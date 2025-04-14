@@ -102,8 +102,8 @@ const PaymentManagementLists = () => {
     setOpen(true);
   };
 
-  const handleOpen2 = (category, item = "",loc="", id = null) => {
-    setFormData({ category, name: item,address:loc });
+  const handleOpen2 = (category, item = "", loc = "", id = null) => {
+    setFormData({ category, name: item, address: loc });
     setEditId(id);
     setOpen(true);
   };
@@ -195,6 +195,7 @@ const PaymentManagementLists = () => {
         "Organizations with Agreements": {
           id: Number(editId),
           organization: name,
+          address: address,
           updatedBy: tokenvalue.name,
           updatedOn: new Date().toISOString(),
         },
@@ -286,7 +287,11 @@ const PaymentManagementLists = () => {
           <Button
             variant="contained"
             startIcon={<Add />}
-            onClick={() => {category === "Organizations with Agreements" ? handleOpen2(category) : handleOpen(category)}}
+            onClick={() => {
+              category === "Organizations with Agreements"
+                ? handleOpen2(category)
+                : handleOpen(category);
+            }}
             style={{ marginBottom: "10px" }}
           >
             Add {category}
@@ -387,11 +392,11 @@ const PaymentManagementLists = () => {
                       field: "actions",
                       headerName: "Actions",
                       renderCell: (params) =>
-                        (category === "Hospital Services" || (params?.row?.createdBy?.toUpperCase() !== "SYS" &&category !== "Hospital Services"  ))  && (
+                        (category === "Hospital Services" ||
+                          (params?.row?.createdBy?.toUpperCase() !== "SYS" &&
+                            category !== "Hospital Services")) && (
                           <>
-                          {
-                            console.log("Checking>>",category,params?.row)
-                          }
+                            {console.log("Checking>>", category, params?.row)}
                             <IconButton
                               onClick={() => {
                                 handleOpen(
@@ -431,7 +436,10 @@ const PaymentManagementLists = () => {
           style={{
             display: "flex",
             msFlexDirection: "column",
-            height: formData?.category === "Organizations with Agreements" ? "150px" : "100px",
+            height:
+              formData?.category === "Organizations with Agreements"
+                ? "150px"
+                : "100px",
             alignItems: "center",
             justifyContent: "center",
             flexDirection: "column",

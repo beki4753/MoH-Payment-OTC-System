@@ -22,6 +22,19 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as XLSX from "xlsx";
 
+const capitalize = (str) => {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
+const capitalizeWords = (str) => {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => capitalize(word))
+    .join(" ");
+};
+
 const formatter2 = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -157,7 +170,7 @@ const ReportReceiptFetcher = () => {
 
       const marginLeft = 10;
       const marginRight = pageWidth - 10;
-
+      const maxWidth = pageWidth - marginLeft * 2;
       const baseFontSize = 10;
       const baseLineHeight = 6;
 
@@ -311,9 +324,15 @@ const ReportReceiptFetcher = () => {
 
       drawText(`Total In Words : `, marginLeft, yPos);
       drawText(
-        `${numberToWords.toWords(totalAmount.toFixed(2))} birr`,
+        `${capitalizeWords(
+          numberToWords.toWords(totalAmount.toFixed(2))
+        )} birr`,
         marginLeft + 30,
-        yPos
+        yPos,
+        {
+          maxWidth: maxWidth - 30, // to fit within the page
+          align: "left",
+        }
       );
       yPos += lineHeight * 2;
 
@@ -345,8 +364,8 @@ const ReportReceiptFetcher = () => {
         }
       } else if (tab === 1 && receiptNumber) {
         if (receiptData.length > 0) {
-          const data = transformPayments(receiptData|| [])
-          generatePDF(data,receiptNumber);
+          const data = transformPayments(receiptData || []);
+          generatePDF(data, receiptNumber);
         } else {
           toast.error("Data is Empty.");
         }
@@ -355,7 +374,6 @@ const ReportReceiptFetcher = () => {
       console.error("Printing Task Erro: ", error);
     }
   };
-
 
   const transformPayments = (data) => {
     if (!data || data.length === 0) return null;
@@ -391,7 +409,42 @@ const ReportReceiptFetcher = () => {
         });
         if (response?.data?.length > 0) {
           setDispPrint(true);
-          setReportData(response?.data);
+          const mod = response?.data
+            ? response?.data?.map(
+                ({
+                  channel,
+                  createdOn,
+                  refNo,
+                  type,
+                  description,
+                  paymentVerifingID,
+                  patientLoaction,
+                  patientWorkingPlace,
+                  patientWorkID,
+                  ...rest
+                }) => ({
+                  refNo:refNo,
+                  ...rest,
+                  type: type,
+                  channel: channel === "-" ? type : channel,
+                  paymentVerifingID:
+                    paymentVerifingID === "-" ? refNo : paymentVerifingID,
+                  patientLoaction:
+                    patientLoaction === "-" ? "Walking" : patientLoaction,
+                  patientWorkingPlace:
+                    patientWorkingPlace === "-"
+                      ? "Walking"
+                      : patientWorkingPlace,
+                  patientWorkID:
+                    patientWorkID === "-" ? "Walking" : patientWorkID,
+
+                  description,
+                  createdOn: createdOn,
+                })
+              )
+            : [];
+
+          setReportData(mod);
         } else if (response?.data?.length <= 0) {
           toast.info("Card Number Not Found.");
         }

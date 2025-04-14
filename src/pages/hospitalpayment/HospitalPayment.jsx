@@ -34,6 +34,19 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import { green, red, orange, grey } from "@mui/material/colors";
 
+const capitalize = (str) => {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
+const capitalizeWords = (str) => {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => capitalize(word))
+    .join(" ");
+};
+
 const tokenvalue = getTokenValue();
 
 // const woredas = ["Woreda 1", "Woreda 2", "Woreda 3"]; // Add relevant woredas
@@ -391,7 +404,7 @@ const HospitalPayment = () => {
             trxRefError.length > 0)) ||
         (formData.method.toUpperCase().includes("CBHI") && !formData.woreda) ||
         (formData.method.toUpperCase().includes("CREDIT") &&
-          (!formData.organization || !formData.employeeId) )
+          (!formData.organization || !formData.employeeId))
       ) {
         return window.alert("Please fill all the necessary fields!!");
       }
@@ -482,7 +495,7 @@ const HospitalPayment = () => {
           setRegisteredCBHI(null);
           toast.success(`Payment Regitstered Under ${response?.data?.refNo}`);
           setRefresh((prev) => !prev);
-  
+
           generatePDF(final, response?.data?.refNo);
           setIsPrintLoading(false);
         } catch (error) {
@@ -493,7 +506,7 @@ const HospitalPayment = () => {
     } catch (error) {
       console.error(error);
       setIsPrintLoading(false);
-      toast.error(error?.response?.data ||"Internal Server Error.")
+      toast.error(error?.response?.data || "Internal Server Error.");
     }
   };
 
@@ -534,7 +547,7 @@ const HospitalPayment = () => {
 
       const marginLeft = 10;
       const marginRight = pageWidth - 10;
-
+      const maxWidth = pageWidth - marginLeft * 2;
       const baseFontSize = 10;
       const baseLineHeight = 6;
 
@@ -688,9 +701,15 @@ const HospitalPayment = () => {
 
       drawText(`Total In Words : `, marginLeft, yPos);
       drawText(
-        `${numberToWords.toWords(totalAmount.toFixed(2))} birr`,
+        `${capitalizeWords(
+          numberToWords.toWords(totalAmount.toFixed(2))
+        )} birr`,
         marginLeft + 30,
-        yPos
+        yPos,
+        {
+          maxWidth: maxWidth - 30, // to fit within the page
+          align: "left",
+        }
       );
       yPos += lineHeight * 2;
 
