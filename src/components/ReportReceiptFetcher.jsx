@@ -400,7 +400,7 @@ const ReportReceiptFetcher = () => {
           paymentId: receiptNumber,
           user: tokenvalue?.name,
         });
-        console.log(response2?.data);
+
         if (response2?.data?.length > 0) {
           setDispPrint(true);
           setReceiptData(response2?.data);

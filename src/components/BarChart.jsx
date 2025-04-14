@@ -1,17 +1,63 @@
+import React, { useEffect, useState } from "react";
 import { useTheme } from "@mui/material";
 import { ResponsiveBar } from "@nivo/bar";
 import { tokens } from "../theme";
-import { mockBarData as data } from "../data/mockData";
+import api from "../utils/api";
+import { getTokenValue } from "../services/user_service";
 
+const tokenvalue = getTokenValue();
 const BarChart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const today = new Date();
+  const startDate = new Date(today);
+  startDate.setDate(today.getDate() - 7);
+  const [result, setResult] = useState([]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await api.put("/Payment/Get-all-Payment", {
+          startDate: startDate,
+          endDate: today,
+          user: tokenvalue.name,
+        });
+        const summary = response?.data
+          ? response?.data?.reduce((acc, payment) => {
+              const { type, amount } = payment;
+              // const dateKey = new Date(createdOn).toISOString().split('T')[0];
+              if (!acc[type]) {
+                acc[type] = 0;
+              }
+              acc[type] += parseFloat(amount);
+              return acc;
+            }, {})
+          : [];
+
+        const mapped = Object.entries(summary).map(([key, value]) => ({
+          method: key,
+          amount: value,
+        }));
+        mapped.sort((a, b) => b.y - a.y);
+
+        setResult(mapped);
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // If data hasn't loaded yet
 
   return (
     <ResponsiveBar
-      data={data}
+      data={result} // <-- Use the result directly
+      indexBy="method" // <-- Use the x as category
+      keys={["amount"]} // <-- y is the value we're plotting
+      margin={{ top: 50, right: 130, bottom: 50, left: 60 }}
+      padding={0.3}
       theme={{
-        // added
         axis: {
           domain: {
             line: {
@@ -39,44 +85,13 @@ const BarChart = ({ isDashboard = false }) => {
           },
         },
       }}
-      keys={["hot dog", "burger", "sandwich", "kebab", "fries", "donut"]}
-      indexBy="country"
-      margin={{ top: 50, right: 130, bottom: 50, left: 60 }}
-      padding={0.3}
-      valueScale={{ type: "linear" }}
-      indexScale={{ type: "band", round: true }}
-      colors={{ scheme: "nivo" }}
-      defs={[
-        {
-          id: "dots",
-          type: "patternDots",
-          background: "inherit",
-          color: "#38bcb2",
-          size: 4,
-          padding: 1,
-          stagger: true,
-        },
-        {
-          id: "lines",
-          type: "patternLines",
-          background: "inherit",
-          color: "#eed312",
-          rotation: -45,
-          lineWidth: 6,
-          spacing: 10,
-        },
-      ]}
-      borderColor={{
-        from: "color",
-        modifiers: [["darker", "1.6"]],
-      }}
-      axisTop={null}
-      axisRight={null}
+      // colors={{ scheme: "nivo" }}
+      colors={colors.greenAccent[500]}
       axisBottom={{
         tickSize: 5,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined : "country", // changed
+        legend: isDashboard ? undefined : "Payment Type",
         legendPosition: "middle",
         legendOffset: 32,
       }}
@@ -84,16 +99,9 @@ const BarChart = ({ isDashboard = false }) => {
         tickSize: 5,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined : "food", // changed
+        legend: isDashboard ? undefined : "Amount",
         legendPosition: "middle",
         legendOffset: -40,
-      }}
-      enableLabel={false}
-      labelSkipWidth={12}
-      labelSkipHeight={12}
-      labelTextColor={{
-        from: "color",
-        modifiers: [["darker", 1.6]],
       }}
       legends={[
         {
@@ -121,7 +129,7 @@ const BarChart = ({ isDashboard = false }) => {
       ]}
       role="application"
       barAriaLabel={function (e) {
-        return e.id + ": " + e.formattedValue + " in country: " + e.indexValue;
+        return e.id + ": " + e.formattedValue + " in category: " + e.indexValue;
       }}
     />
   );

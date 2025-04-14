@@ -17,6 +17,7 @@ import StorageIcon from "@mui/icons-material/Storage";
 import { LibraryBooksTwoTone } from "@mui/icons-material";
 import BusinessIcon from "@mui/icons-material/Business";
 import ManageSearchIcon from "@mui/icons-material/ManageSearch";
+import { CreditCard } from "@mui/icons-material";
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -233,14 +234,14 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                     color={colors.grey[300]}
                     sx={{ m: "15px 0 5px 20px" }}
                   >
-                    Hospital Management
+                    Credit Users Management
                   </Typography>
                 )}
 
                 <Item
-                  title="Hospital Manager"
-                  to="/HospitalManagment"
-                  icon={<LocalHospitalIcon />}
+                  title="Credit Users"
+                  to="/credit-users"
+                  icon={<CreditCard />}
                   selected={selected}
                   setSelected={setSelected}
                 />

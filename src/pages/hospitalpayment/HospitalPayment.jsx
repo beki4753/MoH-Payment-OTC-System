@@ -482,7 +482,7 @@ const HospitalPayment = () => {
           setRegisteredCBHI(null);
           toast.success(`Payment Regitstered Under ${response?.data?.refNo}`);
           setRefresh((prev) => !prev);
-          console.log(final, response?.data?.refNo);
+  
           generatePDF(final, response?.data?.refNo);
           setIsPrintLoading(false);
         } catch (error) {
@@ -523,7 +523,6 @@ const HospitalPayment = () => {
   //Generate PDF
   const generatePDF = (data, refNo) => {
     try {
-      console.log(data, refNo);
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",

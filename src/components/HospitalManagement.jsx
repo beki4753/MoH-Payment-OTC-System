@@ -84,7 +84,7 @@ const HospitalManagement = () => {
     try{
         setIsEditing(true)
         await new Promise(resolve => setTimeout(resolve, 3000))
-        console.log("Edit this one>>",data)
+
         setOpenDialog(false)
     }catch(error)
     {

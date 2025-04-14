@@ -29,7 +29,7 @@ import { getTokenValue, getSession, logout } from "./services/user_service.js";
 import useTokenCheck from "./services/useTokenCheck.js";
 
 import {
-  HospitalManagement,
+  OrgUploadManager,
   UserManagment,
   RoleManagment,
   FinancialDashboard,
@@ -159,10 +159,10 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "HospitalManagment",
+        path: "credit-users",
         element: (
           <ProtectedRoute
-            element={<HospitalManagement />}
+            element={<OrgUploadManager />}
             allowedRoles={["Admin"]}
           />
         ),

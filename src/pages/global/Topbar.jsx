@@ -9,9 +9,10 @@ import {
   ListItemIcon,
   Tooltip,
   InputBase,
+  Button,
 } from "@mui/material";
 import { useContext, useState } from "react";
-import { useNavigate,Form, useRouteLoaderData } from "react-router-dom";
+import { useNavigate, Form, useRouteLoaderData } from "react-router-dom";
 import { ColorModeContext, tokens } from "../../theme";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
@@ -19,10 +20,12 @@ import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import Logout from "@mui/icons-material/Logout";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { getTokenValue } from "../../services/user_service";
-import { LanguageToggle } from "../../components";
-const tokenvalue = getTokenValue()
 
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+
+const tokenvalue = getTokenValue();
 
 const Topbar = () => {
   const theme = useTheme();
@@ -36,11 +39,50 @@ const Topbar = () => {
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
   const handleProfile = () => navigate("/profile");
-  const handleLogout = () => navigate("/logout");
 
+  const handleDownloadCollectorsFile = () => {
+    try {
+      const link = document.createElement("a");
+      link.href = `${window.location.origin}/assets/files/Register Collectors.xlsx`;
+      link.download = "Register Collectors.xlsx";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
+  // Register Credit Users
+  const handleDownloadCreditUserFile = () => {
+    try {
+      const link = document.createElement("a");
+      link.href = `${window.location.origin}/assets/files/Register Credit Users.xlsx`;
+      link.download = "Register Credit Users.xlsx";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
+
+  const handleHelp = () => {
+    try {
+      const link = document.createElement("a");
+      link.href = "/files/report.pdf";
+      link.download = "report.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return session ? (
-    <Box display="flex" justifyContent="space-between" p={2} >
+    <Box display="flex" justifyContent="space-between" p={2}>
       {/* SEARCH BAR */}
       <Box
         display="flex"
@@ -51,7 +93,6 @@ const Topbar = () => {
         <IconButton type="button" sx={{ p: 1 }}>
           <SearchIcon />
         </IconButton>
-        
       </Box>
 
       {/* ICONS */}
@@ -85,7 +126,7 @@ const Topbar = () => {
               aria-expanded={open ? "true" : undefined}
             >
               <Avatar sx={{ width: 32, height: 32 }}>
-                {tokenvalue.name ?.charAt(0)?.toUpperCase()}
+                {tokenvalue.name?.charAt(0)?.toUpperCase()}
               </Avatar>
             </IconButton>
           </Tooltip>
@@ -116,8 +157,29 @@ const Topbar = () => {
             },
           }}
         >
-          <MenuItem onClick={handleProfile}>
-            <Avatar /> Profile
+          <MenuItem onClick={() => handleProfile()}>
+            <ListItemIcon>
+              <Avatar />
+            </ListItemIcon>
+            Profile
+          </MenuItem>
+          <MenuItem onClick={() => handleDownloadCollectorsFile()}>
+            <ListItemIcon>
+              <FileDownloadIcon />
+            </ListItemIcon>
+            Get Register Collectors File
+          </MenuItem>
+          <MenuItem onClick={() => handleDownloadCreditUserFile()}>
+            <ListItemIcon>
+              <FileDownloadIcon />
+            </ListItemIcon>
+            Get Register Credit User File
+          </MenuItem>
+          <MenuItem onClick={() => handleHelp()}>
+            <ListItemIcon>
+              <HelpOutlineIcon />
+            </ListItemIcon>
+            Help
           </MenuItem>
           <Divider />
           <Form action="/logout" method="post">
@@ -125,7 +187,9 @@ const Topbar = () => {
               <ListItemIcon>
                 <Logout fontSize="small" />
               </ListItemIcon>
-              <button>Logout</button>
+              <Button variant="contained" type="submit" color="secondary">
+                Logout
+              </Button>
             </MenuItem>
           </Form>
         </Menu>

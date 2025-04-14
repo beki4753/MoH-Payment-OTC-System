@@ -1,4 +1,4 @@
-export {default as Barchart} from './BarChart';
+export {default as BarChart} from './BarChart';
 export {default as GeographyChart} from './GeographyChart';
 export {default as Header} from './Header';
 export {default as LineChart} from './LineChart';
@@ -15,3 +15,4 @@ export {default as EmployeeUploadManager} from './EmployeeUploadManager'
 export {default as HospitalManagement} from './HospitalManagement'
 export {default as PaymentManagementLists} from './PaymentManagementLists'
 export {default as ReportReceiptFetcher} from './ReportReceiptFetcher'
+export {default as OrgUploadManager} from './OrgUploadManager'

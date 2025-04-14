@@ -29,7 +29,11 @@ const categories = [
 const PaymentManagementLists = () => {
   const [data, setData] = useState({});
   const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({ category: "", name: "" });
+  const [formData, setFormData] = useState({
+    category: "",
+    name: "",
+    address: "",
+  });
   const [editId, setEditId] = useState(null);
   const [refresh, setRefresh] = useState(false);
   // Generalized fetch function
@@ -37,8 +41,12 @@ const PaymentManagementLists = () => {
     try {
       const response = await api.get(endpoint);
       if (response?.status === 200 || response?.status === 201) {
+        const obj = response?.data?.map(({ createdBy, ...rest }) => ({
+          createdby: createdBy,
+          ...rest,
+        }));
         const result = {
-          [key]: response?.data,
+          [key]: obj,
         };
         setData((prevData) => ({ ...prevData, ...result }));
       }
@@ -94,18 +102,32 @@ const PaymentManagementLists = () => {
     setOpen(true);
   };
 
+  const handleOpen2 = (category, item = "",loc="", id = null) => {
+    setFormData({ category, name: item,address:loc });
+    setEditId(id);
+    setOpen(true);
+  };
+
   const handleClose = () => {
     setOpen(false);
     setEditId(null);
-    setFormData({ category: "", name: "" });
+    setFormData({ category: "", name: "", address: "" });
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, name: e.target.value });
+    if (e.target.name === "address") {
+      setFormData({
+        ...formData,
+        [e.target.name]: e.target.value,
+      });
+    } else {
+      setFormData({ ...formData, name: e.target.value });
+    }
   };
+
   const handleSubmit = async () => {
     try {
-      const { category, name } = formData;
+      const { category, name, address } = formData;
       if (!name.trim()) return;
 
       const apiEndpoints = {
@@ -138,6 +160,7 @@ const PaymentManagementLists = () => {
         },
         "Organizations with Agreements": {
           organization: name,
+          address: address,
           createdBy: tokenvalue.name,
         },
       };
@@ -194,22 +217,27 @@ const PaymentManagementLists = () => {
       }
 
       if (apiEndpoints[category] && editId === null) {
-        const response = await api.post(
-          apiEndpoints[category],
-          requestBody[category],
-          {
-            headers: { "Content-Type": "application/json" },
+        try {
+          const response = await api.post(
+            apiEndpoints[category],
+            requestBody[category],
+            {
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+          if (response.status === 201 || response.status === 200) {
+            toast.success(`${category} added successfully!`);
+            setRefresh((prev) => !prev);
+            handleClose();
+            return;
           }
-        );
-        if (response.status === 201 || response.status === 200) {
-          toast.success(`${category} added successfully!`);
-          setRefresh((prev) => !prev);
-          handleClose();
-          return;
+        } catch (error) {
+          console.error("Upload error:", error);
+          toast.error("Error Uploading data!");
         }
       }
 
-      handleClose();
+      // handleClose();
     } catch (error) {
       console.error("Error:", error);
       toast.error(error?.response?.data || "Internal Server Error!");
@@ -258,7 +286,7 @@ const PaymentManagementLists = () => {
           <Button
             variant="contained"
             startIcon={<Add />}
-            onClick={() => handleOpen(category)}
+            onClick={() => {category === "Organizations with Agreements" ? handleOpen2(category) : handleOpen(category)}}
             style={{ marginBottom: "10px" }}
           >
             Add {category}
@@ -290,51 +318,103 @@ const PaymentManagementLists = () => {
                   : category === "Organizations with Agreements"
                   ? item.organization
                   : "",
+              createdBy: item.createdby,
+              location:
+                category === "Digital Payment Channels"
+                  ? ""
+                  : category === "Payment Methods"
+                  ? ""
+                  : category === "Hospital Services"
+                  ? ""
+                  : category === "CBHI Providers"
+                  ? ""
+                  : category === "Organizations with Agreements"
+                  ? item.location
+                  : "",
             }))}
-            columns={[
-              {
-                field: "name",
-                headerName: "Name",
-                flex: 1,
-              },
-              {
-                field: "actions",
-                headerName: "Actions",
-                renderCell: (params) =>
-                  ![
-                    "CASH",
-                    "ALL",
-                    "CBHI",
-                    "Credit",
-                    "Free of Charge",
-                    "Digital",
-                    "TeleBirr",
-                    "CBE Mobile Banking",
-                    "BANK OF ABYSSINIA",
-                    "Awash Bank",
-                  ]
-                    .map((item) => item.toUpperCase())
-                    .includes(params.row.name.toUpperCase()) && (
-                    <>
-                      <IconButton
-                        onClick={() => {
-                          handleOpen(category, params.row.name, params.row.id);
-                        }}
-                      >
-                        <Edit />
-                      </IconButton>
+            columns={
+              category === "Organizations with Agreements"
+                ? [
+                    {
+                      field: "name",
+                      headerName: "Name",
+                      flex: 1,
+                    },
+                    {
+                      field: "location",
+                      headerName: "Address",
+                      flex: 1,
+                    },
+                    {
+                      field: "actions",
+                      headerName: "Actions",
+                      renderCell: (params) =>
+                        params?.row?.createdBy?.toUpperCase() !== "SYS" && (
+                          <>
+                            <IconButton
+                              onClick={() => {
+                                handleOpen2(
+                                  category,
+                                  params.row.name,
+                                  params.row.location,
+                                  params.row.id
+                                );
+                              }}
+                            >
+                              <Edit />
+                            </IconButton>
 
-                      <IconButton
-                        onClick={() => handleDelete(category, params.row.id)}
-                        color="error"
-                      >
-                        <Delete />
-                      </IconButton>
-                    </>
-                  ),
-                flex: 0.5,
-              },
-            ]}
+                            <IconButton
+                              onClick={() =>
+                                handleDelete(category, params.row.id)
+                              }
+                              color="error"
+                            >
+                              <Delete />
+                            </IconButton>
+                          </>
+                        ),
+                      flex: 0.5,
+                    },
+                  ]
+                : [
+                    {
+                      field: "name",
+                      headerName: "Name",
+                      flex: 1,
+                    },
+                    {
+                      field: "actions",
+                      headerName: "Actions",
+                      renderCell: (params) =>
+                        params?.row?.createdBy?.toUpperCase() !== "SYS" && (
+                          <>
+                            <IconButton
+                              onClick={() => {
+                                handleOpen(
+                                  category,
+                                  params.row.name,
+                                  params.row.id
+                                );
+                              }}
+                            >
+                              <Edit />
+                            </IconButton>
+
+                            <IconButton
+                              onClick={() =>
+                                handleDelete(category, params.row.id)
+                              }
+                              color="error"
+                            >
+                              <Delete />
+                            </IconButton>
+                          </>
+                        ),
+                      flex: 0.5,
+                    },
+                  ]
+            }
             autoHeight
           />
         </div>
@@ -347,18 +427,32 @@ const PaymentManagementLists = () => {
         <DialogContent
           style={{
             display: "flex",
-            height: "100px",
+            msFlexDirection: "column",
+            height: formData?.category === "Organizations with Agreements" ? "150px" : "100px",
             alignItems: "center",
             justifyContent: "center",
+            flexDirection: "column",
           }}
         >
           <TextField
             fullWidth
             label="Name"
+            name="name"
             value={formData.name}
             onChange={handleChange}
             autoFocus
           />
+          {formData?.category === "Organizations with Agreements" && (
+            <TextField
+              fullWidth
+              label="Address"
+              name="address"
+              value={formData?.address || ""}
+              onChange={handleChange}
+              autoFocus
+              sx={{ marginTop: "10px" }}
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
