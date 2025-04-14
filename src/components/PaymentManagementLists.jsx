@@ -387,8 +387,11 @@ const PaymentManagementLists = () => {
                       field: "actions",
                       headerName: "Actions",
                       renderCell: (params) =>
-                        params?.row?.createdBy?.toUpperCase() !== "SYS" && (
+                        (category === "Hospital Services" || (params?.row?.createdBy?.toUpperCase() !== "SYS" &&category !== "Hospital Services"  ))  && (
                           <>
+                          {
+                            console.log("Checking>>",category,params?.row)
+                          }
                             <IconButton
                               onClick={() => {
                                 handleOpen(
