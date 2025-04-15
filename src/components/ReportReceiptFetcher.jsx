@@ -157,7 +157,7 @@ const ReportReceiptFetcher = () => {
   };
 
   //Generate PDF
-  const generatePDF = (data, refNo) => {
+  const generatePDF = (data) => {
     try {
       const doc = new jsPDF({
         orientation: "portrait",
@@ -178,9 +178,9 @@ const ReportReceiptFetcher = () => {
       const countLines = () => {
         let lines = 10; // header and static
         lines += 5; // patient + method
-        if (data.method.toUpperCase().includes("DIGITAL")) lines += 2;
-        if (data.method.toUpperCase().includes("CBHI")) lines += 1;
-        if (data.method.toUpperCase().includes("CREDIT")) lines += 1;
+        if (data.type.toUpperCase().includes("DIGITAL")) lines += 2;
+        if (data.type.toUpperCase().includes("CBHI")) lines += 1;
+        if (data.type.toUpperCase().includes("CREDIT")) lines += 1;
         lines += 3 + data.amount.length; // items and total
         lines += 6; // footer
         return lines;
@@ -221,20 +221,20 @@ const ReportReceiptFetcher = () => {
       yPos += lineHeight + 1;
 
       doc.setFontSize(fontSize - 1);
-      drawText(`${tokenvalue?.Hospital || "N/A"}`, pageWidth / 2, yPos, {
+      drawText(`${data?.hospitalName || "N/A"}`, pageWidth / 2, yPos, {
         align: "center",
       });
       yPos += lineHeight;
 
       // Receipt Info
       doc.setFont("helvetica", "normal");
-      drawText(`Receipt NO: ${refNo || "N/A"}`, marginLeft, yPos);
+      drawText(`Receipt NO: ${data?.refNo || "N/A"}`, marginLeft, yPos);
       yPos += lineHeight;
       drawText(`Address: Debre Brihan`, marginLeft, yPos);
       yPos += lineHeight;
       drawText(`Date: ${new Date().toLocaleDateString()}`, marginLeft, yPos);
       yPos += lineHeight;
-      drawText(`Cashier: ${tokenvalue?.name || "N/A"}`, marginLeft, yPos);
+      drawText(`Cashier: ${data?.createdby || "N/A"}`, marginLeft, yPos);
       yPos += lineHeight;
 
       doc.setLineWidth(0.3);
@@ -251,38 +251,42 @@ const ReportReceiptFetcher = () => {
       doc.setFont("helvetica", "bold");
       drawText(`Card Number:`, marginLeft, yPos);
       doc.setFont("helvetica", "normal");
-      drawText(`${data.cardNumber || "N/A"}`, marginLeft + 35, yPos);
+      drawText(`${data?.cardNumber || "N/A"}`, marginLeft + 35, yPos);
       yPos += lineHeight;
 
       doc.setFont("helvetica", "bold");
       drawText(`Payment Method:`, marginLeft, yPos);
       doc.setFont("helvetica", "normal");
-      drawText(`${data.method || "N/A"}`, marginLeft + 35, yPos);
+      drawText(`${data?.type || "N/A"}`, marginLeft + 35, yPos);
       yPos += lineHeight;
 
-      if (data.method.toUpperCase().includes("DIGITAL")) {
+      if (data?.type.toUpperCase().includes("DIGITAL")) {
         doc.setFont("helvetica", "bold");
         drawText("Channel:", marginLeft, yPos);
         doc.setFont("helvetica", "normal");
-        drawText(`${data.digitalChannel || "N/A"}`, marginLeft + 35, yPos);
+        drawText(`${data?.channel || "N/A"}`, marginLeft + 35, yPos);
         yPos += lineHeight;
 
         doc.setFont("helvetica", "bold");
         drawText("Transaction Ref No:", marginLeft, yPos);
         doc.setFont("helvetica", "normal");
-        drawText(`${data.trxref || "N/A"}`, marginLeft + 35, yPos);
+        drawText(`${data?.paymentVerifingID || "N/A"}`, marginLeft + 35, yPos);
         yPos += lineHeight;
-      } else if (data.method.toUpperCase().includes("CBHI")) {
+      } else if (data?.type.toUpperCase().includes("CBHI")) {
         doc.setFont("helvetica", "bold");
         drawText(`Woreda:`, marginLeft, yPos);
         doc.setFont("helvetica", "normal");
-        drawText(`${data.woreda || "N/A"}`, marginLeft + 35, yPos);
+        drawText(`${data?.patientLoaction || "N/A"}`, marginLeft + 35, yPos);
         yPos += lineHeight;
-      } else if (data.method.toUpperCase().includes("CREDIT")) {
+      } else if (data?.type.toUpperCase().includes("CREDIT")) {
         doc.setFont("helvetica", "bold");
         drawText(`Organization:`, marginLeft, yPos);
         doc.setFont("helvetica", "normal");
-        drawText(`${data.organization || "N/A"}`, marginLeft + 35, yPos);
+        drawText(
+          `${data?.patientWorkingPlace || "N/A"}`,
+          marginLeft + 35,
+          yPos
+        );
         yPos += lineHeight;
       }
 
@@ -352,7 +356,7 @@ const ReportReceiptFetcher = () => {
     }
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     try {
       if (tab === 0 && cardNumber) {
         if (reportData.length > 0) {
@@ -364,8 +368,26 @@ const ReportReceiptFetcher = () => {
         }
       } else if (tab === 1 && receiptNumber) {
         if (receiptData.length > 0) {
-          const data = transformPayments(receiptData || []);
-          generatePDF(data, receiptNumber);
+          const data = await transformPayments(receiptData || []);
+          const response = await api.put("/Payment/patient-info", {
+            patientCardNumber: data?.cardNumber,
+            hospital: tokenvalue?.Hospital,
+            cashier: tokenvalue?.name,
+          });
+
+          if (response?.data?.length > 0) {
+            if (response?.data[0].patientName !== undefined) {
+              const obj = Object.entries(data);
+              obj.push(["patientName", response?.data[0].patientName]);
+
+              generatePDF(Object.fromEntries(obj));
+            }
+          } else {
+            const obj = Object.entries(data);
+            obj.push(["patientName", null]);
+
+            generatePDF(Object.fromEntries(obj));
+          }
         } else {
           toast.error("Data is Empty.");
         }
@@ -375,25 +397,31 @@ const ReportReceiptFetcher = () => {
     }
   };
 
-  const transformPayments = (data) => {
+  const transformPayments = async (data) => {
     if (!data || data.length === 0) return null;
 
-    const first = data[0]; // assume same cardNumber, type, etc.
+    const first = data[0];
 
     const result = {
-      id: first.id, // or generate new one
-      cardNumber: first.cardNumber,
+      refNo: first?.refNo,
+      id: first?.id,
+      cardNumber: first?.cardNumber,
+      hospitalName: first?.hospitalName,
+      department: first?.department,
       amount: data.map((item) => ({
         purpose: item.purpose,
         Amount: item.amount,
       })),
-      method: first.type || "",
-      description: "",
-      reason: data.map((item) => item.purpose).join(", "),
-      digitalChannel: "",
-      woreda: "",
-      trxref: "",
-      organization: "",
+      createdby: first?.createdby,
+      collectionID: first?.collectionID,
+      type: first?.type,
+      channel: first?.channel,
+      paymentVerifingID: first?.paymentVerifingID,
+      patientLoaction: first?.patientLoaction,
+      patientWorkingPlace: first?.patientWorkingPlace,
+      patientWorkID: first?.patientWorkID,
+      description: first?.description,
+      createdOn: first?.createdOn,
     };
 
     return result;
@@ -423,7 +451,7 @@ const ReportReceiptFetcher = () => {
                   patientWorkID,
                   ...rest
                 }) => ({
-                  refNo:refNo,
+                  refNo: refNo,
                   ...rest,
                   type: type,
                   channel: channel === "-" ? type : channel,
@@ -498,13 +526,31 @@ const ReportReceiptFetcher = () => {
 
         <Tabs
           value={tab}
-          onChange={(e, val) => {
-            setTab(val);
-          }}
+          onChange={(e, val) => setTab(val)}
           sx={{ mb: 2 }}
+          TabIndicatorProps={{
+            style: { backgroundColor: "#1976d2" }, // underline color
+          }}
         >
-          <Tab icon={<CreditCardIcon />} label="Report by Card Number" />
-          <Tab icon={<ReceiptLongIcon />} label="Receipt" />
+          <Tab
+            icon={<CreditCardIcon />}
+            label="Report by Card Number"
+            sx={{
+              "&.Mui-selected": {
+                color: "#a2b9f5",
+              },
+            }}
+          />
+          <Tab
+            icon={<ReceiptLongIcon />}
+            label="Receipt"
+            sx={{
+  
+              "&.Mui-selected": {
+                color: "#a2b9f5",
+              },
+            }}
+          />
         </Tabs>
 
         <Box display="flex" alignItems="center" gap={2} mb={3}>
@@ -571,7 +617,6 @@ const ReportReceiptFetcher = () => {
           columns={columns}
           pageSize={5}
           disableRowSelectionOnClick
-          sx={{ backgroundColor: "#fff", borderRadius: 2 }}
         />
       </CardContent>
       <ToastContainer />

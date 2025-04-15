@@ -1,176 +1,270 @@
 import React, { useState, useEffect } from "react";
-import {
-    Container,
-    Tabs,
-    Tab,
-    Paper,
-    Typography,
-    Button,
-    TextField,
-} from "@mui/material";
+import { Tabs, Tab, Paper, Typography, Button, TextField } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import * as XLSX from "xlsx";
-import { GetAllPaymentByDate } from "../../services/report_service";
+import {
+  GetAllPaymentByDate,
+  GetAllPaymentType,
+} from "../../services/report_service";
 import { getTokenValue } from "../../services/user_service";
+import Box from "@mui/material/Box";
+import { styled } from "@mui/material/styles";
 
-
-const paymentMethods = [
-    "All",
-    "CASH",
-    "Digital",
-    "CBHI",
-    "Free Service",
-    "Credit",
-];
 
 const ReportPage = () => {
-    const [payments, setPayments] = useState([]);
+  const [payments, setPayments] = useState([]);
 
-    const [selectedMethod, setSelectedMethod] = useState("All");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
-    const [filteredPayments, setFilteredPayments] = useState(payments);
+  const [selectedMethod, setSelectedMethod] = useState("ALL");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [filteredPayments, setFilteredPayments] = useState(payments);
+  const [paymentMethods, setpaymentMethods] = useState([]);
+  var tokenValue = getTokenValue();
 
-
-    var tokenValue = getTokenValue();
-
-    // useEffect(() => {
-    //   localStorage.setItem("hospitalPayments", JSON.stringify(payments));
-    // }, [payments]);
-
-
-    useEffect(() => {
-        setFilteredPayments(
-            payments.filter(
-                (payment) =>
-                    (selectedMethod === "All" || payment.type === selectedMethod)
-            )
-        );
-    }, [selectedMethod, startDate, endDate, payments]);
-
-    const handleMethodChange = (event, newValue) => {
-        setSelectedMethod(newValue);
+  useEffect(() => {
+    const fetchData = async () => {
+      setpaymentMethods(await GetAllPaymentType());
     };
 
-    const calculateTotal = (method) => {
-        return payments
-            .filter(
-                (payment) =>
-                    (method === "All" || payment.type === method)
-            )
-            .reduce((sum, payment) => sum + Number(payment.amount), 0); // Ensure amount is treated as a number
-    };
+    fetchData();
+  }, []);
 
-    const exportToExcel = () => {
-        const ws = XLSX.utils.json_to_sheet(filteredPayments);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Payments Report");
-        XLSX.writeFile(
-            wb,
-            `Payments_Report_${startDate}_to_${endDate}_${selectedMethod}.xlsx`
-        );
-    };
+  useEffect(() => {
+    try {
+      const newSet = new Set(payments.map((item) => item.type));
+      const prev = new Set(paymentMethods.map((item) => item.type));
+      const diffSet = new Set([...newSet].filter((x) => !prev.has(x)));
 
-    const columns = [
+      if (diffSet.size === 0) return;
 
-        { field: "refNo", headerName: "Ref No.", width: 200 },
-        { field: "hospitalName", headerName: "Hospital Name", width: 150 },
-        { field: "cardNumber", headerName: "Card Number", width: 150 },
-        { field: "purpose", headerName: "Service", width: 150 },
-        { field: "amount", headerName: "Amount", width: 120 },
-        { field: "type", headerName: "Payment Method", width: 150 },
-        { field: "description", headerName: "Description", width: 200 },
-        { field: "createdOn", headerName: "Date", width: 150 },
-        { field: "createdby", headerName: "Created by", width: 150 },
+      const maxId =
+        paymentMethods.length > 0
+          ? Math.max(...paymentMethods.map((item) => item.id))
+          : 0;
 
+      const newEntries = Array.from(diffSet).map((type, index) => ({
+        id: maxId + index + 1,
+        type,
+      }));
 
-    ];
-    const handleReportRequest = async () => {
-        try {
-            const datas = await GetAllPaymentByDate({
-                startDate,
-                endDate,
-                user: tokenValue.name,
-            });
-            setPayments(datas);
+    setpaymentMethods((prevData) => [...prevData, ...newEntries]);
+    } catch (error) {
+      console.error("Filter Error : ", error);
+    }
+  }, [payments]);
 
-            setFilteredPayments(
-                payments.filter(
-                    (payment) =>
-                        (selectedMethod === "All" || payment.type === selectedMethod)
-                )
-            );
+  const StyledGridOverlay = styled("div")(({ theme }) => ({
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100%",
+    "& .no-results-primary": {
+      fill: "#3D4751",
+      ...theme.applyStyles("light", {
+        fill: "#AEB8C2",
+      }),
+    },
+    "& .no-results-secondary": {
+      fill: "#1D2126",
+      ...theme.applyStyles("light", {
+        fill: "#E8EAED",
+      }),
+    },
+  }));
 
-        } catch (error) {
-            console.error("Error fetching payments:", error);
-        }
-    };
+  function CustomNoResultsOverlay() {
     return (
-        <>
-            <Typography variant="h5" gutterBottom sx={{ margin: 2 }}>
-                Payment Reports
-            </Typography>
-            <Paper sx={{ padding: 2, margin: 2 }}>
-                <TextField
-                    label="Start Date"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    required
-                    sx={{ marginRight: 2 }}
-                />
-                <TextField
-                    label="End Date"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    required
-                    sx={{ marginRight: 2 }}
-                />
-                <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={handleReportRequest}
-                    sx={{ marginRight: 2 }}
-                >
-                    Request Report
-                </Button>
-                <Tabs
-                    value={selectedMethod}
-                    onChange={handleMethodChange}
-                    variant="scrollable"
-                    sx={{ marginTop: 2 }}
-                >
-                    {paymentMethods.map((method) => (
-                        <Tab
-                            key={method}
-                            label={`${method} (${calculateTotal(method)})`}
-                            value={method}
-                        />
-                    ))}
-                </Tabs>
-            </Paper>
-            <Paper sx={{ height: 400, margin: 2 }}>
-                <DataGrid
-                    rows={filteredPayments.length ? filteredPayments : []}
-                    columns={columns}
-                    pageSize={5}
-                    rowsPerPageOptions={[5, 10, 20]}
-                />
-            </Paper>
-            <Button
-                sx={{ marginLeft: 2 }}
-                variant="contained"
-                color="primary"
-
-                onClick={exportToExcel}
-            >
-                Export to Excel
-            </Button>
-        </>
+      <StyledGridOverlay>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          width={96}
+          viewBox="0 0 523 299"
+          aria-hidden
+          focusable="false"
+        >
+          <path
+            className="no-results-primary"
+            d="M262 20c-63.513 0-115 51.487-115 115s51.487 115 115 115 115-51.487 115-115S325.513 20 262 20ZM127 135C127 60.442 187.442 0 262 0c74.558 0 135 60.442 135 135 0 74.558-60.442 135-135 135-74.558 0-135-60.442-135-135Z"
+          />
+          <path
+            className="no-results-primary"
+            d="M348.929 224.929c3.905-3.905 10.237-3.905 14.142 0l56.569 56.568c3.905 3.906 3.905 10.237 0 14.143-3.906 3.905-10.237 3.905-14.143 0l-56.568-56.569c-3.905-3.905-3.905-10.237 0-14.142ZM212.929 85.929c3.905-3.905 10.237-3.905 14.142 0l84.853 84.853c3.905 3.905 3.905 10.237 0 14.142-3.905 3.905-10.237 3.905-14.142 0l-84.853-84.853c-3.905-3.905-3.905-10.237 0-14.142Z"
+          />
+          <path
+            className="no-results-primary"
+            d="M212.929 185.071c-3.905-3.905-3.905-10.237 0-14.142l84.853-84.853c3.905-3.905 10.237-3.905 14.142 0 3.905 3.905 3.905 10.237 0 14.142l-84.853 84.853c-3.905 3.905-10.237 3.905-14.142 0Z"
+          />
+          <path
+            className="no-results-secondary"
+            d="M0 43c0-5.523 4.477-10 10-10h100c5.523 0 10 4.477 10 10s-4.477 10-10 10H10C4.477 53 0 48.523 0 43ZM0 89c0-5.523 4.477-10 10-10h80c5.523 0 10 4.477 10 10s-4.477 10-10 10H10C4.477 99 0 94.523 0 89ZM0 135c0-5.523 4.477-10 10-10h74c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 181c0-5.523 4.477-10 10-10h80c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 227c0-5.523 4.477-10 10-10h100c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM523 227c0 5.523-4.477 10-10 10H413c-5.523 0-10-4.477-10-10s4.477-10 10-10h100c5.523 0 10 4.477 10 10ZM523 181c0 5.523-4.477 10-10 10h-80c-5.523 0-10-4.477-10-10s4.477-10 10-10h80c5.523 0 10 4.477 10 10ZM523 135c0 5.523-4.477 10-10 10h-74c-5.523 0-10-4.477-10-10s4.477-10 10-10h74c5.523 0 10 4.477 10 10ZM523 89c0 5.523-4.477 10-10 10h-80c-5.523 0-10-4.477-10-10s4.477-10 10-10h80c5.523 0 10 4.477 10 10ZM523 43c0 5.523-4.477 10-10 10H413c-5.523 0-10-4.477-10-10s4.477-10 10-10h100c5.523 0 10 4.477 10 10Z"
+          />
+        </svg>
+        <Box sx={{ mt: 2 }}>No results found.</Box>
+      </StyledGridOverlay>
     );
+  }
+
+  useEffect(() => {
+    setFilteredPayments(
+      payments
+        ? payments.filter((payment) =>
+            selectedMethod === "ALL" ? payment : payment.type === selectedMethod
+          )
+        : []
+    );
+  }, [selectedMethod, startDate, endDate, payments]);
+
+  const handleMethodChange = (event, newValue) => {
+    setSelectedMethod(newValue);
+  };
+
+  const calculateTotal = (method) => {
+    try {
+      return payments
+        ? payments
+            .filter((payment) =>
+              method === "ALL" ? payment : payment.type === method
+            )
+            .reduce((sum, payment) => sum + Number(payment.amount), 0)
+        : 0; // Ensure amount is treated as a number
+    } catch (error) {
+      console.error("Calc Error : ", error);
+    }
+  };
+
+  const exportToExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(filteredPayments);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Payments Report");
+    XLSX.writeFile(
+      wb,
+      `Payments_Report_${startDate}_to_${endDate}_${selectedMethod}.xlsx`
+    );
+  };
+
+  const columns = [
+    { field: "refNo", headerName: "Ref No.", width: 200 },
+    { field: "hospitalName", headerName: "Hospital Name", width: 150 },
+    { field: "cardNumber", headerName: "Card Number", width: 150 },
+    { field: "purpose", headerName: "Service", width: 150 },
+    { field: "amount", headerName: "Amount", width: 120 },
+    { field: "type", headerName: "Payment Method", width: 150 },
+    { field: "description", headerName: "Description", width: 200 },
+    { field: "createdOn", headerName: "Date", width: 150 },
+    { field: "createdby", headerName: "Created by", width: 150 },
+  ];
+
+  const handleReportRequest = async () => {
+    try {
+      if (startDate === "" || endDate === "") {
+        alert("Please select start and end date");
+        return;
+      }
+
+      const datas = await GetAllPaymentByDate({
+        startDate,
+        endDate,
+        user: tokenValue.name,
+      });
+
+      if (datas.length > 0) {
+        setPayments(datas);
+
+        setFilteredPayments(
+          payments
+            ? payments.filter((payment) =>
+                selectedMethod === "ALL"
+                  ? payment
+                  : payment.type === selectedMethod
+              )
+            : []
+        );
+      }
+
+      setPayments(datas);
+
+      setFilteredPayments(
+        payments
+          ? payments.filter((payment) =>
+              selectedMethod === "All"
+                ? payment
+                : payment.type === selectedMethod
+            )
+          : []
+      );
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+    }
+  };
+
+  return (
+    <>
+      <Typography variant="h5" gutterBottom sx={{ margin: 2 }}>
+        Payment Reports
+      </Typography>
+      <Paper sx={{ padding: 2, margin: 2 }}>
+        <TextField
+          label="Start Date"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          required
+          sx={{ marginRight: 2 }}
+        />
+        <TextField
+          label="End Date"
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          required
+          sx={{ marginRight: 2 }}
+        />
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={handleReportRequest}
+          sx={{ marginRight: 2 }}
+        >
+          Request Report
+        </Button>
+        <Tabs
+          value={selectedMethod}
+          onChange={handleMethodChange}
+          variant="scrollable"
+          sx={{ marginTop: 2 }}
+        >
+          {paymentMethods.map((method) => (
+            <Tab
+              key={method.type}
+              label={`${method.type} (${calculateTotal(method.type)})`}
+              value={method.type}
+            />
+          ))}
+        </Tabs>
+      </Paper>
+      <Paper sx={{ height: 400, margin: 2 }}>
+        <DataGrid
+          rows={filteredPayments.length ? filteredPayments : []}
+          columns={columns}
+          slots={{
+            noResultsOverlay: CustomNoResultsOverlay,
+          }}
+        />
+      </Paper>
+      <Button
+        sx={{ marginLeft: 2 }}
+        variant="contained"
+        color="primary"
+        onClick={exportToExcel}
+      >
+        Export to Excel
+      </Button>
+    </>
+  );
 };
 
 export default ReportPage;

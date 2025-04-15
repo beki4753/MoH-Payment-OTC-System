@@ -75,36 +75,46 @@ const formatAccounting = (num) => {
 };
 
 const generateAndOpenPDF = async (error) => {
-  const message =
-    error?.response?.data !== undefined
-      ? error?.response?.data?.message
-      : "Incorrect Receipt ID";
+  try {
+    const responseData = error?.response?.data;
 
-  // Create a new PDF document
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([600, 400]);
-  const { width, height } = page.getSize();
+    // Check if response is a Blob (e.g., an actual PDF file)
+    if (responseData instanceof Blob) {
+      const blobUrl = URL.createObjectURL(responseData);
+      window.open(blobUrl, "_blank");
 
-  // Add text to the PDF
-  page.drawText(message, {
-    x: 50,
-    y: height - 100,
-    size: 50,
-    color: rgb(0, 0, 0),
-  });
+      // Revoke the blob after a few seconds to free memory
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+      return;
+    }
 
-  // Serialize the PDF to bytes
-  const pdfBytes = await pdfDoc.save();
+    // If it's not a Blob, try to extract message
+    let message = "Incorrect Receipt ID";
+    if (responseData?.message) {
+      message = String(responseData.message);
+    }
 
-  // Create a Blob and URL
-  const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
-  const pdfUrl = URL.createObjectURL(pdfBlob);
+    // Generate a simple PDF with the message using pdf-lib
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([600, 400]);
+    const { height } = page.getSize();
 
-  // Open the generated PDF
-  window.open(pdfUrl, "_blank");
+    page.drawText(message, {
+      x: 50,
+      y: height - 100,
+      size: 16,
+      color: rgb(0, 0, 0),
+    });
 
-  // Revoke the URL after a delay to free memory
-  setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000);
+    const pdfBytes = await pdfDoc.save();
+    const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+
+    window.open(pdfUrl, "_blank");
+    setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000);
+  } catch (err) {
+    console.error("generateAndOpenPDF error:", err);
+  }
 };
 
 const HospitalPayment = () => {
@@ -829,12 +839,18 @@ const HospitalPayment = () => {
         } else if (
           formData.digitalChannel.toUpperCase().includes("CBE MOBILE BANKING")
         ) {
-          const pdfBlob = new Blob([response?.data], {
-            type: "application/pdf",
-          });
+          try {
+            const pdfBlob = response?.data
+              ? new Blob([response?.data], {
+                  type: "application/pdf",
+                })
+              : new Blob("Unknown status received.");
 
-          const pdfUrl = URL.createObjectURL(pdfBlob);
-          window.open(pdfUrl, "_blank");
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+            window.open(pdfUrl, "_blank");
+          } catch (error) {
+            console.log("CBE Error: ", error);
+          }
         }
       }
     } catch (error) {

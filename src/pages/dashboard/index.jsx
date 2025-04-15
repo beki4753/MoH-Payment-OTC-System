@@ -219,8 +219,8 @@ const Dashboard = () => {
 
         const recentPayments = response?.data
           ? response?.data?.filter((payment) => {
-              const paymentDate = new Date(payment.createdOn);
-              return paymentDate >= startDate && paymentDate <= today;
+              const paymentDate = new Date(payment.createdOn).toISOString().split("T")[0];
+              return paymentDate >= startDate.toISOString().split("T")[0] && paymentDate <= today.toISOString().split("T")[0];
             })
           : [];
 
@@ -440,8 +440,6 @@ const Dashboard = () => {
                 sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
               />
             ),
-            progress: "0.50",
-            increase: "+43%",
           },
         ].map((stat, index) => (
           <Box

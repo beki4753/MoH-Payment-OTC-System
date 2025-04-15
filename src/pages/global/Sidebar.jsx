@@ -39,7 +39,6 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
 
 const tokenvalue = getTokenValue();
 
-
 // Departement,UserType
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const role =
@@ -61,7 +60,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       localStorage.setItem("currentNav", JSON.stringify(selected));
     }
   }, [selected]);
-
 
   return (
     <Box
@@ -207,10 +205,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                   selected={selected}
                   setSelected={setSelected}
                 />
-              </>
-            )}
-            {role?.toUpperCase() === "ADMIN" && (
-              <>
                 {!isCollapsed && (
                   <Typography
                     variant="h6"
@@ -247,33 +241,42 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 />
               </>
             )}
+
             {role?.toUpperCase() === "USER" &&
               (tokenvalue?.UserType?.toUpperCase() === "CASHIER" ||
                 tokenvalue?.UserType?.toUpperCase() === "SUPERVISOR") && (
                 <>
-                  <Item
-                    title="Payments"
-                    to="/payments"
-                    icon={<CreditCardOutlinedIcon />}
-                    selected={selected}
-                    setSelected={setSelected}
-                  />
-                  {!isCollapsed && (
-                    <Typography
-                      variant="h6"
-                      color={colors.grey[300]}
-                      sx={{ m: "15px 0 5px 20px" }}
-                    >
-                      Money Submission
-                    </Typography>
+                  {tokenvalue?.UserType?.toUpperCase() === "CASHIER" && (
+                    <Item
+                      title="Payments"
+                      to="/payments"
+                      icon={<CreditCardOutlinedIcon />}
+                      selected={selected}
+                      setSelected={setSelected}
+                    />
                   )}
-                  <Item
-                    title="Submit Money"
-                    to="/money-submission"
-                    icon={<StorageIcon />}
-                    selected={selected}
-                    setSelected={setSelected}
-                  />
+
+                  {tokenvalue?.UserType?.toUpperCase() === "CASHIER" &&
+                    !isCollapsed && (
+                      <Typography
+                        variant="h6"
+                        color={colors.grey[300]}
+                        sx={{ m: "15px 0 5px 20px" }}
+                      >
+                        Money Submission
+                      </Typography>
+                    )}
+
+                  {tokenvalue?.UserType?.toUpperCase() === "CASHIER" && (
+                    <Item
+                      title="Submit Money"
+                      to="/money-submission"
+                      icon={<StorageIcon />}
+                      selected={selected}
+                      setSelected={setSelected}
+                    />
+                  )}
+
                   {!isCollapsed && (
                     <Typography
                       variant="h6"
