@@ -849,7 +849,7 @@ const HospitalPayment = () => {
             const pdfUrl = URL.createObjectURL(pdfBlob);
             window.open(pdfUrl, "_blank");
           } catch (error) {
-            console.log("CBE Error: ", error);
+            console.error("CBE Error: ", error);
           }
         }
       }
