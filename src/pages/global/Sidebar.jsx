@@ -123,12 +123,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                   style={{ cursor: "pointer", borderRadius: "50%" }}
                 />
               </Box>
-              <Box textAlign="center">
+              <Box textAlign="center" sx={{fontSize:'20px', textTransform:"capitalize"}}>
                 <Typography
                   variant="h2"
                   color={colors.grey[100]}
                   fontWeight="bold"
-                  sx={{ m: "10px 0 0 0" }}
+                  sx={{ m: "10px 0 0 0",fontSize:"inherit", transform:"-moz-initial"}}
                 >
                   {tokenvalue.name}
                 </Typography>

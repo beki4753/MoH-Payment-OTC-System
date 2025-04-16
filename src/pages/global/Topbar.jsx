@@ -70,13 +70,8 @@ const Topbar = () => {
 
   const handleHelp = () => {
     try {
-      const link = document.createElement("a");
-      link.href = `${window.location.origin}/assets/files/Moh Doc.pdf`;
-      link.download = "Moh Doc.pdf";
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const pdf = `${window.location.origin}/assets/files/Moh Documentation.pdf`;
+      window.open(pdf, "_blank");
     } catch (error) {
       console.error("Download failed:", error);
     }

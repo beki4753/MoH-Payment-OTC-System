@@ -9,7 +9,7 @@ import {
 import { getTokenValue } from "../../services/user_service";
 import Box from "@mui/material/Box";
 import { styled } from "@mui/material/styles";
-
+import { formatAccounting2 } from "../hospitalpayment/HospitalPayment";
 
 const ReportPage = () => {
   const [payments, setPayments] = useState([]);
@@ -149,7 +149,7 @@ const ReportPage = () => {
     { field: "hospitalName", headerName: "Hospital Name", width: 150 },
     { field: "cardNumber", headerName: "Card Number", width: 150 },
     { field: "purpose", headerName: "Service", width: 150 },
-    { field: "amount", headerName: "Amount", width: 120 },
+    { field: "amount", headerName: "Amount", width: 120,renderCell: (params)=>formatAccounting2(params.row.amount) },
     { field: "type", headerName: "Payment Method", width: 150 },
     { field: "description", headerName: "Description", width: 200 },
     { field: "createdOn", headerName: "Date", width: 150 },

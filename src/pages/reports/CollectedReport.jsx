@@ -16,6 +16,7 @@ import api from "../../utils/api";
 import { getTokenValue } from "../../services/user_service";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { formatAccounting2 } from "../hospitalpayment/HospitalPayment";
 
 const tokenvalue = getTokenValue();
 const CollectedReport = () => {
@@ -155,7 +156,13 @@ const CollectedReport = () => {
             { field: "id", headerName: "ID", width: 40 },
             { field: "fromDate", headerName: "Start Date", width: 150 },
             { field: "toDate", headerName: "End Date", width: 140 },
-            { field: "collectedAmount", headerName: "Amount", width: 130 },
+            {
+              field: "collectedAmount",
+              headerName: "Amount",
+              width: 130,
+              renderCell: (params) =>
+                formatAccounting2(params.row.collectedAmount),
+            },
             { field: "collectedBy", headerName: "Collector", width: 200 },
             { field: "casher", headerName: "Cashier", width: 200 },
             {
@@ -166,7 +173,11 @@ const CollectedReport = () => {
           ]}
         />
       </Paper>
-      <Button variant="contained" color="primary" onClick={()=>exportToExcel()}>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => exportToExcel()}
+      >
         Export to Excel
       </Button>
       <ToastContainer />

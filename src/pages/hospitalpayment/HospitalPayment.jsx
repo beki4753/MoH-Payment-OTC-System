@@ -64,12 +64,12 @@ const formatter2 = new Intl.NumberFormat("en-US", {
   useGrouping: true,
 });
 
-const formatAccounting2 = (num) => {
+export const formatAccounting2 = (num) => {
   const formatted = formatter2.format(Math.abs(num));
   return num < 0 ? `(${formatted})` : formatted;
 };
 
-const formatAccounting = (num) => {
+export const formatAccounting = (num) => {
   const formatted = formatter.format(Math.abs(num));
   return num < 0 ? `(${formatted})` : formatted;
 };
@@ -744,7 +744,7 @@ const HospitalPayment = () => {
     { field: "createdOn", headerName: "Date", width: 200 },
     { field: "refNo", headerName: "Reciept Number", width: 200 },
     { field: "cardNumber", headerName: "Card Number", width: 150 },
-    { field: "amount", headerName: "Amount", width: 120 },
+    { field: "amount", headerName: "Amount", width: 120, renderCell: (params) => formatAccounting2(params.row.amount) },
     {
       field: "type",
       headerName: "Payment Method",

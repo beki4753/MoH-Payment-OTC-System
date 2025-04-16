@@ -15,8 +15,7 @@ import { getTokenValue } from "../services/user_service";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { jsPDF } from "jspdf";
-import { TonalitySharp } from "@mui/icons-material";
-
+import { formatAccounting } from "../pages/hospitalpayment/HospitalPayment";
 const tokenvalue = getTokenValue();
 
 const formatter2 = new Intl.NumberFormat("en-US", {
@@ -267,7 +266,7 @@ const FinancialDashboard = () => {
       headerName: "Amount",
       flex: 1,
       minWidth: 120,
-      renderCell: (params) => `ETB ${params.value}`,
+      renderCell: (params) => formatAccounting(params.value),
     },
     {
       field: "status",
