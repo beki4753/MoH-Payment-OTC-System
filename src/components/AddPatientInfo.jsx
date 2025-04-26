@@ -143,7 +143,7 @@ const AddPatientInfo = ({
       setAddrError("");
     }
   };
-  const genders = ["Male", "Female", "Unknown"];
+  const genders = ["Male", "Female"];
 
   return (
     <Modal

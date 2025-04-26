@@ -101,15 +101,15 @@ const Dashboard = () => {
   const [totalSum, setTotalSum] = useState(0);
   const [totalUnc, setTotalUnc] = useState(0);
   const [todayTotal, setTodayTotal] = useState(0);
-  const [yesterdayTotal, setYesterdayTotal] = useState(0);
+  // const [yesterdayTotal, setYesterdayTotal] = useState(0);
   const [trend, setTrend] = useState(0);
   const [trendpercent, setTrendPercent] = useState(0);
 
   const [transactionCountBy, setTransactionCountBy] = useState({});
-  const [totalUncollectedbycash, setTotalUncollectedbycash] = useState([]);
+  // const [totalUncollectedbycash, setTotalUncollectedbycash] = useState([]);
   const [pateintCount, setPatientcount] = useState({});
   const [collectionbycashier, setCollectionbycashier] = useState([]);
-  const [lastCollectedOn, setLastCollectedOn] = useState("");
+  // const [lastCollectedOn, setLastCollectedOn] = useState("");
   const [totalCollected, setTotalCollected] = useState(0);
 
   const today = new Date();
@@ -197,7 +197,7 @@ const Dashboard = () => {
 
         setCollectionbycashier(transform2);
         setTotalUnc(totalUnc);
-        setTotalUncollectedbycash(mapp);
+        // setTotalUncollectedbycash(mapp);
         setTotalCollected(totalCollected);
       } catch (error) {
         console.error("Error fetching uncollected data:", error);
@@ -219,10 +219,17 @@ const Dashboard = () => {
 
         const recentPayments = response?.data
           ? response?.data?.filter((payment) => {
-              const paymentDate = new Date(payment.createdOn).toISOString().split("T")[0];
-              return paymentDate >= startDate.toISOString().split("T")[0] && paymentDate <= today.toISOString().split("T")[0];
+              const paymentDate = new Date(payment.createdOn)
+                .toISOString()
+                .split("T")[0];
+              return (
+                paymentDate >= startDate.toISOString().split("T")[0] &&
+                paymentDate <= today.toISOString().split("T")[0]
+              );
             })
           : [];
+
+
 
         const summary = recentPayments
           .filter((item) => item.type.toLowerCase() !== "free of charge")
@@ -232,6 +239,8 @@ const Dashboard = () => {
             return acc;
           }, {});
 
+
+
         const totalSum = Object.values(summary).reduce(
           (acc, value) => acc + value,
           0
@@ -239,6 +248,7 @@ const Dashboard = () => {
 
         // Today's data
         const todayDateStr = today.toISOString().split("T")[0];
+
         const todayPayments = recentPayments.filter((payment) => {
           const paymentDateStr = new Date(payment.createdOn)
             .toISOString()
@@ -262,20 +272,19 @@ const Dashboard = () => {
         });
 
         // Amount calculations
-        const todayTotal = todayPayments.reduce(
-          (acc, payment) => acc + parseFloat(payment.amount),
-          0
-        );
-        const yesterdayTotal = yesterdayPayments.reduce(
-          (acc, payment) => acc + parseFloat(payment.amount),
-          0
-        );
+        const todayTotal = todayPayments
+          .reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
+
+        const yesterdayTotal = yesterdayPayments
+          .reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
+
         const trend =
           yesterdayTotal > 0
             ? Math.abs((todayTotal - yesterdayTotal) / yesterdayTotal).toFixed(
                 2
               )
             : "0";
+
         const trendpercent =
           yesterdayTotal > 0
             ? `${Math.round(
@@ -306,6 +315,8 @@ const Dashboard = () => {
         const todayPatientCount = new Set(
           todayPayments.map((payment) => payment.cardNumber)
         ).size;
+
+
         const yesterdayPatientCount = new Set(
           yesterdayPayments.map((payment) => payment.cardNumber)
         ).size;
@@ -328,15 +339,20 @@ const Dashboard = () => {
         // Set all states
 
         setTotalSum(totalSum);
+
         setTodayTotal(todayTotal);
-        setYesterdayTotal(yesterdayTotal);
+
+        // setYesterdayTotal(yesterdayTotal);
+
         setTrend(trend);
+
         setTrendPercent(trendpercent);
         setTransactionCountBy({
           count: todayTransactionCount,
           trend: transactionTrend,
           trendPercent: transactionTrendPercent,
         });
+
         setPatientcount({
           count: todayPatientCount,
           trend: patientTrend,
@@ -412,7 +428,7 @@ const Dashboard = () => {
           },
           {
             title: formatAccounting(todayTotal),
-            subtitle: "Total Cash collected Today",
+            subtitle: "Total Revenue Today",
             icon: (
               <PointOfSaleIcon
                 sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
