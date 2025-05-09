@@ -396,7 +396,6 @@ const PaymentManagementLists = () => {
                           (params?.row?.createdBy?.toUpperCase() !== "SYS" &&
                             category !== "Hospital Services")) && (
                           <>
-                            {console.log("Checking>>", category, params?.row)}
                             <IconButton
                               onClick={() => {
                                 handleOpen(

@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, Tab, Paper, Typography, Button, TextField } from "@mui/material";
+import {
+  Tabs,
+  Tab,
+  Paper,
+  Typography,
+  Button,
+  TextField,
+  MenuItem,
+  Grid,
+} from "@mui/material";
+import api from "../../utils/api";
 import { DataGrid } from "@mui/x-data-grid";
 import * as XLSX from "xlsx";
 import {
@@ -10,6 +20,8 @@ import { getTokenValue } from "../../services/user_service";
 import Box from "@mui/material/Box";
 import { styled } from "@mui/material/styles";
 import { formatAccounting2 } from "../hospitalpayment/HospitalPayment";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ReportPage = () => {
   const [payments, setPayments] = useState([]);
@@ -19,7 +31,48 @@ const ReportPage = () => {
   const [endDate, setEndDate] = useState("");
   const [filteredPayments, setFilteredPayments] = useState(payments);
   const [paymentMethods, setpaymentMethods] = useState([]);
-  var tokenValue = getTokenValue();
+  const [woredas, setWoredas] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
+  const [formData, setFormData] = useState({
+    woreda: "",
+    organization: "",
+  });
+
+  const tokenValue = getTokenValue();
+
+  //Fetch (CBHI) providers
+  useEffect(() => {
+    const fetchCBHI = async () => {
+      try {
+        const response = await api.get(
+          `/Providers/list-providers/${tokenValue.name}`
+        );
+        if (response?.status === 200) {
+          setWoredas(response?.data?.map((item) => item.provider));
+        }
+      } catch (error) {
+        console.error(error.message);
+      }
+    };
+    fetchCBHI();
+  }, []);
+
+  //Fetch Organization with agreement
+  useEffect(() => {
+    const fetchORG = async () => {
+      try {
+        const response = await api.get(
+          `/Organiztion/Organization/${tokenValue.name}`
+        );
+        if (response?.status === 200 || response?.status === 201) {
+          setOrganizations(response?.data?.map((item) => item.organization));
+        }
+      } catch (error) {
+        console.error(error.message);
+      }
+    };
+    fetchORG();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,11 +100,71 @@ const ReportPage = () => {
         type,
       }));
 
-    setpaymentMethods((prevData) => [...prevData, ...newEntries]);
+      setpaymentMethods((prevData) => [...prevData, ...newEntries]);
     } catch (error) {
       console.error("Filter Error : ", error);
     }
   }, [payments]);
+
+  const exportToExcel = () => {
+    const filtered = filteredPayments.map(
+      ({ id, collectionID, createdOn, ...rest }) => {
+        return { ...rest, createdOn: createdOn.split("T")[0] };
+      }
+    );
+    const ws = XLSX.utils.json_to_sheet(filtered);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Payments Report");
+    XLSX.writeFile(
+      wb,
+      `Payments_Report_${startDate}_to_${endDate}_${selectedMethod}.xlsx`
+    );
+  };
+
+  const cumulativeReport = () => {
+    try {
+      if (filteredPayments.length < 0) {
+        toast.info("Empty Data.");
+        return;
+      }
+      const modified = filteredPayments.map(
+        ({ refNo, id, collectionID, createdOn, isCollected, ...rest }) => {
+          return { ...rest, createdOn: createdOn.split("T")[0] };
+        }
+      );
+
+      const grouped = modified.reduce((acc, item) => {
+        // Create a group key from all keys except 'amount'
+        const { amount, purpose, ...rest } = item;
+        const key = JSON.stringify(rest); // serialize grouping keys
+
+        if (!acc[key]) {
+          acc[key] = { ...rest, amount: 0, purpose: [] };
+        }
+
+        acc[key].amount += amount;
+        acc[key].purpose.push(purpose);
+        return acc;
+      }, {});
+
+      const result = Object.values(grouped);
+      const resultAmended = result.map(({ purpose, ...rest }) => {
+        return { ...rest, purpose: purpose.join(",") };
+      });
+      const ws = XLSX.utils.json_to_sheet(resultAmended);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Payments Report");
+      XLSX.writeFile(
+        wb,
+        `Payments_Report_${startDate}_to_${endDate}_${selectedMethod}.xlsx`
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error("Report Generation Failed.");
+    }
+  };
+
+  
 
   const StyledGridOverlay = styled("div")(({ theme }) => ({
     display: "flex",
@@ -107,17 +220,25 @@ const ReportPage = () => {
   }
 
   useEffect(() => {
-    setFilteredPayments(
-      payments
-        ? payments.filter((payment) =>
-            selectedMethod === "ALL" ? payment : payment.type === selectedMethod
-          )
-        : []
-    );
+    if (formData?.organization?.length <= 0 && formData.woreda?.length <= 0) {
+      setFilteredPayments(
+        payments
+          ? payments.filter((payment) =>
+              selectedMethod === "ALL"
+                ? payment
+                : payment.type === selectedMethod
+            )
+          : []
+      );
+    }
   }, [selectedMethod, startDate, endDate, payments]);
 
   const handleMethodChange = (event, newValue) => {
     setSelectedMethod(newValue);
+    setFormData({
+      woreda: "",
+      organization: "",
+    });
   };
 
   const calculateTotal = (method) => {
@@ -134,22 +255,17 @@ const ReportPage = () => {
     }
   };
 
-  const exportToExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(filteredPayments);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Payments Report");
-    XLSX.writeFile(
-      wb,
-      `Payments_Report_${startDate}_to_${endDate}_${selectedMethod}.xlsx`
-    );
-  };
-
   const columns = [
     { field: "refNo", headerName: "Ref No.", width: 200 },
     { field: "hospitalName", headerName: "Hospital Name", width: 150 },
     { field: "cardNumber", headerName: "Card Number", width: 150 },
     { field: "purpose", headerName: "Service", width: 150 },
-    { field: "amount", headerName: "Amount", width: 120,renderCell: (params)=>formatAccounting2(params.row.amount) },
+    {
+      field: "amount",
+      headerName: "Amount",
+      width: 120,
+      renderCell: (params) => formatAccounting2(params.row.amount),
+    },
     { field: "type", headerName: "Payment Method", width: 150 },
     { field: "description", headerName: "Description", width: 200 },
     { field: "createdOn", headerName: "Date", width: 150 },
@@ -199,51 +315,145 @@ const ReportPage = () => {
     }
   };
 
+  const filterData = (name, value) => {
+    try {
+      if (name === "woreda") {
+        if (payments.length <= 0) {
+          toast.info("Empty Filter.");
+          return;
+        }
+        const copy = payments;
+        setFilteredPayments(
+          copy?.filter(
+            (item) => item.patientLoaction.toLowerCase() === value.toLowerCase()
+          )
+        );
+      } else if (name === "organization") {
+        const copy = payments;
+        setFilteredPayments(
+          copy?.filter(
+            (item) =>
+              item.patientWorkingPlace.toLowerCase() === value.toLowerCase()
+          )
+        );
+      }
+    } catch (error) {
+      console.error("The Data Filter Error", error);
+    }
+  };
+
+  const handleChange = (e) => {
+    if (e.target.name === "woreda") {
+      setSelectedMethod("CBHI");
+      setFormData({ organization: "", [e.target.name]: e.target.value });
+    } else {
+      setSelectedMethod("Credit");
+      setFormData({ woreda: "", [e.target.name]: e.target.value });
+    }
+    filterData(e.target.name, e.target.value);
+  };
+
   return (
     <>
       <Typography variant="h5" gutterBottom sx={{ margin: 2 }}>
         Payment Reports
       </Typography>
       <Paper sx={{ padding: 2, margin: 2 }}>
-        <TextField
-          label="Start Date"
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          required
-          sx={{ marginRight: 2 }}
-        />
-        <TextField
-          label="End Date"
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          required
-          sx={{ marginRight: 2 }}
-        />
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={handleReportRequest}
-          sx={{ marginRight: 2 }}
-        >
-          Request Report
-        </Button>
+        <Grid container spacing={1}>
+          <Grid item xs={2}>
+            <TextField
+              label="Start Date"
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setFormData({
+                  woreda: "",
+                  organization: "",
+                });
+              }}
+              InputLabelProps={{ shrink: true }}
+              required
+              sx={{ marginRight: 2 }}
+            />
+          </Grid>
+
+          <Grid item xs={2}>
+            <TextField
+              label="End Date"
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setFormData({
+                  woreda: "",
+                  organization: "",
+                });
+              }}
+              InputLabelProps={{ shrink: true }}
+              required
+              sx={{ marginRight: 2 }}
+            />
+          </Grid>
+          <Grid item xs={2}>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={handleReportRequest}
+              sx={{ marginRight: 2 }}
+            >
+              Request Report
+            </Button>
+          </Grid>
+
+          <Grid item xs={3}>
+            <TextField
+              select
+              fullWidth
+              label="Woreda"
+              name="woreda"
+              value={formData.woreda}
+              onChange={handleChange}
+            >
+              {woredas.map((woreda) => (
+                <MenuItem key={woreda} value={woreda}>
+                  {woreda}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          <Grid item xs={3}>
+            <TextField
+              select
+              fullWidth
+              label="Organization"
+              name="organization"
+              value={formData.organization}
+              onChange={handleChange}
+            >
+              {organizations.map((role) => (
+                <MenuItem key={role} value={role}>
+                  {role}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+        </Grid>
         <Tabs
           value={selectedMethod}
           onChange={handleMethodChange}
           variant="scrollable"
           sx={{ marginTop: 2 }}
         >
-          {paymentMethods.map((method) => (
-            <Tab
-              key={method.type}
-              label={`${method.type} (${calculateTotal(method.type)})`}
-              value={method.type}
-            />
-          ))}
+          {paymentMethods.length > 0 &&
+            paymentMethods.map((method) => (
+              <Tab
+                key={method.type}
+                label={`${method.type} (${calculateTotal(method.type)})`}
+                value={method.type}
+              />
+            ))}
         </Tabs>
       </Paper>
       <Paper sx={{ height: 400, margin: 2 }}>
@@ -259,10 +469,20 @@ const ReportPage = () => {
         sx={{ marginLeft: 2 }}
         variant="contained"
         color="primary"
-        onClick={exportToExcel}
+        onClick={() => exportToExcel()}
       >
         Export to Excel
       </Button>
+      <Button
+        sx={{ marginLeft: 2 }}
+        variant="contained"
+        color="primary"
+        onClick={() => cumulativeReport()}
+      >
+        Cumulative Export
+      </Button>
+
+      <ToastContainer />
     </>
   );
 };

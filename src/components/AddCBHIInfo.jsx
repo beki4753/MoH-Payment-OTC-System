@@ -133,6 +133,7 @@ const AddCBHIInfo = ({
                   onChange={handleChange}
                   margin="normal"
                   disabled={!!userData}
+                  required
                   //   error={!!emailError}
                   //   helperText={emailError}
                 />

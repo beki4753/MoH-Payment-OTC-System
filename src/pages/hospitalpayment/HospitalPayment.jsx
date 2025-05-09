@@ -295,6 +295,7 @@ const HospitalPayment = () => {
         validateTransactionRef(e.target.value);
       }
       if (e.target.name === "cardNumber") {
+        handleNumberOnlyCheck(e.target.value);
         setPatientName("");
         setCbhiId("");
         setRegisteredCBHI(null);
@@ -388,11 +389,13 @@ const HospitalPayment = () => {
     }
   };
 
-  const handleNumberOnlyCheck = (name, value) => {
+  const handleNumberOnlyCheck = (value) => {
     try {
       const regex = /^[0-9]*$/;
-      if (!regex.test(value) && name === "cardNumber") {
+      if (!regex.test(value)) {
         setCardNumberError("Please Insert Number Only");
+      } else if (value.length < 6 || value.length > 6) {
+        setCardNumberError("Please Insert 6 Digit Number.");
       } else {
         setCardNumberError("");
       }
@@ -405,6 +408,7 @@ const HospitalPayment = () => {
     try {
       if (
         !formData.cardNumber ||
+        !!cardNumberError ||
         formData.reason.length <= 0 ||
         formData.amount.length <= 0 ||
         !formData.method ||
@@ -537,7 +541,7 @@ const HospitalPayment = () => {
 
       // Clean up
       setTimeout(() => {
-        document.body.removeChild(iframe);
+        //document.body.removeChild(iframe);
         URL.revokeObjectURL(blobURL);
       }, 1000);
     };
@@ -744,7 +748,12 @@ const HospitalPayment = () => {
     { field: "createdOn", headerName: "Date", width: 200 },
     { field: "refNo", headerName: "Reciept Number", width: 200 },
     { field: "cardNumber", headerName: "Card Number", width: 150 },
-    { field: "amount", headerName: "Amount", width: 120, renderCell: (params) => formatAccounting2(params.row.amount) },
+    {
+      field: "amount",
+      headerName: "Amount",
+      width: 120,
+      renderCell: (params) => formatAccounting2(params.row.amount),
+    },
     {
       field: "type",
       headerName: "Payment Method",
@@ -866,7 +875,7 @@ const HospitalPayment = () => {
   const handleAdditionalUser = async () => {
     try {
       setAddPatienthLoad(true);
-      if (formData.cardNumber.length <= 0) {
+      if (formData.cardNumber.length <= 0 || !!cardNumberError) {
         toast.error("please fill the card number!!");
         return;
       }
@@ -905,8 +914,13 @@ const HospitalPayment = () => {
   const handleAdditionalCBHI = async () => {
     try {
       setCbhiSearchLoad(true);
-      if (formData.cardNumber.length <= 0) {
+      if (formData.cardNumber.length <= 0 || !!cardNumberError) {
         toast.error("Please fill out The Card Number First");
+        return;
+      }
+
+      if (formData.woreda.length <= 0) {
+        toast.error("Please select The woreda First");
         return;
       }
 
@@ -1021,16 +1035,16 @@ const HospitalPayment = () => {
             value={formData.cardNumber}
             onChange={handleChange}
             fullWidth
-            // error={!!cardNumberError}
-            helperText={patientName}
+            error={!!cardNumberError}
+            helperText={!!cardNumberError ? cardNumberError : patientName}
             margin="normal"
             variant="outlined"
             sx={{
               "& .MuiOutlinedInput-root": {
-                borderRadius: "10px", // Rounded edges for a modern look
+                borderRadius: "10px",
 
                 "&:hover fieldset": {
-                  borderColor: "info.main", // Changes border color on hover
+                  borderColor: "info.main",
                 },
                 "&.Mui-focused fieldset": {
                   borderColor: "primary.main", // Focus effect
@@ -1039,7 +1053,10 @@ const HospitalPayment = () => {
               },
             }}
             FormHelperTextProps={{
-              style: { color: "green", fontSize: "14px" },
+              style: {
+                color: !!cardNumberError ? "red" : "green",
+                fontSize: "14px",
+              },
             }}
             InputProps={{
               endAdornment: (

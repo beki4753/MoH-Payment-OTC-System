@@ -31,7 +31,7 @@ const AddUserModal = ({
     role: "",
     department: "",
     usertype: "",
-    hospital: "",
+    hospital: "DB Referral Hospital",
   });
 
   const [usernameError, setUsernameError] = useState("");
@@ -40,7 +40,8 @@ const AddUserModal = ({
   const [confPassError, setConfPassError] = useState("");
 
   const departments = ["Card", "Pharmacy", "Hospital", "Tsedey Bank"];
-  const hospitals = ["DB Tena tabiya", "DB Referal Hopital"];
+  const hospitals = ["DB Referral Hospital"];
+  //"DB Referral Hospital",  "DB Tena tabiya"
   const usertypes = ["Cashier", "Supervisor", "Admin"];
   // Reset form data when modal is closed
   const handleClose = () => {
@@ -53,7 +54,7 @@ const AddUserModal = ({
       role: "",
       department: "",
       usertype: "",
-      hospital: "",
+      hospital: "DB Referral Hospital",
     });
     resetUserData();
     onClose(); // Close the modal
@@ -64,7 +65,7 @@ const AddUserModal = ({
       setFormData({
         username: userData?.username,
         email: userData?.email,
-        password: "", // Don't pre-fill the password
+        password: "", 
         confirmpassword: "",
         phone: userData?.phoneNumber,
         role: userData?.role,

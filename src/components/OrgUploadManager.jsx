@@ -43,9 +43,11 @@ const OrgUploadManager = () => {
       setSearchKey("");
       if (!formData.organization) {
         toast.error("Please First Select Organization.");
+        event.target.value = null;
         return;
       } else if (!formData.option) {
         toast.error("Please First Select Option.");
+        event.target.value = null;
         return;
       }
       const file = event.target.files[0];

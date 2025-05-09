@@ -70,7 +70,12 @@ const EmployeeUploadManager = () => {
       setFileData([]);
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error(error?.response?.data || "Internal Server Error.");
+      toast.error(
+        error?.response?.data.lenght <= 50
+          ? error?.response?.data
+          : "File Upload Failed. please check if empty column exists." ||
+              "Internal Server Error."
+      );
     }
   };
 
@@ -81,8 +86,7 @@ const EmployeeUploadManager = () => {
           `/Collection/collector/${tokenvalue?.name}`
         );
 
-        
-        setData(response?.data<= 0 ? new Array() : response?.data);
+        setData(response?.data <= 0 ? new Array() : response?.data);
       } catch (error) {
         console.error(error);
         toast.error(error?.response?.data || "Failde To Load list.");

@@ -1,6 +1,5 @@
 import axios from "axios";
 import config from "../config.json";
-import { logout } from "../services/user_service";
 
 const api = axios.create({
   baseURL: `${config.bakendURL}/api`,

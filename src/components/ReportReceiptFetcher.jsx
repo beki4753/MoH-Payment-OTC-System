@@ -138,6 +138,7 @@ const ReportReceiptFetcher = () => {
     }
   };
 
+
   // To Display print iframe
   const printPDF = (doc) => {
     const blob = doc.output("blob");
@@ -155,7 +156,7 @@ const ReportReceiptFetcher = () => {
 
       // Clean up
       setTimeout(() => {
-        document.body.removeChild(iframe);
+        //document.body.removeChild(iframe);
         URL.revokeObjectURL(blobURL);
       }, 1000);
     };
