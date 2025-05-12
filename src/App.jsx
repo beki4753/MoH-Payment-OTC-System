@@ -42,7 +42,6 @@ const tokenvalue = getTokenValue();
 
 const token = getSession();
 
-
 const ProtectedRoute = ({ element, allowedRoles }) => {
   const role =
     tokenvalue["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
@@ -58,7 +57,6 @@ const ProtectedRoute = ({ element, allowedRoles }) => {
 
   return element;
 };
-
 
 const router = createBrowserRouter([
   {
@@ -205,9 +203,11 @@ function App() {
   useTokenCheck();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </>
   );
 }
 

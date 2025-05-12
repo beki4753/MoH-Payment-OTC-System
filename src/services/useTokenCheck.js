@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import {jwtDecode} from "jwt-decode";
 import { logout } from "./user_service";
 import api from "../utils/api";
 

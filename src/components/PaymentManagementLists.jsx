@@ -10,6 +10,7 @@ import {
   TextField,
   IconButton,
 } from "@mui/material";
+import AddHospitalServices from './AddHospitalServices';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { DataGrid } from "@mui/x-data-grid";
@@ -27,6 +28,7 @@ const categories = [
 ];
 
 const PaymentManagementLists = () => {
+  const [isOpen ,setIsOpen] = useState(false)
   const [data, setData] = useState({});
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -107,6 +109,8 @@ const PaymentManagementLists = () => {
     setEditId(id);
     setOpen(true);
   };
+
+
 
   const handleClose = () => {
     setOpen(false);
@@ -290,7 +294,7 @@ const PaymentManagementLists = () => {
             onClick={() => {
               category === "Organizations with Agreements"
                 ? handleOpen2(category)
-                : handleOpen(category);
+                : category === "Hospital Services" ? setIsOpen(true) : handleOpen(category);
             }}
             style={{ marginBottom: "10px" }}
           >
@@ -471,6 +475,7 @@ const PaymentManagementLists = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <AddHospitalServices isOpen={isOpen} setIsOpen={setIsOpen}/>
       <ToastContainer />
     </Container>
   );
