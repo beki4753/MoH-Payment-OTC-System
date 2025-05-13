@@ -538,7 +538,6 @@ const HospitalPayment = () => {
     iframe.onload = () => {
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
-   window.addEventListener("afterprint", alert("Beki clicked"))
       // Clean up
       setTimeout(() => {
         document.body.removeChild(iframe);
