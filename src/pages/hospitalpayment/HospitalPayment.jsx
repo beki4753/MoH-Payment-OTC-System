@@ -538,12 +538,12 @@ const HospitalPayment = () => {
     iframe.onload = () => {
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
-
+   window.addEventListener("afterprint", alert("Beki clicked"))
       // Clean up
       setTimeout(() => {
-        //document.body.removeChild(iframe);
+        document.body.removeChild(iframe);
         URL.revokeObjectURL(blobURL);
-      }, 1000);
+      }, 30000);
     };
   };
 
@@ -1083,7 +1083,7 @@ const HospitalPayment = () => {
             }}
           />
           <Typography variant="subtitle1" gutterBottom>
-            {language === "AMH" ? "ምክንያት" : "Select Reason:"}
+            {language === "AMH" ? "ምክንያት" : "Select Reason*"}
           </Typography>
           {reasons?.map((reason) => (
             <FormControlLabel
@@ -1095,6 +1095,7 @@ const HospitalPayment = () => {
                 />
               }
               label={reason}
+              
             />
           ))}
 
@@ -1105,6 +1106,7 @@ const HospitalPayment = () => {
               name={reason}
               label={`${reason} Amount`}
               fullWidth
+              required
               margin="normal"
               value={
                 formData?.amount?.find((item) => item.purpose === reason)
@@ -1139,6 +1141,7 @@ const HospitalPayment = () => {
             value={formData.method}
             onChange={handleChange}
             fullWidth
+            required
             margin="normal"
             sx={{
               "& .MuiOutlinedInput-root": {
@@ -1229,7 +1232,7 @@ const HospitalPayment = () => {
           {formData?.method.trim().toUpperCase().includes("CBHI") && (
             <TextField
               select
-              label="Woreda"
+              label="woreda/Kebele"
               name="woreda"
               value={formData.woreda}
               onChange={handleChange}

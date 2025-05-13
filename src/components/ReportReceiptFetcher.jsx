@@ -156,9 +156,9 @@ const ReportReceiptFetcher = () => {
 
       // Clean up
       setTimeout(() => {
-        //document.body.removeChild(iframe);
+        document.body.removeChild(iframe);
         URL.revokeObjectURL(blobURL);
-      }, 1000);
+      }, 30000);
     };
   };
 

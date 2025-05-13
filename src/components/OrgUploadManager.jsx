@@ -10,6 +10,8 @@ import {
   CircularProgress,
   Grid,
 } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { DataGrid } from "@mui/x-data-grid";
 import * as XLSX from "xlsx";
 import { CancelPresentationTwoTone } from "@mui/icons-material";
@@ -151,12 +153,45 @@ const OrgUploadManager = () => {
     setSearchKey("");
   };
 
+  const handleEdit = (params)=>{
+console.log(params?.row?.employeeID,"To Edit.");
+  }
+
+  const handlConfirm = (params)=>{
+  console.log(params?.row?.employeeID,"To Confirm Delete.");
+  }
+  
   const columns = [
     { field: "employeeID", headerName: "Employee ID", flex: 1 },
     { field: "employeeName", headerName: "Employee Name", flex: 1 },
     { field: "employeePhone", headerName: "Phone", flex: 1 },
     { field: "employeeEmail", headerName: "Email", flex: 1 },
     { field: "workPlace", headerName: "Organization", flex: 1 },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 130,
+      renderCell: (params) => (
+        <>
+          <IconButton
+           onClick={() => handleEdit(params)}
+            color ="info"
+            aria-label="edit"
+            className="text-info"
+          >
+            <EditIcon />
+          </IconButton>
+          <IconButton
+            color="error"
+            onClick={() => handlConfirm(params)}
+            aria-label="delete"
+            className="text-danger"
+          >
+            <DeleteIcon />
+          </IconButton>
+        </>
+      ),
+    },
   ];
 
   const CustomErrorOverlay = () => {

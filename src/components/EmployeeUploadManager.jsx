@@ -6,6 +6,8 @@ import {
   Button,
   IconButton,
 } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { DataGrid } from "@mui/x-data-grid";
 import * as XLSX from "xlsx";
 import { CancelPresentationTwoTone } from "@mui/icons-material";
@@ -100,6 +102,15 @@ const EmployeeUploadManager = () => {
     setFileData([]);
   };
 
+const handleEdit = (params)=>{
+console.log(params?.row?.employeeID,"To edit.")
+}
+
+const handlConfirm = (params)=>{
+  console.log(params?.row?.employeeID,"Confirm To Delete.")
+
+}
+
   const columns = [
     { field: "employeeID", headerName: "Employee ID", flex: 1 },
     { field: "employeeName", headerName: "Employee Name", flex: 1 },
@@ -108,6 +119,31 @@ const EmployeeUploadManager = () => {
     { field: "assignedAs", headerName: "Assigned As", flex: 1 },
     { field: "assignedBy", headerName: "Assigned By", flex: 1 },
     { field: "contactMethod", headerName: "Contact Method", flex: 1 },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 130,
+      renderCell: (params) => (
+        <>
+          <IconButton
+           onClick={() => handleEdit(params)}
+            color ="info"
+            aria-label="edit"
+            className="text-info"
+          >
+            <EditIcon />
+          </IconButton>
+          <IconButton
+            color="error"
+            onClick={() => handlConfirm(params)}
+            aria-label="delete"
+            className="text-danger"
+          >
+            <DeleteIcon />
+          </IconButton>
+        </>
+      ),
+    },
   ];
 
   const CustomErrorOverlay = () => {

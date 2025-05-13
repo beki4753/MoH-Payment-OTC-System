@@ -37,7 +37,6 @@ const BankerComponent = () => {
     const storedPayments = localStorage.getItem("cashPayments");
     return storedPayments ? JSON.parse(storedPayments) : mockCashPayments;
   });
-  const [isSelecting, setIsSelecting] = useState(false);
   const  [selectedHosp,setSelectedHosp] = useState({selectedHosp:""})
 
 
