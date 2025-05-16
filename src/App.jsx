@@ -36,6 +36,8 @@ import {
   PaymentManagementLists,
   EmployeeUploadManager,
   ReportReceiptFetcher,
+  SearchableList,
+  PatientRegistration,
 } from "./components";
 
 const tokenvalue = getTokenValue();
@@ -160,6 +162,15 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "patien-reg",
+        element: (
+          <ProtectedRoute
+            element={<PatientRegistration />}
+            allowedRoles={["User"]}
+          />
+        ),
+      },
+      {
         path: "credit-users",
         element: (
           <ProtectedRoute
@@ -207,6 +218,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
       </QueryClientProvider>
+      {/* <SearchableList /> */}
     </>
   );
 }

@@ -1,19 +1,21 @@
-export {default as BarChart} from './BarChart';
-export {default as GeographyChart} from './GeographyChart';
-export {default as Header} from './Header';
-export {default as LineChart} from './LineChart';
-export {default as PieChart} from './PieChart';
-export {default as ProgressCircle} from './ProgressCircle';
-export {default as Routes} from './Routes';
-export {default as StatBox} from './StatBox';
-export {default as modal} from './modal';
-export {default as UserManagment} from './UserManagment';
-export {default as RoleManagment} from './RoleManagment';
-export {default as LanguageToggle} from './LanguageToggle'
-export {default as FinancialDashboard} from './FinancialDashboard'
-export {default as EmployeeUploadManager} from './EmployeeUploadManager'
-export {default as HospitalManagement} from './HospitalManagement'
-export {default as PaymentManagementLists} from './PaymentManagementLists'
-export {default as ReportReceiptFetcher} from './ReportReceiptFetcher'
-export {default as OrgUploadManager} from './OrgUploadManager'
-export {default as AddHospitalServices} from './AddHospitalServices'
+export { default as BarChart } from "./BarChart";
+export { default as GeographyChart } from "./GeographyChart";
+export { default as Header } from "./Header";
+export { default as LineChart } from "./LineChart";
+export { default as PieChart } from "./PieChart";
+export { default as ProgressCircle } from "./ProgressCircle";
+export { default as Routes } from "./Routes";
+export { default as StatBox } from "./StatBox";
+export { default as modal } from "./modal";
+export { default as UserManagment } from "./UserManagment";
+export { default as RoleManagment } from "./RoleManagment";
+export { default as LanguageToggle } from "./LanguageToggle";
+export { default as FinancialDashboard } from "./FinancialDashboard";
+export { default as EmployeeUploadManager } from "./EmployeeUploadManager";
+export { default as HospitalManagement } from "./HospitalManagement";
+export { default as PaymentManagementLists } from "./PaymentManagementLists";
+export { default as ReportReceiptFetcher } from "./ReportReceiptFetcher";
+export { default as OrgUploadManager } from "./OrgUploadManager";
+export { default as AddHospitalServices } from "./AddHospitalServices";
+export { default as SearchableList } from "./SearchableList";
+export { default as PatientRegistration } from "./PatientRegistration";

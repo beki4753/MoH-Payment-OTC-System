@@ -620,7 +620,6 @@ const ReportReceiptFetcher = () => {
           autoHeight
           rows={tab === 0 ? reportData : receiptData}
           columns={columns}
-          pageSize={5}
           disableRowSelectionOnClick
         />
       </CardContent>

@@ -10,13 +10,14 @@ import {
   TextField,
   IconButton,
 } from "@mui/material";
-import AddHospitalServices from './AddHospitalServices';
+import AddHospitalServices from "./AddHospitalServices";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { DataGrid } from "@mui/x-data-grid";
 import { Add, Edit, Delete } from "@mui/icons-material";
 import api from "../utils/api";
 import { getTokenValue } from "../services/user_service";
+import { formatAccounting2 } from "../pages/hospitalpayment/HospitalPayment";
 
 const tokenvalue = getTokenValue();
 const categories = [
@@ -28,7 +29,7 @@ const categories = [
 ];
 
 const PaymentManagementLists = () => {
-  const [isOpen ,setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
   const [data, setData] = useState({});
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,6 +37,7 @@ const PaymentManagementLists = () => {
     name: "",
     address: "",
   });
+  const [loading, setLoading] = useState(false);
   const [editId, setEditId] = useState(null);
   const [refresh, setRefresh] = useState(false);
   // Generalized fetch function
@@ -110,8 +112,6 @@ const PaymentManagementLists = () => {
     setOpen(true);
   };
 
-
-
   const handleClose = () => {
     setOpen(false);
     setEditId(null);
@@ -129,7 +129,7 @@ const PaymentManagementLists = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (params) => {
     try {
       const { category, name, address } = formData;
       if (!name.trim()) return;
@@ -156,7 +156,11 @@ const PaymentManagementLists = () => {
           createdBy: tokenvalue.name,
         },
         "Payment Methods": { type: name, createdBy: tokenvalue.name },
-        "Hospital Services": { purpose: name, createdBy: tokenvalue.name },
+        "Hospital Services": {
+          purpose: params.services,
+          amount: params.Amount,
+          createdBy: tokenvalue.name,
+        },
         "CBHI Providers": {
           provider: name,
           service: "CBHI",
@@ -223,6 +227,8 @@ const PaymentManagementLists = () => {
 
       if (apiEndpoints[category] && editId === null) {
         try {
+          setLoading(true);
+
           const response = await api.post(
             apiEndpoints[category],
             requestBody[category],
@@ -233,12 +239,15 @@ const PaymentManagementLists = () => {
           if (response.status === 201 || response.status === 200) {
             toast.success(`${category} added successfully!`);
             setRefresh((prev) => !prev);
+            setIsOpen(false);
             handleClose();
             return;
           }
         } catch (error) {
           console.error("Upload error:", error);
           toast.error("Error Uploading data!");
+        } finally {
+          setLoading(false);
         }
       }
 
@@ -278,6 +287,12 @@ const PaymentManagementLists = () => {
     }
   };
 
+  const handleSomething = (categoryA) => {
+    setFormData({ category: categoryA, name: categoryA, address: "" });
+    setEditId(null);
+    setIsOpen(true);
+  };
+
   return (
     <Container>
       <Typography variant="h4" gutterBottom>
@@ -294,7 +309,9 @@ const PaymentManagementLists = () => {
             onClick={() => {
               category === "Organizations with Agreements"
                 ? handleOpen2(category)
-                : category === "Hospital Services" ? setIsOpen(true) : handleOpen(category);
+                : category === "Hospital Services"
+                ? handleSomething(category)
+                : handleOpen(category);
             }}
             style={{ marginBottom: "10px" }}
           >
@@ -339,6 +356,18 @@ const PaymentManagementLists = () => {
                   ? ""
                   : category === "Organizations with Agreements"
                   ? item.location
+                  : "",
+                  amount:
+                  category === "Digital Payment Channels"
+                  ? 0
+                  : category === "Payment Methods"
+                  ? 0
+                  : category === "Hospital Services"
+                  ? formatAccounting2(item.amount)
+                  : category === "CBHI Providers"
+                  ? 0
+                  : category === "Organizations with Agreements"
+                  ? 0
                   : "",
             }))}
             columns={
@@ -386,6 +415,52 @@ const PaymentManagementLists = () => {
                       flex: 0.5,
                     },
                   ]
+                  
+                : category === "Hospital Services"
+                ? [
+                    {
+                      field: "name",
+                      headerName: "Name",
+                      flex:1.1,
+                    },
+                    {
+                      field: "amount",
+                      headerName: "Amount",
+                      flex:0.5,
+                    },
+                    {
+                      field: "actions",
+                      headerName: "Actions",
+                      renderCell: (params) =>
+                        params?.row?.createdBy?.toUpperCase() !== "SYS" && (
+                          <>
+                            <IconButton
+                              onClick={() => {
+                                handleOpen2(
+                                  category,
+                                  params.row.name,
+                                  params.row.location,
+                                  params.row.id
+                                );
+                              }}
+                            >
+                              <Edit />
+                            </IconButton>
+
+                            <IconButton
+                              onClick={() =>
+                                handleDelete(category, params.row.id)
+                              }
+                              color="error"
+                            >
+                              <Delete />
+                            </IconButton>
+                          </>
+                        ),
+                        flex:0.2,
+                    },
+                  ]
+                
                 : [
                     {
                       field: "name",
@@ -475,7 +550,13 @@ const PaymentManagementLists = () => {
           </Button>
         </DialogActions>
       </Dialog>
-      <AddHospitalServices isOpen={isOpen} setIsOpen={setIsOpen}/>
+      <AddHospitalServices
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+        loading={loading}
+        setLoading={setLoading}
+        onSubmit={handleSubmit}
+      />
       <ToastContainer />
     </Container>
   );

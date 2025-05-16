@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Modal,
   Typography,
@@ -6,71 +6,79 @@ import {
   Button,
   Stack,
   CircularProgress,
+  IconButton,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
+import { CancelPresentationTwoTone } from "@mui/icons-material";
 
-const AddHospitalServices = ({isOpen=false, setIsOpen}) => {
+const AddHospitalServices = ({
+  isOpen = false,
+  setIsOpen,
+  onSubmit,
+  loading,
+  setLoading,
+}) => {
   const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-const columns = [
-  {field: "Services",headerName:"Hospital Services", flex: 1},
-  {field: "Amount",headerName:"Amount", flex: 1},
-]
+ const fileInput = useRef(null)
+  const columns = [
+    { field: "Services", headerName: "Hospital Services", flex: 1 },
+    { field: "Amount", headerName: "Amount", flex: 1 },
+  ];
 
   const handleFileUpload = (event) => {
-    try{
-    const file = event.target.files[0];
-    if (!file) return;
+    try {
+      const file = event.target.files[0];
+      if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: "array" });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const parsedData = XLSX.utils.sheet_to_json(sheet);
-      
-      const rowsData = parsedData.map((prev, index) => ({
-        id: index + 1,
-        ...prev,
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const parsedData = XLSX.utils.sheet_to_json(sheet);
 
-      }));
+        const rowsData = parsedData.map((prev, index) => ({
+          id: index + 1,
+          ...prev,
+        }));
 
-      setRows(rowsData)
-
-    };
-    reader.readAsArrayBuffer(file);
-  }catch(error){
-    console.error('File Upload Error: ',error)
-  }
+        setRows(rowsData);
+      };
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error("File Upload Error: ", error);
+    }
   };
 
   const handleUploadToServer = async () => {
-    setLoading(true);
     try {
-      toast.success("Uploaded successfully!");
-      setIsOpen(false);
+      onSubmit({
+        services: rows.map((item) => item.Services),
+        Amount: rows.map((item) => item.Amount),
+      });
     } catch (error) {
       console.error(error);
       toast.error("Upload failed.");
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleClose = ()=>{
-    try{
+  const handleClose = () => {
+    try {
       setIsOpen(false);
       setRows([]);
       setLoading(false);
-
-    }catch(error){
-      console.error('Close error',error)
+    } catch (error) {
+      console.error("Close error", error);
     }
+  };
+
+
+  const handleReset = ()=>{
+    setRows([]);
+    fileInput.current.value = null;
   }
 
   return (
@@ -102,7 +110,14 @@ const columns = [
           Upload Hospital Services (Excel)
         </Typography>
         <Stack direction="row" spacing={2} alignItems="center" mb={2}>
-          <input  type="file" accept=".xlsx, .xls" onChange={handleFileUpload} />
+          <input ref={fileInput} type="file" accept=".xlsx, .xls" onChange={handleFileUpload} />
+          <IconButton
+            onClick={handleReset}
+            color="error"
+            sx={{ marginLeft: 2 }}
+          >
+            <CancelPresentationTwoTone />
+          </IconButton>
           <Button
             variant="contained"
             disabled={!rows.length || loading}
@@ -111,21 +126,19 @@ const columns = [
             {loading ? <CircularProgress size={24} /> : "Upload to Database"}
           </Button>
         </Stack>
-          <Box sx={{ height: 400, width: "100%" }}>
-            <DataGrid
-              rows={rows}
-              columns={columns}
-            />
-          </Box>
-          <Box sx={{display: "flex",justifyContent:"right",width: "100%" }}>
+        <Box sx={{ height: 400, width: "100%" }}>
+          <DataGrid rows={rows} columns={columns} />
+        </Box>
+        <Box sx={{ display: "flex", justifyContent: "right", width: "100%" }}>
           <Button
-           variant="contained"
-           sx={{margin:"10px"}} 
-           onClick = {()=>handleClose()}
-           color="error"
-            >Cancel</Button>
-          </Box>
-
+            variant="contained"
+            sx={{ margin: "10px" }}
+            onClick={() => handleClose()}
+            color="error"
+          >
+            Cancel
+          </Button>
+        </Box>
       </Box>
     </Modal>
   );

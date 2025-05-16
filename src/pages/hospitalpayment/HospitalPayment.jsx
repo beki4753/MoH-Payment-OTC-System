@@ -347,7 +347,6 @@ const HospitalPayment = () => {
           ? prev.reason.filter((r) => r !== reason)
           : [...prev.reason, reason];
 
-        // Create a proper copy of the amount array
         const updatedAmount = [...prev.amount];
 
         // If the reason is being removed, remove the corresponding amount entry
@@ -371,14 +370,14 @@ const HospitalPayment = () => {
       setFormData((prev) => {
         const updatedAmount = prev.amount.map((item) =>
           item.purpose === reason
-            ? { ...item, Amount: Math.abs(Number(e.target.value)) }
+            ? { ...item, Amount: Math.abs(parseFloat(e.target.value)) }
             : item
         );
 
         if (!updatedAmount.some((item) => item.purpose === reason)) {
           updatedAmount.push({
             purpose: reason,
-            Amount: Math.abs(Number(e.target.value)),
+            Amount: Math.abs(parseFloat(e.target.value)),
           });
         }
 
