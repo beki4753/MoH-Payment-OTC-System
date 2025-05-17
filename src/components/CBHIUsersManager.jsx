@@ -10,6 +10,7 @@ import {
   Typography,
   Grid,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { Add, Edit } from "@mui/icons-material";
@@ -47,6 +48,7 @@ function CBHIUsersManager() {
     controllerError,
     initialFormState
   );
+  const [loading, setLoading] = useState(false);
 
   const handleOpen = (index = null) => {
     if (index !== null) {
@@ -78,6 +80,7 @@ function CBHIUsersManager() {
 
   const handleSave = async () => {
     try {
+      setLoading(true);
       if (
         formData?.mrn?.length <= 0 ||
         formData?.id?.length <= 0 ||
@@ -102,6 +105,8 @@ function CBHIUsersManager() {
       handleClose();
     } catch (error) {
       console.error("This is Submit Error: ", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -239,7 +244,7 @@ function CBHIUsersManager() {
             Cancel
           </Button>
           <Button onClick={handleSave} variant="contained">
-            Save
+            {loading ? <CircularProgress size={24} color="inherit"/> : "Save"}
           </Button>
         </DialogActions>
       </Dialog>

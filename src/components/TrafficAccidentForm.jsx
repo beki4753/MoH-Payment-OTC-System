@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useReducer } from "react";
 import {
   Box,
   Button,
@@ -7,9 +7,12 @@ import {
   Typography,
   Paper,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { Edit, Delete, Cancel, Save } from "@mui/icons-material";
+import { Edit, Delete } from "@mui/icons-material";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const initialForm = {
   mrn: "",
@@ -21,30 +24,69 @@ const initialForm = {
   policePhone: "",
 };
 
+const controllerError = (state, action) => {
+  try {
+    if (action.name === "Reset") {
+      return initialForm;
+    } else {
+      return { ...state, [action.name]: action.values };
+    }
+  } catch (error) {
+    console.error("State Update Error: ", error);
+  }
+};
+
 function TrafficAccidentCrud() {
   const [formData, setFormData] = useState(initialForm);
+  const [formDataError, setFormDataError] = useReducer(
+    controllerError,
+    initialForm
+  );
+
   const [records, setRecords] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === "mrn") {
+      mrnCheck(name, value);
+    } else if (name === "accidentAddress" || name === "carPlateNumber") {
+      letterNumberCheck(name, value);
+    } else if (name === "policeName") {
+      validateName(name, value);
+    } else if (name === "policePhone") {
+      validatePhoneNumber(name, value);
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editIndex !== null) {
-      const updated = [...records];
-      updated[editIndex] = { ...formData, id: updated[editIndex].id };
-      setRecords(updated);
-      setEditIndex(null);
-    } else {
-      setRecords((prev) => [
-        ...prev,
-        { ...formData, id: Date.now() },
-      ]);
+  const handleSubmit = async (e) => {
+    try {
+      setLoading(true);
+      e.preventDefault();
+
+      if (Object.values(formDataError).some((em) => em.length > 0)) {
+        toast.error("Please fix the erros first.");
+        return;
+      }
+
+      if (editIndex !== null) {
+        const updated = [...records];
+        updated[editIndex] = { ...formData, id: updated[editIndex].id };
+        setRecords(updated);
+        setEditIndex(null);
+      } else {
+        setRecords((prev) => [...prev, { ...formData, id: Date.now() }]);
+      }
+      setFormData(initialForm);
+    } catch (error) {
+      console.error("This is Submit Error: ", error);
+      toast.error(error?.reponse?.data?.message || "Internal Server Error.");
+    } finally {
+      setLoading(true);
     }
-    setFormData(initialForm);
   };
 
   const handleEdit = (index) => {
@@ -60,6 +102,7 @@ function TrafficAccidentCrud() {
 
   const handleCancelEdit = () => {
     setFormData(initialForm);
+    setFormDataError({ name: "Reset" });
     setEditIndex(null);
   };
 
@@ -78,7 +121,11 @@ function TrafficAccidentCrud() {
       sortable: false,
       renderCell: (params) => (
         <>
-          <IconButton onClick={() => handleEdit(records.findIndex(r => r.id === params.row.id))}>
+          <IconButton
+            onClick={() =>
+              handleEdit(records.findIndex((r) => r.id === params.row.id))
+            }
+          >
             <Edit />
           </IconButton>
           <IconButton color="error" onClick={() => handleDelete(params.row.id)}>
@@ -89,8 +136,92 @@ function TrafficAccidentCrud() {
     },
   ];
 
+  const validatePhoneNumber = (name, phone) => {
+    const phoneRegex = /^(?:\+251|09|07)\d+$/;
+    if (!phoneRegex.test(phone) && phone.length > 0) {
+      setFormDataError({
+        name: name,
+        values:
+          "Phone number must start with +251, 09, or 07 and contain only numbers.",
+      });
+    } else {
+      if (phone.startsWith("+251") && phone.length !== 13) {
+        setFormDataError({
+          name: name,
+          values: "Phone number starting with +251 must have 13 digits.",
+        });
+      } else if (
+        (phone.startsWith("09") || phone.startsWith("07")) &&
+        phone.length !== 10
+      ) {
+        setFormDataError({
+          name: name,
+          values: "Phone number starting with 09 or 07 must have 10 digits.",
+        });
+      } else {
+        setFormDataError({
+          name: name,
+          values: "",
+        });
+      }
+      return;
+    }
+  };
+
+  const validateName = (name, value) => {
+    const comp = /^[A-Za-z\s]{3,}$/;
+    if (!comp.test(value) && value.length > 0) {
+      setFormDataError({
+        name: name,
+        values: "Full Name must be only letters, at least 3 characters long.",
+      });
+    } else {
+      setFormDataError({
+        name: name,
+        values: "",
+      });
+    }
+    return;
+  };
+
+  const mrnCheck = (name, value) => {
+    const comp = /^[0-9]{5,}$/;
+    if (!comp.test(value) && value.length > 0) {
+      setFormDataError({
+        name: name,
+        values: "Please Insert Valid MRN, more than 5 digit only.",
+      });
+    } else {
+      setFormDataError({
+        name: name,
+        values: "",
+      });
+    }
+  };
+
+  const letterNumberCheck = (name, value) => {
+    const comp = /^[A-Za-z0-9\s]+$/;
+    if (!comp.test(value) && value.length > 0) {
+      setFormDataError({
+        name: name,
+        values: "Letters Number and space Only.",
+      });
+    } else {
+      setFormDataError({
+        name: name,
+        values: "",
+      });
+    }
+  };
+
   return (
-    <Box p={3} component={Paper} sx={{marginInline:"15px"}} elevation={4} borderRadius={3}>
+    <Box
+      p={3}
+      component={Paper}
+      sx={{ marginInline: "15px" }}
+      elevation={4}
+      borderRadius={3}
+    >
       <Typography variant="h5" gutterBottom fontWeight="bold">
         🚨 Traffic Accident Registration
       </Typography>
@@ -101,28 +232,32 @@ function TrafficAccidentCrud() {
             <TextField
               label="MRN"
               name="mrn"
-              value={formData.mrn}
+              value={formData?.mrn}
               onChange={handleChange}
               fullWidth
               required
+              error={!!formDataError?.mrn}
+              helperText={formDataError?.mrn}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
               label="Age"
               name="age"
-              value={formData.age}
+              value={Math.abs(formData?.age) || formData?.age}
               onChange={handleChange}
               fullWidth
               required
               type="number"
+              error={!!formDataError?.age}
+              helperText={formDataError?.age}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
               label="Accident Date"
               name="accidentDate"
-              value={formData.accidentDate}
+              value={formData?.accidentDate}
               onChange={handleChange}
               fullWidth
               type="date"
@@ -134,53 +269,66 @@ function TrafficAccidentCrud() {
             <TextField
               label="Car Plate Number"
               name="carPlateNumber"
-              value={formData.carPlateNumber}
+              value={formData?.carPlateNumber}
               onChange={handleChange}
               fullWidth
+              error={!!formDataError?.carPlateNumber}
+              helperText={formDataError?.carPlateNumber}
             />
           </Grid>
           <Grid item xs={12}>
             <TextField
               label="Accident Address"
               name="accidentAddress"
-              value={formData.accidentAddress}
+              value={formData?.accidentAddress}
               onChange={handleChange}
               fullWidth
               multiline
               rows={2}
               required
+              error={!!formDataError?.accidentAddress}
+              helperText={formDataError?.accidentAddress}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
               label="Police Name"
               name="policeName"
-              value={formData.policeName}
+              value={formData?.policeName}
               onChange={handleChange}
               fullWidth
               required
+              error={!!formDataError?.policeName}
+              helperText={formDataError?.policeName}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
               label="Police Phone"
               name="policePhone"
-              value={formData.policePhone}
+              value={formData?.policePhone}
               onChange={handleChange}
               fullWidth
               type="tel"
+              error={!!formDataError?.policePhone}
+              helperText={formDataError?.policePhone}
             />
           </Grid>
         </Grid>
 
         <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
-          {editIndex !== null && (
-            <Button variant="outlined" onClick={handleCancelEdit}>
-              Cancel
-            </Button>
-          )}
+          <Button variant="outlined" color="error" onClick={handleCancelEdit}>
+            Cancel
+          </Button>
+
           <Button type="submit" variant="contained">
-            {editIndex !== null ? "Update" : "Register"}
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : editIndex !== null ? (
+              "Update"
+            ) : (
+              "Register"
+            )}
           </Button>
         </Box>
       </form>
@@ -189,7 +337,7 @@ function TrafficAccidentCrud() {
         <Typography variant="h6" gutterBottom>
           Registered Records
         </Typography>
-        <Box style={{ height: 400, width: '100%' }}>
+        <Box style={{ height: 400, width: "100%" }}>
           <DataGrid
             rows={records}
             columns={columns}
@@ -197,10 +345,13 @@ function TrafficAccidentCrud() {
             rowsPerPageOptions={[5]}
             disableRowSelectionOnClick
             getRowId={(row) => row.id}
-            localeText={{ noRowsLabel: "No traffic accident records to display" }}
+            localeText={{
+              noRowsLabel: "No traffic accident records to display",
+            }}
           />
         </Box>
       </Box>
+      <ToastContainer />
     </Box>
   );
 }
