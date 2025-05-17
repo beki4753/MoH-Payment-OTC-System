@@ -354,7 +354,7 @@ const ReportPage = () => {
   };
 
   return (
-    <>
+    <Box>
       <Typography variant="h5" gutterBottom sx={{ margin: 2 }}>
         Payment Reports
       </Typography>
@@ -483,7 +483,7 @@ const ReportPage = () => {
       </Button>
 
       <ToastContainer />
-    </>
+    </Box>
   );
 };
 

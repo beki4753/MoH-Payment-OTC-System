@@ -9,6 +9,7 @@ import {
   ToggleButtonGroup,
   FormControlLabel,
   Checkbox,
+  Box,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import * as XLSX from "xlsx";
@@ -99,7 +100,17 @@ const CollectedReport = () => {
   };
 
   return (
-    <Container>
+    <Box
+      sx={{
+        mx: "auto",
+        p: { xs: 2, sm: 3 },
+        mt: 4,
+        borderRadius: 2,
+        backgroundColor: "#f9f9f9",
+        boxShadow: 3,
+        marginInline: "15px",
+      }}
+    >
       <Typography variant="h5" gutterBottom>
         Collection Report
       </Typography>
@@ -181,7 +192,7 @@ const CollectedReport = () => {
         Export to Excel
       </Button>
       <ToastContainer />
-    </Container>
+    </Box>
   );
 };
 

@@ -38,6 +38,9 @@ import {
   ReportReceiptFetcher,
   SearchableList,
   PatientRegistration,
+  PatientSearch,
+  CBHIUsersManager,
+  TrafficAccidentForm,
 } from "./components";
 
 const tokenvalue = getTokenValue();
@@ -111,6 +114,15 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "patien-reg-cbhi",
+        element: (
+          <ProtectedRoute
+            element={<CBHIUsersManager />}
+            allowedRoles={["User"]}
+          />
+        ),
+      },
+      {
         path: "cash-managment",
         element: (
           <ProtectedRoute
@@ -144,6 +156,15 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "patien-reg-tar",
+        element: (
+          <ProtectedRoute
+            element={<TrafficAccidentForm />}
+            allowedRoles={["User"]}
+          />
+        ),
+      },
+      {
         path: "profile",
         element: (
           <ProtectedRoute
@@ -168,6 +189,12 @@ const router = createBrowserRouter([
             element={<PatientRegistration />}
             allowedRoles={["User"]}
           />
+        ),
+      },
+      {
+        path: "view-pat",
+        element: (
+          <ProtectedRoute element={<PatientSearch />} allowedRoles={["User"]} />
         ),
       },
       {

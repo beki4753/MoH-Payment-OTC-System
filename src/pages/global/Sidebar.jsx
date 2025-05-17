@@ -14,6 +14,10 @@ import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import { getTokenValue } from "../../services/user_service";
 import StorageIcon from "@mui/icons-material/Storage";
+import HowToRegIcon from "@mui/icons-material/HowToReg";
+import CarCrashIcon from "@mui/icons-material/CarCrash";
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VaccinesIcon from "@mui/icons-material/Vaccines";
 import { LibraryBooksTwoTone } from "@mui/icons-material";
 import BusinessIcon from "@mui/icons-material/Business";
 import ManageSearchIcon from "@mui/icons-material/ManageSearch";
@@ -123,12 +127,19 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                   style={{ cursor: "pointer", borderRadius: "50%" }}
                 />
               </Box>
-              <Box textAlign="center" sx={{fontSize:'20px', textTransform:"capitalize"}}>
+              <Box
+                textAlign="center"
+                sx={{ fontSize: "20px", textTransform: "capitalize" }}
+              >
                 <Typography
                   variant="h2"
                   color={colors.grey[100]}
                   fontWeight="bold"
-                  sx={{ m: "10px 0 0 0",fontSize:"inherit", transform:"-moz-initial"}}
+                  sx={{
+                    m: "10px 0 0 0",
+                    fontSize: "inherit",
+                    transform: "-moz-initial",
+                  }}
                 >
                   {tokenvalue.name}
                 </Typography>
@@ -277,6 +288,49 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                     />
                   )}
 
+                  {tokenvalue?.UserType?.toUpperCase() === "CASHIER" &&
+                    !isCollapsed && (
+                      <Typography
+                        variant="h6"
+                        color={colors.grey[300]}
+                        sx={{ m: "15px 0 5px 20px" }}
+                      >
+                        Patient Registration
+                      </Typography>
+                    )}
+
+                  {tokenvalue?.UserType?.toUpperCase() === "CASHIER" && (
+                    <>
+                      <Item
+                        title="Patient Register"
+                        to="/patien-reg"
+                        icon={<HowToRegIcon />}
+                        selected={selected}
+                        setSelected={setSelected}
+                      />
+                      <Item
+                        title="CBHI Registration"
+                        to="/patien-reg-cbhi"
+                        icon={<VaccinesIcon />}
+                        selected={selected}
+                        setSelected={setSelected}
+                      />
+                      <Item
+                        title="Traffic Accident Registration"
+                        to="/patien-reg-tar"
+                        icon={<CarCrashIcon />}
+                        selected={selected}
+                        setSelected={setSelected}
+                      />
+                      <Item
+                        title="View Patient"
+                        to="/view-pat"
+                        icon={<VisibilityIcon />}
+                        selected={selected}
+                        setSelected={setSelected}
+                      />
+                    </>
+                  )}
                   {!isCollapsed && (
                     <Typography
                       variant="h6"

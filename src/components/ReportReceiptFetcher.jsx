@@ -522,7 +522,7 @@ const ReportReceiptFetcher = () => {
   };
 
   return (
-    <Card sx={{ p: 3, borderRadius: "2xl", boxShadow: 3 }}>
+    <Card sx={{ p: 3, borderRadius: "2xl", boxShadow: 3,marginInline:"15px" }}>
       <CardContent>
         <Typography variant="h5" gutterBottom>
           {tab === 0
