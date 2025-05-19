@@ -42,6 +42,7 @@ import {
   CBHIUsersManager,
   TrafficAccidentForm,
   TreatmentEntry,
+  PaymentManagement,
 } from "./components";
 
 const tokenvalue = getTokenValue();
@@ -128,6 +129,15 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute
             element={<TreatmentEntry />}
+            allowedRoles={["User"]}
+          />
+        ),
+      },
+      {
+        path: "payment-entry",
+        element: (
+          <ProtectedRoute
+            element={<PaymentManagement />}
             allowedRoles={["User"]}
           />
         ),

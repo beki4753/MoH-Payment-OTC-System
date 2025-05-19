@@ -260,7 +260,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                   {tokenvalue?.UserType?.toUpperCase() === "CASHIER" && (
                     <Item
                       title="Payments"
-                      to="/payments"
+                      to="/payment-entry"
                       icon={<CreditCardOutlinedIcon />}
                       selected={selected}
                       setSelected={setSelected}

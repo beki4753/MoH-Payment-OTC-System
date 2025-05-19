@@ -1093,7 +1093,6 @@ const HospitalPayment = () => {
                 />
               }
               label={reason}
-              
             />
           ))}
 
@@ -1224,7 +1223,7 @@ const HospitalPayment = () => {
                     </InputAdornment>
                   ),
                 }}
-              ></TextField>
+              />
             </>
           )}
           {formData?.method.trim().toUpperCase().includes("CBHI") && (
