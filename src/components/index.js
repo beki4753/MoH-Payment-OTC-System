@@ -22,3 +22,4 @@ export { default as PatientRegistration } from "./PatientRegistration";
 export { default as PatientSearch } from "./PatientSearch";
 export { default as CBHIUsersManager } from "./CBHIUsersManager";
 export { default as TrafficAccidentForm } from "./TrafficAccidentForm";
+export { default as TreatmentEntry } from "./TreatmentEntry";

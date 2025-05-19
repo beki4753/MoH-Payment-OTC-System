@@ -41,6 +41,7 @@ import {
   PatientSearch,
   CBHIUsersManager,
   TrafficAccidentForm,
+  TreatmentEntry,
 } from "./components";
 
 const tokenvalue = getTokenValue();
@@ -118,6 +119,15 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute
             element={<CBHIUsersManager />}
+            allowedRoles={["User"]}
+          />
+        ),
+      },
+      {
+        path: "treatment-entry",
+        element: (
+          <ProtectedRoute
+            element={<TreatmentEntry />}
             allowedRoles={["User"]}
           />
         ),

@@ -1,4 +1,6 @@
-import React, { useState, useReducer } from "react";
+import React, { useState, useReducer, useEffect } from "react";
+import { EtLocalizationProvider } from "habesha-datepicker";
+import EtDatePicker from "habesha-datepicker";
 import {
   Box,
   Button,
@@ -22,6 +24,8 @@ const initialFormState = {
   id: "",
   goth: "",
   kebele: "",
+  sdate: "",
+  edate: "",
   referralNumber: "",
   letterNumber: "",
   examination: "",
@@ -165,6 +169,37 @@ function CBHIUsersManager() {
     }
   };
 
+  const handleChangeTime = (fieldName, selectedDate) => {
+    let jsDate;
+    if (selectedDate instanceof Date) {
+      jsDate = selectedDate;
+    } else {
+      jsDate = new Date(selectedDate);
+    }
+
+    if (isNaN(jsDate.getTime())) {
+      console.error("Invalid date provided to handleChangeTime:", selectedDate);
+      return;
+    }
+
+    const tzOffsetMinutes = jsDate.getTimezoneOffset();
+    const absOffset = Math.abs(tzOffsetMinutes);
+    const offsetHours = String(Math.floor(absOffset / 60)).padStart(2, "0");
+    const offsetMinutes = String(absOffset % 60).padStart(2, "0");
+    const sign = tzOffsetMinutes <= 0 ? "+" : "-";
+
+    const localDate = new Date(jsDate.getTime() - tzOffsetMinutes * 60000);
+    const dateStr = localDate.toISOString().slice(0, 19).replace("T", " ");
+
+    const sqlDateOffset = `${dateStr} ${sign}${offsetHours}:${offsetMinutes}`;
+
+    setFormData((prev) => ({
+      ...prev,
+      [fieldName]: sqlDateOffset,
+    }));
+  };
+
+
   return (
     <Box p={4}>
       <Box
@@ -213,28 +248,42 @@ function CBHIUsersManager() {
               { label: "ID", name: "id" },
               { label: "Woreda/Kebele", name: "kebele" },
               { label: "Goth", name: "goth" },
+              { label: "Start Date", name: "sdate" },
+              { label: "End Date", name: "edate" },
               { label: "Referral Number", name: "referralNumber" },
               { label: "Letter Number", name: "letterNumber" },
               { label: "Examination", name: "examination" },
             ].map(({ label, name }) => (
               <Grid item xs={12} sm={6} key={name}>
-                <TextField
-                  fullWidth
-                  variant="outlined"
-                  label={label}
-                  name={name}
-                  value={formData[name]}
-                  onChange={handleChange}
-                  multiline={label === "Examination" ? true : false}
-                  rows={label === "Examination" ? 4 : 0}
-                  required={
-                    ["MRN", "ID", "Woreda/Kebele"].includes(label)
-                      ? true
-                      : false
-                  }
-                  error={!!formDataError[name]}
-                  helperText={formDataError[name]}
-                />
+                {["sdate", "edate"].includes(name) ? (
+                  <EtLocalizationProvider localType="EC">
+                    <EtDatePicker
+                      label={label}
+                      name={name}
+                      value={formData[name] ? new Date(formData[name]) : null}
+                      onChange={(e) => handleChangeTime(name, e)}
+                      sx={{ width: "100%" }}
+                    />
+                  </EtLocalizationProvider>
+                ) : (
+                  <TextField
+                    fullWidth
+                    variant="outlined"
+                    label={label}
+                    name={name}
+                    value={formData[name]}
+                    onChange={handleChange}
+                    multiline={label === "Examination" ? true : false}
+                    rows={label === "Examination" ? 4 : 0}
+                    required={
+                      ["MRN", "ID", "Woreda/Kebele"].includes(label)
+                        ? true
+                        : false
+                    }
+                    error={!!formDataError[name]}
+                    helperText={formDataError[name]}
+                  />
+                )}
               </Grid>
             ))}
           </Grid>
@@ -244,7 +293,7 @@ function CBHIUsersManager() {
             Cancel
           </Button>
           <Button onClick={handleSave} variant="contained">
-            {loading ? <CircularProgress size={24} color="inherit"/> : "Save"}
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Save"}
           </Button>
         </DialogActions>
       </Dialog>

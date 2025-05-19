@@ -13,7 +13,10 @@ import { DataGrid } from "@mui/x-data-grid";
 import { Edit, Delete } from "@mui/icons-material";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import { EtLocalizationProvider } from "habesha-datepicker";
+import format from "date-fns/format";
+import EtDatePicker from "habesha-datepicker";
+import { EthiopianDate } from "habesha-datepicker/dist/util/EthiopianDateUtils";
 const initialForm = {
   mrn: "",
   age: "",
@@ -85,7 +88,7 @@ function TrafficAccidentCrud() {
       console.error("This is Submit Error: ", error);
       toast.error(error?.reponse?.data?.message || "Internal Server Error.");
     } finally {
-      setLoading(true);
+      setLoading(false);
     }
   };
 
@@ -106,10 +109,55 @@ function TrafficAccidentCrud() {
     setEditIndex(null);
   };
 
+  const handleChangeTime = (fieldName, selectedDate) => {
+    let jsDate;
+    if (selectedDate instanceof Date) {
+      jsDate = selectedDate;
+    } else {
+      jsDate = new Date(selectedDate);
+    }
+
+    if (isNaN(jsDate.getTime())) {
+      console.error("Invalid date provided to handleChangeTime:", selectedDate);
+      return;
+    }
+
+    const tzOffsetMinutes = jsDate.getTimezoneOffset();
+    const absOffset = Math.abs(tzOffsetMinutes);
+    const offsetHours = String(Math.floor(absOffset / 60)).padStart(2, "0");
+    const offsetMinutes = String(absOffset % 60).padStart(2, "0");
+    const sign = tzOffsetMinutes <= 0 ? "+" : "-";
+
+    const localDate = new Date(jsDate.getTime() - tzOffsetMinutes * 60000);
+    const dateStr = localDate.toISOString().slice(0, 19).replace("T", " ");
+
+    const sqlDateOffset = `${dateStr} ${sign}${offsetHours}:${offsetMinutes}`;
+
+    setFormData((prev) => ({
+      ...prev,
+      [fieldName]: sqlDateOffset,
+    }));
+  };
+
   const columns = [
     { field: "mrn", headerName: "MRN", flex: 1 },
     { field: "age", headerName: "Age", flex: 1 },
-    { field: "accidentDate", headerName: "Date", flex: 1 },
+    {
+      field: "accidentDate",
+      headerName: "Date",
+      flex: 1,
+      renderCell: (params) => {
+        const ndate = new Date(
+          params?.row?.accidentDate.replace(" ", "T").replace(" +", "+")
+        );
+        const etDate = EthiopianDate.toEth(ndate);
+        const formattedString = `${etDate.Year}-${String(etDate.Month).padStart(
+          2,
+          "0"
+        )}-${String(etDate.Day).padStart(2, "0")}`;
+        return formattedString;
+      },
+    },
     { field: "carPlateNumber", headerName: "Plate Number", flex: 1 },
     { field: "accidentAddress", headerName: "Address", flex: 2 },
     { field: "policeName", headerName: "Police Name", flex: 1 },
@@ -254,7 +302,21 @@ function TrafficAccidentCrud() {
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField
+            <EtLocalizationProvider localType="EC">
+              <EtDatePicker
+                label="Accident Date"
+                name="accidentDate"
+                value={
+                  formData?.accidentDate
+                    ? new Date(formData?.accidentDate)
+                    : null
+                }
+                onChange={(e) => handleChangeTime("accidentDate", e)}
+                sx={{ width: "100%" }}
+                required
+              />
+            </EtLocalizationProvider>
+            {/* <TextField
               label="Accident Date"
               name="accidentDate"
               value={formData?.accidentDate}
@@ -263,7 +325,7 @@ function TrafficAccidentCrud() {
               type="date"
               InputLabelProps={{ shrink: true }}
               required
-            />
+            /> */}
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField

@@ -14,8 +14,15 @@ import {
   Paper,
   CircularProgress,
 } from "@mui/material";
+import { EtLocalizationProvider } from "habesha-datepicker";
+import EtDatePicker from "habesha-datepicker";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import api from "../utils/api";
+import { getTokenValue } from "../services/user_service";
+
+const tokenvalue = getTokenValue();
+
 const steps = ["Basic Info", "Addres Info"];
 const genders = ["Male", "Female"];
 const Religions = [
@@ -234,6 +241,36 @@ function PatientRegistration() {
     setActiveStep(0);
   };
 
+  const handleChangeTime = (fieldName, selectedDate) => {
+    let jsDate;
+    if (selectedDate instanceof Date) {
+      jsDate = selectedDate;
+    } else {
+      jsDate = new Date(selectedDate);
+    }
+
+    if (isNaN(jsDate.getTime())) {
+      console.error("Invalid date provided to handleChangeTime:", selectedDate);
+      return;
+    }
+
+    const tzOffsetMinutes = jsDate.getTimezoneOffset();
+    const absOffset = Math.abs(tzOffsetMinutes);
+    const offsetHours = String(Math.floor(absOffset / 60)).padStart(2, "0");
+    const offsetMinutes = String(absOffset % 60).padStart(2, "0");
+    const sign = tzOffsetMinutes <= 0 ? "+" : "-";
+
+    const localDate = new Date(jsDate.getTime() - tzOffsetMinutes * 60000);
+    const dateStr = localDate.toISOString().slice(0, 19).replace("T", " ");
+
+    const sqlDateOffset = `${dateStr} ${sign}${offsetHours}:${offsetMinutes}`;
+
+    setFormData((prev) => ({
+      ...prev,
+      [fieldName]: sqlDateOffset,
+    }));
+  };
+
   const handleChange = (e) => {
     if (
       e.target.name === "fname" ||
@@ -394,9 +431,19 @@ function PatientRegistration() {
         toast.error("Please Insert Valid MRN first.");
         return;
       }
-      console.log("Search Logic for: ", formData?.mrn);
+      const response = await api.put("/Patient/get-patient-info", {
+        patientCardNumber: formData?.mrn,
+        patientFirstName: "-",
+        patientLastName: "-",
+        patientMiddleName: "-",
+        patientPhone: "-",
+        cashier: tokenvalue?.name,
+      });
+
+      console.log("Search Logic for: ", response);
     } catch (error) {
       console.error("This Is CHeck Error: ", error);
+      toast.error(error?.reponse?.data?.message || "Internal Server Error.");
     } finally {
       setCheckLoading(false);
     }
@@ -457,16 +504,15 @@ function PatientRegistration() {
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  label="Date of Birth *"
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  name="dob"
-                  value={formData.dob}
-                  type="date"
-                  onChange={handleChange}
-                  required
-                />
+                <EtLocalizationProvider localType="EC">
+                  <EtDatePicker
+                    label="Date of Birth *"
+                    name="dob"
+                    value={formData?.dob ? new Date(formData?.dob) : null}
+                    onChange={(e) => handleChangeTime("dob", e)}
+                    sx={{ width: "100%" }}
+                  />
+                </EtLocalizationProvider>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
                 <TextField
@@ -678,15 +724,15 @@ function PatientRegistration() {
               </Grid>
 
               <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  label="Visit Date"
-                  type="date"
-                  InputLabelProps={{ shrink: true }}
-                  value={formData.vdate}
-                  name="vdate"
-                  onChange={handleChange}
-                  fullWidth
-                />
+                <EtLocalizationProvider localType="EC">
+                  <EtDatePicker
+                    label="Visit Date"
+                    name="vdate"
+                    value={formData?.vdate ? new Date(formData?.vdate) : ""}
+                    onChange={(e) => handleChangeTime("vdate", e)}
+                    sx={{ width: "100%" }}
+                  />
+                </EtLocalizationProvider>
               </Grid>
 
               <Grid item xs={12} sm={6} md={4}>
