@@ -40,7 +40,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, userData, userRole }) =
 
         {/* Warning Message */}
         <Typography variant="body1" textAlign="center" mt={2} id="confirmation-modal-description">
-          Are you sure you want to delete the {userRole ? `role "${userRole}"` : "user"}{" "}
+          Are you sure you want to delete the {userRole ? `role "${userRole}"` : "user "}
           <strong>{userData}</strong>?
         </Typography>
 

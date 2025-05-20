@@ -488,7 +488,7 @@ function PatientRegistration() {
           patientMiddleName: formData?.fatname,
           patientLastName: formData?.gfname,
           patientMotherName: formData?.maname,
-          patientAge: 0,
+          // patientAge: 0,
           patientDOB: formData?.dob?.replace(" +03:00", ""),
           patientGender: formData?.gender,
           patientReligion: formData?.religion,
@@ -508,7 +508,7 @@ function PatientRegistration() {
           patientSpouseFirstName: formData?.sname,
           patientSpouselastName: formData?.sfname,
           patientRegisteredBy: tokenvalue?.name, //token name
-          patientVisitingDate: formData?.vdate?.replace(" +03:00", ""),
+          patientVisitingDate: new Date(),
           // patientType: formData?.mrn,
           patientRegion: formData?.region,
           patientWoreda: formData?.woreda,
@@ -537,7 +537,7 @@ function PatientRegistration() {
       }
     } catch (error) {
       console.error("Error Happened on Next Step and Submit handler:", error);
-      toast.error(error?.response?.data?.message || "Internal Server Error.");
+      toast.error(error?.response?.data?.msg || "Internal Server Error.");
     }
   };
 

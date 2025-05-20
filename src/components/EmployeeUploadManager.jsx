@@ -17,6 +17,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getTokenValue } from "../services/user_service";
 import EditStaffModal from "./EditStaffModal";
+import ConfirmationModal from "./ConfirmationModal";
 
 const tokenvalue = getTokenValue();
 const EmployeeUploadManager = () => {
@@ -25,27 +26,36 @@ const EmployeeUploadManager = () => {
   const [refresh, setRefresh] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
-
-  useEffect(() => {
-    console.log("fileData>>", fileData);
-  }, [fileData]);
+  const [loading, setLoading] = useState(false);
+  const [isConfOpen, setIsConfOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState("");
 
   const handleSave = async (paylod) => {
     try {
+      setLoading(true);
       if (fileData?.length > 0) {
         const updatedArray = fileData.map((item) =>
           item.id === paylod.id ? { ...item, ...paylod } : item
         );
 
-        // Update the state with the modified array
         setFileData(updatedArray);
       }
-
-      console.log("Recived Data is: ", paylod);
     } catch (error) {
       console.error("Save Change Error: ", error);
       toast.error(error?.response?.data?.message || "Internal Server Error.");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleConfClose = () => {
+    setIsConfOpen(false);
+    setDeleteId("");
+  };
+
+  const handleDelConf = (paylod) => {
+    console.log("Recived Data is: ", paylod);
+    handleConfClose();
   };
 
   const handleFileUpload = (event) => {
@@ -130,10 +140,11 @@ const EmployeeUploadManager = () => {
   const handleEdit = (params) => {
     setSelectedStaff(params?.row);
     setIsModalOpen(true);
-    console.log(params?.row?.employeeID, "To edit.");
   };
 
   const handlConfirm = (params) => {
+    setDeleteId(params?.row?.employeeID);
+    setIsConfOpen(true);
     console.log(params?.row?.employeeID, "Confirm To Delete.");
   };
 
@@ -242,6 +253,13 @@ const EmployeeUploadManager = () => {
         onClose={() => setIsModalOpen(false)}
         staffData={selectedStaff}
         onSave={handleSave}
+        isloading={loading}
+      />
+      <ConfirmationModal
+        isOpen={isConfOpen}
+        onClose={handleConfClose}
+        onConfirm={handleDelConf}
+        userData={deleteId}
       />
       <ToastContainer />
     </Container>

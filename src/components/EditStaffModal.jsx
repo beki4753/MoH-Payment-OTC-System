@@ -7,11 +7,12 @@ import {
   TextField,
   Button,
   MenuItem,
+  CircularProgress,
 } from "@mui/material";
 
 const contactMethods = ["EMAIL", "SMS"];
 
-const EditStaffModal = ({ open, onClose, staffData, onSave }) => {
+const EditStaffModal = ({ open, onClose, staffData, onSave, isloading }) => {
   const [editedData, setEditedData] = useState(() =>
     staffData !== undefined ? { ...staffData } : {}
   );
@@ -105,7 +106,7 @@ const EditStaffModal = ({ open, onClose, staffData, onSave }) => {
           Cancel
         </Button>
         <Button onClick={handleSubmit} variant="contained" color="primary">
-          Save
+          {isloading ? <CircularProgress size={24} color="inherit" /> : "Save"}
         </Button>
       </DialogActions>
     </Dialog>
