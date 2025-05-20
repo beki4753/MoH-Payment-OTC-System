@@ -13,8 +13,10 @@ import {
   Paper,
   Card,
   CardContent,
+  FormControlLabel,
   InputAdornment,
   IconButton,
+  Checkbox,
   Avatar,
 } from "@mui/material";
 import { PDFDocument, rgb } from "pdf-lib";
@@ -31,23 +33,64 @@ import CreditScoreIcon from "@mui/icons-material/CreditScore";
 import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 import PaymentIcon from "@mui/icons-material/Payment";
 import api from "../utils/api";
+import { getTokenValue } from "../services/user_service";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { formatAccounting2 } from "../pages/hospitalpayment/HospitalPayment";
+
+const tokenvalue = getTokenValue();
 
 const dummyData = [
   {
-    id: 1,
-    name: "John Doe",
-    cardNumber: "12345",
-    amount: 500,
-    method: "",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    cardNumber: "67890",
-    amount: 300,
-    method: "",
-    status: "Pending",
+    patientCardNumber: "000000002",
+
+    patientFirstName: "string1",
+
+    patientMiddleName: "string2",
+
+    patientLastName: "string3",
+
+    patientMotherName: null,
+
+    patientAge: 20,
+
+    patientGender: "Male",
+
+    requestGroup: null,
+
+    noRequestedServices: 2,
+
+    rquestedServices: ["Card/ካርድ [100.00] ", "Medicne/መድሃኒት [100.00] "],
+
+    requestedCatagories: [
+      {
+        groupID: "casheir-d2bf74cb-09ab-402d-9d86-dfced2e6ebac",
+
+        amount: 100.0,
+
+        purpose: "Laboratory",
+      },
+
+      {
+        groupID: "casheir-d2bf74cb-09ab-402d-9d86-dfced2e6ebac",
+
+        amount: 100.0,
+
+        purpose: "X-Ray/Ultrasound",
+      },
+    ],
+
+    totalPrice: 200.0,
+
+    requestedReason: null,
+
+    paid: false,
+
+    isCompleted: false,
+
+    requestedBy: "test1",
+
+    createdOn: "2025-05-19T00:00:00",
   },
 ];
 
@@ -59,10 +102,12 @@ const icons = {
   Digital: <AttachMoneyIcon />,
 };
 
-const creditOrganizations = ["Tsedey Bank", "Amhara Bank", "Ethio Telecom"]; // example list
+//const creditOrganizations = ["Tsedey Bank", "Amhara Bank", "Ethio Telecom"]; // example list
 const initialState = {
-  cbhiID: "",
+  cbhiId: "",
   method: "",
+  reason: "",
+  amount: "",
   digitalChannel: "",
   trxref: "",
   organization: "",
@@ -75,9 +120,69 @@ function PaymentManagement() {
   const [paymentOptions, setPaymentOptions] = useState([]);
   const [digitalChannels, setDigitalChannels] = useState([]);
   const [formData, setFormData] = useState(initialState);
-  const [formDataError, setFormDataError] = useState(initialState);
-
+  const [creditOrganizations, setcreditOrganizations] = useState([]);
+  const [totals, setTotals] = useState({});
+  const [total, setTotal] = useState(0);
   const navigate = useNavigate();
+
+  //Fetch Organization with agreement
+  useEffect(() => {
+    const fetchORG = async () => {
+      try {
+        const response = await api.get(
+          `/Organiztion/Organization/${tokenvalue.name}`
+        );
+        if (response?.status === 200 || response?.status === 201) {
+          setcreditOrganizations(
+            response?.data?.map((item) => item.organization)
+          );
+        }
+      } catch (error) {
+        console.error(error.message);
+      }
+    };
+    fetchORG();
+  }, []);
+
+  //All Payments by casher
+  useEffect(() => {
+    const fetchPaymetInfo = async () => {
+      try {
+        const response = await api.put(
+          "/Payment/payment-by-cashier",
+          tokenvalue.name,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (response.status === 200) {
+          const sortedPayment = await response?.data.sort(
+            (a, b) => b.id - a.id
+          );
+          updatePaymentSummary(sortedPayment);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchPaymetInfo();
+  }, []);
+
+  const updatePaymentSummary = (payments) => {
+    const summary = payments.reduce((acc, payment) => {
+      const { type, amount } = payment;
+      if (!acc[type]) {
+        acc[type] = 0;
+      }
+      acc[type] += parseFloat(amount);
+      return acc;
+    }, {});
+
+    setTotals(summary);
+    setTotal(Object.values(summary).reduce((a, b) => a + b, 0));
+  };
 
   // Fetch Payment Options
   useEffect(() => {
@@ -118,8 +223,25 @@ function PaymentManagement() {
   };
 
   const handleOpenModal = (row) => {
-    setSelectedRow(row);
-    setOpenModal(true);
+    try {
+      const datavisualization = dummyData.filter(
+        (item) => item?.patientCardNumber === row?.patientCardNumber
+      );
+      const modData = datavisualization.map(
+        ({ requestedCatagories, ...rest }) => ({
+          requestedCatagories: requestedCatagories.map((item) => ({
+            ...item,
+            isOk: true,
+          })),
+          ...rest,
+        })
+      );
+      setSelectedRow(modData[0]);
+      setOpenModal(true);
+    } catch (error) {
+      console.error("This is The Open Modal error: ", error);
+      toast.error("Unable to open.");
+    }
   };
 
   const handleCloseModal = () => {
@@ -128,12 +250,26 @@ function PaymentManagement() {
     setSelectedRow(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (
-      formData?.method === "CBHI" &&
-      (formData?.cbhiID.length <= 0 || formDataError?.cbhiID.length > 0)
+      !formData.method ||
+      (formData.method.toUpperCase().includes("DIGITAL") &&
+        (!formData.digitalChannel || !formData.trxref)) ||
+      (formData.method.toUpperCase().includes("CBHI") && !formData.cbhiId) ||
+      (formData.method.toUpperCase().includes("CREDIT") &&
+        (!formData.organization || !formData.employeeId))
     ) {
-      return window.alert("Please Fill All Fields");
+      toast.error("Please Fill All Fields");
+      return;
+    }
+
+    if (
+      !selectedRow.requestedCatagories
+        .map((item) => item.isOk)
+        .some((item) => item === true)
+    ) {
+      toast.error("Should have at least one payment.");
+      return;
     }
     const updatedRows = rows.map((r) =>
       r.id === selectedRow.id
@@ -141,7 +277,7 @@ function PaymentManagement() {
             ...r,
             method: formData?.method,
             status: "Completed",
-            payerId: formData?.cbhiID,
+            payerId: formData?.cbhiId,
             transactionRef: formData?.trxref,
             creditOrg: formData?.organization,
           }
@@ -152,19 +288,56 @@ function PaymentManagement() {
   };
 
   const columns = [
-    { field: "cardNumber", headerName: "Card Number", flex: 1 },
-    { field: "name", headerName: "Patient Name", flex: 1 },
-    { field: "amount", headerName: "Amount", flex: 1 },
-    { field: "status", headerName: "Status", flex: 1 },
+    { field: "patientCardNumber", headerName: "Card Number", flex: 1 },
+    { field: "patientFirstName", headerName: "First Name", flex: 1 },
+    { field: "patientMiddleName", headerName: "Father Name", flex: 1 },
+    { field: "patientLastName", headerName: "Grand Father Name", flex: 1 },
+    { field: "patientGender", headerName: "Gender", flex: 1 },
+    { field: "noRequestedServices", headerName: "Requested Services", flex: 1 },
+    {
+      field: "requestedCatagories",
+      headerName: "Reason",
+      flex: 1,
+      renderCell: (params) => {
+        return params.row.requestedCatagories
+          .map((item) => item.purpose)
+          .join(", ");
+      },
+    },
+    {
+      field: "totalPrice",
+      headerName: "Amount",
+      flex: 1,
+      renderCell: (params) => {
+        return formatAccounting2(params.row.totalPrice);
+      },
+    },
+    {
+      field: "paid",
+      headerName: "Status",
+      flex: 1,
+      renderCell: (params) => {
+        return params.row.paid ? "Completed" : "Pending";
+      },
+    },
+    {
+      field: "createdOn",
+      headerName: "Date",
+      flex: 1,
+      renderCell: (params) => {
+        const date = new Date(params.row.createdOn);
+        return date.toISOString().split("T")[0];
+      },
+    },
     {
       field: "action",
       headerName: "Manage",
+      flex: 1,
       renderCell: (params) => (
         <Button variant="contained" onClick={() => handleOpenModal(params.row)}>
           Manage
         </Button>
       ),
-      flex: 1,
     },
   ];
 
@@ -185,7 +358,7 @@ function PaymentManagement() {
     return { totals, total };
   };
 
-  const { totals, total } = getSummary();
+  //const { totals, total } = getSummary();
 
   const openNewTab = (id) => {
     window.open(
@@ -334,7 +507,7 @@ function PaymentManagement() {
               <Box>
                 <Typography variant="subtitle2">{method}</Typography>
                 <Typography variant="h6" fontWeight="bold">
-                  {amt} Birr
+                  {formatAccounting2(amt)} Birr
                 </Typography>
               </Box>
             </Card>
@@ -352,7 +525,7 @@ function PaymentManagement() {
             }}
           >
             <Typography variant="h6" fontWeight="bold">
-              Total Received Today: {total} Birr
+              Total Received Today: {formatAccounting2(total)} Birr
             </Typography>
           </Paper>
         </Grid>
@@ -367,7 +540,7 @@ function PaymentManagement() {
           <Button
             variant="contained"
             color="success"
-            startIcon={<AttachMoneyIcon />}
+            //startIcon={<AttachMoneyIcon />}
             onClick={() => navigate("/payments")}
           >
             Add Payment
@@ -375,11 +548,9 @@ function PaymentManagement() {
         </Grid>
         <Grid item xs={12}>
           <DataGrid
-            rows={rows.filter((r) => r.status === "Pending")}
+            rows={rows}
+            getRowId={(row) => row.patientCardNumber}
             columns={columns}
-            autoHeight
-            pageSize={5}
-            rowsPerPageOptions={[5, 10]}
           />
         </Grid>
       </Grid>
@@ -406,11 +577,51 @@ function PaymentManagement() {
           </Typography>
 
           <Typography variant="body1" color="text.secondary" gutterBottom>
-            Patient: <strong>{selectedRow?.name}</strong>
+            Patient:{" "}
+            <strong>
+              {selectedRow?.patientFirstName +
+                " " +
+                selectedRow?.patientMiddleName +
+                " " +
+                selectedRow?.patientLastName}
+            </strong>
           </Typography>
           <Typography variant="body2" mb={2} color="text.secondary">
-            Amount to Pay: <strong>{selectedRow?.amount} Birr</strong>
+            Amount to Pay:{" "}
+            <strong>
+              {selectedRow?.requestedCatagories
+                .filter((item) => item.isOk)
+                .reduce((sum, item) => sum + item.amount, 0)}
+              Birr
+            </strong>
           </Typography>
+          {selectedRow?.requestedCatagories.map((item, index) => (
+            <FormControlLabel
+              key={item.purpose}
+              control={
+                <Checkbox
+                  name={item.purpose}
+                  checked={!!item.isOk}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+
+                    // Create a copy and update the relevant item
+                    const updatedCategories =
+                      selectedRow.requestedCatagories.map((cat, i) =>
+                        i === index ? { ...cat, isOk: isChecked } : cat
+                      );
+
+                    // Update selectedRow state
+                    setSelectedRow((prev) => ({
+                      ...prev,
+                      requestedCatagories: updatedCategories,
+                    }));
+                  }}
+                />
+              }
+              label={item.purpose}
+            />
+          ))}
 
           {/* Payment Method */}
 
@@ -510,8 +721,8 @@ function PaymentManagement() {
               fullWidth
               margin="dense"
               label="CBHI ID Number"
-              name="cbhiID"
-              value={formData?.cbhiID}
+              name="cbhiId"
+              value={formData?.cbhiId}
               onChange={handleChange}
               required
             />
@@ -543,6 +754,7 @@ function PaymentManagement() {
           </Grid>
         </Box>
       </Modal>
+      <ToastContainer />
     </Box>
   );
 }

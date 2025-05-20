@@ -18,7 +18,6 @@ import { PDFDocument, rgb } from "pdf-lib";
 import numberToWords from "number-to-words";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { DataGrid } from "@mui/x-data-grid";
-import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import ReactDOM from "react-dom/client";
 import ReceiptModal from "./ReceiptModal";
@@ -26,7 +25,9 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getTokenValue } from "../../services/user_service";
 import api from "../../utils/api";
+import AddPatientInfo from "../../components/AddPatientInfo";
 import { useLang } from "../../contexts/LangContext";
+import AddCBHIInfo from "../../components/AddCBHIInfo";
 import RenderPDF from "./RenderPDF";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -47,6 +48,9 @@ const capitalizeWords = (str) => {
 };
 
 const tokenvalue = getTokenValue();
+
+// const woredas = ["Woreda 1", "Woreda 2", "Woreda 3"]; // Add relevant woredas
+// const organizations = ["Org A", "Org B", "Org C"]; // Add relevant organizations
 
 const formatter = new Intl.NumberFormat("en-us", {
   style: "currency",
@@ -70,7 +74,7 @@ export const formatAccounting = (num) => {
   return num < 0 ? `(${formatted})` : formatted;
 };
 
-export const generateAndOpenPDF = async (error) => {
+const generateAndOpenPDF = async (error) => {
   try {
     const responseData = error?.response?.data;
 
@@ -113,246 +117,24 @@ export const generateAndOpenPDF = async (error) => {
   }
 };
 
-const initialState = {
-  cardNumber: "",
-  amount: [],
-  method: "",
-  description: "",
-  reason: [],
-  digitalChannel: "",
-  cbhiId: "",
-  trxref: "",
-  organization: "",
-  employeeId: "",
-};
-
-// To Display print iframe
-export const printPDF = (doc) => {
-  const blob = doc.output("blob");
-  const blobURL = URL.createObjectURL(blob);
-
-  const iframe = document.createElement("iframe");
-  iframe.style.display = "none"; // Hide the iframe
-  iframe.src = blobURL;
-
-  document.body.appendChild(iframe);
-
-  iframe.onload = () => {
-    iframe.contentWindow.focus();
-    iframe.contentWindow.print();
-    // Clean up
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-      URL.revokeObjectURL(blobURL);
-    }, 30000);
-  };
-};
-
-//Generate PDF
-export const generatePDF = (data, refNo) => {
-  try {
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a6",
-    });
-
-    const pageHeight = doc.internal.pageSize.height;
-    const pageWidth = doc.internal.pageSize.width;
-
-    const marginLeft = 10;
-    const marginRight = pageWidth - 10;
-    const maxWidth = pageWidth - marginLeft * 2;
-    const baseFontSize = 10;
-    const baseLineHeight = 6;
-
-    // Estimate how many lines will be printed
-    const countLines = () => {
-      let lines = 10; // header and static
-      lines += 5; // patient + method
-      if (data.method.toUpperCase().includes("DIGITAL")) lines += 2;
-      if (data.method.toUpperCase().includes("CBHI")) lines += 1;
-      if (data.method.toUpperCase().includes("CREDIT")) lines += 1;
-      lines += 3 + data.amount.length; // items and total
-      lines += 6; // footer
-      return lines;
-    };
-
-    const totalLines = countLines();
-    let lineHeight = baseLineHeight;
-    let fontSize = baseFontSize;
-
-    const estimatedContentHeight = totalLines * baseLineHeight;
-
-    if (estimatedContentHeight > pageHeight) {
-      const scale = pageHeight / estimatedContentHeight;
-      lineHeight = baseLineHeight * scale;
-      fontSize = baseFontSize * scale;
-    }
-
-    let yPos = 8;
-    doc.setFontSize(fontSize);
-
-    const drawText = (text, x, y, options = {}) => {
-      doc.text(String(text), x, y, options);
-    };
-
-    // Header
-    doc.setFont("helvetica", "bold");
-    drawText("*************************", pageWidth / 2, yPos, {
-      align: "center",
-    });
-    yPos += lineHeight;
-    drawText("HOSPITAL PAYMENT RECEIPT", pageWidth / 2, yPos, {
-      align: "center",
-    });
-    yPos += lineHeight;
-    drawText("*************************", pageWidth / 2, yPos, {
-      align: "center",
-    });
-    yPos += lineHeight + 1;
-
-    doc.setFontSize(fontSize - 1);
-    drawText(`${tokenvalue?.Hospital || "N/A"}`, pageWidth / 2, yPos, {
-      align: "center",
-    });
-    yPos += lineHeight;
-
-    // Receipt Info
-    doc.setFont("helvetica", "normal");
-    drawText(`Receipt NO: ${refNo || "N/A"}`, marginLeft, yPos);
-    yPos += lineHeight;
-    drawText(`Address: Debre Brihan`, marginLeft, yPos);
-    yPos += lineHeight;
-    drawText(`Date: ${new Date().toLocaleDateString()}`, marginLeft, yPos);
-    yPos += lineHeight;
-    drawText(`Cashier: ${tokenvalue?.name || "N/A"}`, marginLeft, yPos);
-    yPos += lineHeight;
-
-    doc.setLineWidth(0.3);
-    doc.line(marginLeft, yPos, marginRight, yPos);
-    yPos += lineHeight;
-
-    // Patient Info
-    doc.setFont("helvetica", "bold");
-    drawText(`Patient Name:`, marginLeft, yPos);
-    doc.setFont("helvetica", "normal");
-    drawText(`${data?.patientName || "N/A"}`, marginLeft + 35, yPos);
-    yPos += lineHeight;
-
-    doc.setFont("helvetica", "bold");
-    drawText(`Card Number:`, marginLeft, yPos);
-    doc.setFont("helvetica", "normal");
-    drawText(`${data.cardNumber || "N/A"}`, marginLeft + 35, yPos);
-    yPos += lineHeight;
-
-    doc.setFont("helvetica", "bold");
-    drawText(`Payment Method:`, marginLeft, yPos);
-    doc.setFont("helvetica", "normal");
-    drawText(`${data.method || "N/A"}`, marginLeft + 35, yPos);
-    yPos += lineHeight;
-
-    if (data.method.toUpperCase().includes("DIGITAL")) {
-      doc.setFont("helvetica", "bold");
-      drawText("Channel:", marginLeft, yPos);
-      doc.setFont("helvetica", "normal");
-      drawText(`${data.digitalChannel || "N/A"}`, marginLeft + 35, yPos);
-      yPos += lineHeight;
-
-      doc.setFont("helvetica", "bold");
-      drawText("Transaction Ref No:", marginLeft, yPos);
-      doc.setFont("helvetica", "normal");
-      drawText(`${data.trxref || "N/A"}`, marginLeft + 35, yPos);
-      yPos += lineHeight;
-    } else if (data.method.toUpperCase().includes("CBHI")) {
-      doc.setFont("helvetica", "bold");
-      drawText(`CBHI ID:`, marginLeft, yPos);
-      doc.setFont("helvetica", "normal");
-      drawText(`${data.cbhiId || "N/A"}`, marginLeft + 35, yPos);
-      yPos += lineHeight;
-    } else if (data.method.toUpperCase().includes("CREDIT")) {
-      doc.setFont("helvetica", "bold");
-      drawText(`Organization:`, marginLeft, yPos);
-      doc.setFont("helvetica", "normal");
-      drawText(`${data.organization || "N/A"}`, marginLeft + 35, yPos);
-      yPos += lineHeight;
-      doc.setFont("helvetica", "bold");
-      drawText(`Employee Id:`, marginLeft, yPos);
-      doc.setFont("helvetica", "normal");
-      drawText(`${data.employeeId || "N/A"}`, marginLeft + 35, yPos);
-      yPos += lineHeight;
-    }
-
-    doc.line(marginLeft, yPos, marginRight, yPos);
-    yPos += lineHeight;
-
-    // Item Table
-    doc.setFont("helvetica", "bold");
-    drawText(`Reason`, marginLeft, yPos);
-    drawText(`Price`, marginRight - 25, yPos);
-    yPos += lineHeight;
-
-    doc.setFont("helvetica", "normal");
-    data?.amount?.forEach((item) => {
-      drawText(`${item.purpose}`, marginLeft, yPos);
-      drawText(
-        `${formatAccounting2(parseFloat(item.Amount).toFixed(2))}`,
-        marginRight - 25,
-        yPos
-      );
-      yPos += lineHeight;
-    });
-
-    doc.line(marginLeft, yPos, marginRight, yPos);
-    yPos += lineHeight;
-
-    const totalAmount = data?.amount
-      ?.map((item) => parseFloat(item.Amount))
-      .reduce((a, b) => a + b, 0);
-
-    doc.setFont("helvetica", "bold");
-    drawText(`Total In Figure`, marginLeft, yPos);
-    drawText(
-      `${formatAccounting2(totalAmount.toFixed(2))}`,
-      marginRight - 25,
-      yPos
-    );
-    yPos += lineHeight;
-
-    drawText(`Total In Words : `, marginLeft, yPos);
-    drawText(
-      `${capitalizeWords(numberToWords.toWords(totalAmount.toFixed(2)))} birr`,
-      marginLeft + 30,
-      yPos,
-      {
-        maxWidth: maxWidth - 30, // to fit within the page
-        align: "left",
-      }
-    );
-    yPos += lineHeight * 2;
-
-    doc.setFont("helvetica", "normal");
-    drawText(
-      "This Receipt is invalid unless it is stamped.",
-      pageWidth / 2,
-      yPos,
-      { align: "center" }
-    );
-
-    // Save & Print
-    doc.save("receipt.pdf");
-    printPDF(doc);
-  } catch (error) {
-    console.error(error.message);
-  }
-};
-
 const HospitalPayment = () => {
   const { language } = useLang();
 
   const [payments, setPayments] = useState([]);
 
-  const [formData, setFormData] = useState(initialState);
+  const [formData, setFormData] = useState({
+    cardNumber: "",
+    amount: [],
+    method: "",
+    description: "",
+    reason: [],
+    digitalChannel: "",
+    woreda: "",
+    trxref: "",
+    organization: "",
+    employeeId: "",
+  });
+  const [woredas, setWoredas] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
@@ -363,8 +145,17 @@ const HospitalPayment = () => {
   const [paymentMethods, setPaymentMehods] = useState([]);
   const [digitalChannels, setDigitalChannels] = useState([]);
   const [reasons, setReasons] = useState([]);
+  const [isAdditonalInfo, setIsAdditionalInfo] = useState(false);
+  const [isAdditonalCBHIInfo, setIsAdditionalCBHIInfo] = useState(false);
+  const [cardsearchLoad, setCardSearchLoad] = useState(false);
+  const [cbhisearchLoad, setCbhiSearchLoad] = useState(false);
+  const [addPatientLoad, setAddPatienthLoad] = useState(false);
+  const [patientName, setPatientName] = useState("");
+  const [cbhiId, setCbhiId] = useState("");
+  const [registeredPatient, setRegisteredPatient] = useState(null);
+  const [registeredCBHI, setRegisteredCBHI] = useState(null);
   const [isPrintLoading, setIsPrintLoading] = useState(false);
-  const navigate = useNavigate();
+  const [isAdditionalCBHILoading, setIsAdditionalCBHILoading] = useState(false);
 
   //Inserting evry changet that the user makes on print into the loacl storage using the useEffect hooks
   // onchange of payments the useEffect runs
@@ -395,18 +186,19 @@ const HospitalPayment = () => {
     updatePaymentSummary(payments);
   }, [refresh, payments]);
 
+  //fetch Reasons
   useEffect(() => {
-    setReasons([
-      "Card",
-      "For Examination",
-      "Laboratory",
-      "X-ray/Ultrasound",
-      "Bed",
-      "Medicines",
-      "Surgery",
-      "Food",
-      "Other",
-    ]);
+    const fetchReasons = async () => {
+      try {
+        const response = await api.get("/Lookup/payment-purpose");
+        if (response?.status === 200) {
+          setReasons(response?.data?.map((item) => item.purpose));
+        }
+      } catch (error) {
+        console.error(error.message);
+      }
+    };
+    fetchReasons();
   }, []);
 
   //fetch paymentmethods
@@ -441,6 +233,23 @@ const HospitalPayment = () => {
       }
     };
     fetchChane();
+  }, []);
+
+  //Fetch (CBHI) providers
+  useEffect(() => {
+    const fetchCBHI = async () => {
+      try {
+        const response = await api.get(
+          `/Providers/list-providers/${tokenvalue.name}`
+        );
+        if (response?.status === 200) {
+          setWoredas(response?.data?.map((item) => item.provider));
+        }
+      } catch (error) {
+        console.error(error.message);
+      }
+    };
+    fetchCBHI();
   }, []);
 
   //Fetch Organization with agreement
@@ -487,16 +296,27 @@ const HospitalPayment = () => {
       }
       if (e.target.name === "cardNumber") {
         handleNumberOnlyCheck(e.target.value);
+        setPatientName("");
+        setCbhiId("");
+        setRegisteredCBHI(null);
+        setRegisteredPatient(null);
       }
       if (e.target.name === "method") {
         setFormData((prev) => ({
           ...prev,
-          cbhiId: "",
+          woreda: "",
           trxref: "",
           organization: "",
           employeeId: "",
           digitalChannel: "",
         }));
+        setCbhiId("");
+        setRegisteredCBHI(null);
+      }
+
+      if (e.target.name === "woreda") {
+        setCbhiId("");
+        setRegisteredCBHI(null);
       }
     } catch (error) {
       console.error(error.message);
@@ -527,7 +347,6 @@ const HospitalPayment = () => {
           ? prev.reason.filter((r) => r !== reason)
           : [...prev.reason, reason];
 
-        // Create a proper copy of the amount array
         const updatedAmount = [...prev.amount];
 
         // If the reason is being removed, remove the corresponding amount entry
@@ -571,9 +390,11 @@ const HospitalPayment = () => {
 
   const handleNumberOnlyCheck = (value) => {
     try {
-      const regex = /^[0-9]{5,}$/;
+      const regex = /^[0-9]*$/;
       if (!regex.test(value)) {
-        setCardNumberError("Please Insert Valid Card Number.");
+        setCardNumberError("Please Insert Number Only");
+      } else if (value.length < 6 || value.length > 6) {
+        setCardNumberError("Please Insert 6 Digit Number.");
       } else {
         setCardNumberError("");
       }
@@ -594,7 +415,7 @@ const HospitalPayment = () => {
           (!formData.digitalChannel ||
             !formData.trxref ||
             trxRefError.length > 0)) ||
-        (formData.method.toUpperCase().includes("CBHI") && !formData.cbhiId) ||
+        (formData.method.toUpperCase().includes("CBHI") && !formData.woreda) ||
         (formData.method.toUpperCase().includes("CREDIT") &&
           (!formData.organization || !formData.employeeId))
       ) {
@@ -669,7 +490,22 @@ const HospitalPayment = () => {
             patientName: add?.data[0]?.patientName,
           };
           setReceiptOpen(false);
-          setFormData(initialState);
+          setFormData({
+            cardNumber: "",
+            amount: [],
+            method: "",
+            description: "",
+            reason: [],
+            digitalChannel: "",
+            woreda: "",
+            trxref: "",
+            organization: "",
+            employeeId: "",
+          });
+          setRegisteredPatient(null);
+          setPatientName("");
+          setCbhiId("");
+          setRegisteredCBHI(null);
           toast.success(`Payment Regitstered Under ${response?.data?.refNo}`);
           setRefresh((prev) => !prev);
 
@@ -684,6 +520,224 @@ const HospitalPayment = () => {
       console.error(error);
       setIsPrintLoading(false);
       toast.error(error?.response?.data || "Internal Server Error.");
+    }
+  };
+
+  // To Display print iframe
+  const printPDF = (doc) => {
+    const blob = doc.output("blob");
+    const blobURL = URL.createObjectURL(blob);
+
+    const iframe = document.createElement("iframe");
+    iframe.style.display = "none"; // Hide the iframe
+    iframe.src = blobURL;
+
+    document.body.appendChild(iframe);
+
+    iframe.onload = () => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+        URL.revokeObjectURL(blobURL);
+      }, 30000);
+    };
+  };
+
+  //Generate PDF
+  const generatePDF = (data, refNo) => {
+    try {
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a6",
+      });
+
+      const pageHeight = doc.internal.pageSize.height;
+      const pageWidth = doc.internal.pageSize.width;
+
+      const marginLeft = 10;
+      const marginRight = pageWidth - 10;
+      const maxWidth = pageWidth - marginLeft * 2;
+      const baseFontSize = 10;
+      const baseLineHeight = 6;
+
+      // Estimate how many lines will be printed
+      const countLines = () => {
+        let lines = 10; // header and static
+        lines += 5; // patient + method
+        if (data.method.toUpperCase().includes("DIGITAL")) lines += 2;
+        if (data.method.toUpperCase().includes("CBHI")) lines += 1;
+        if (data.method.toUpperCase().includes("CREDIT")) lines += 1;
+        lines += 3 + data.amount.length; // items and total
+        lines += 6; // footer
+        return lines;
+      };
+
+      const totalLines = countLines();
+      let lineHeight = baseLineHeight;
+      let fontSize = baseFontSize;
+
+      const estimatedContentHeight = totalLines * baseLineHeight;
+
+      if (estimatedContentHeight > pageHeight) {
+        const scale = pageHeight / estimatedContentHeight;
+        lineHeight = baseLineHeight * scale;
+        fontSize = baseFontSize * scale;
+      }
+
+      let yPos = 8;
+      doc.setFontSize(fontSize);
+
+      const drawText = (text, x, y, options = {}) => {
+        doc.text(String(text), x, y, options);
+      };
+
+      // Header
+      doc.setFont("helvetica", "bold");
+      drawText("*************************", pageWidth / 2, yPos, {
+        align: "center",
+      });
+      yPos += lineHeight;
+      drawText("HOSPITAL PAYMENT RECEIPT", pageWidth / 2, yPos, {
+        align: "center",
+      });
+      yPos += lineHeight;
+      drawText("*************************", pageWidth / 2, yPos, {
+        align: "center",
+      });
+      yPos += lineHeight + 1;
+
+      doc.setFontSize(fontSize - 1);
+      drawText(`${tokenvalue?.Hospital || "N/A"}`, pageWidth / 2, yPos, {
+        align: "center",
+      });
+      yPos += lineHeight;
+
+      // Receipt Info
+      doc.setFont("helvetica", "normal");
+      drawText(`Receipt NO: ${refNo || "N/A"}`, marginLeft, yPos);
+      yPos += lineHeight;
+      drawText(`Address: Debre Brihan`, marginLeft, yPos);
+      yPos += lineHeight;
+      drawText(`Date: ${new Date().toLocaleDateString()}`, marginLeft, yPos);
+      yPos += lineHeight;
+      drawText(`Cashier: ${tokenvalue?.name || "N/A"}`, marginLeft, yPos);
+      yPos += lineHeight;
+
+      doc.setLineWidth(0.3);
+      doc.line(marginLeft, yPos, marginRight, yPos);
+      yPos += lineHeight;
+
+      // Patient Info
+      doc.setFont("helvetica", "bold");
+      drawText(`Patient Name:`, marginLeft, yPos);
+      doc.setFont("helvetica", "normal");
+      drawText(`${data?.patientName || "N/A"}`, marginLeft + 35, yPos);
+      yPos += lineHeight;
+
+      doc.setFont("helvetica", "bold");
+      drawText(`Card Number:`, marginLeft, yPos);
+      doc.setFont("helvetica", "normal");
+      drawText(`${data.cardNumber || "N/A"}`, marginLeft + 35, yPos);
+      yPos += lineHeight;
+
+      doc.setFont("helvetica", "bold");
+      drawText(`Payment Method:`, marginLeft, yPos);
+      doc.setFont("helvetica", "normal");
+      drawText(`${data.method || "N/A"}`, marginLeft + 35, yPos);
+      yPos += lineHeight;
+
+      if (data.method.toUpperCase().includes("DIGITAL")) {
+        doc.setFont("helvetica", "bold");
+        drawText("Channel:", marginLeft, yPos);
+        doc.setFont("helvetica", "normal");
+        drawText(`${data.digitalChannel || "N/A"}`, marginLeft + 35, yPos);
+        yPos += lineHeight;
+
+        doc.setFont("helvetica", "bold");
+        drawText("Transaction Ref No:", marginLeft, yPos);
+        doc.setFont("helvetica", "normal");
+        drawText(`${data.trxref || "N/A"}`, marginLeft + 35, yPos);
+        yPos += lineHeight;
+      } else if (data.method.toUpperCase().includes("CBHI")) {
+        doc.setFont("helvetica", "bold");
+        drawText(`Woreda:`, marginLeft, yPos);
+        doc.setFont("helvetica", "normal");
+        drawText(`${data.woreda || "N/A"}`, marginLeft + 35, yPos);
+        yPos += lineHeight;
+      } else if (data.method.toUpperCase().includes("CREDIT")) {
+        doc.setFont("helvetica", "bold");
+        drawText(`Organization:`, marginLeft, yPos);
+        doc.setFont("helvetica", "normal");
+        drawText(`${data.organization || "N/A"}`, marginLeft + 35, yPos);
+        yPos += lineHeight;
+      }
+
+      doc.line(marginLeft, yPos, marginRight, yPos);
+      yPos += lineHeight;
+
+      // Item Table
+      doc.setFont("helvetica", "bold");
+      drawText(`Reason`, marginLeft, yPos);
+      drawText(`Price`, marginRight - 25, yPos);
+      yPos += lineHeight;
+
+      doc.setFont("helvetica", "normal");
+      data?.amount?.forEach((item) => {
+        drawText(`${item.purpose}`, marginLeft, yPos);
+        drawText(
+          `${formatAccounting2(parseFloat(item.Amount).toFixed(2))}`,
+          marginRight - 25,
+          yPos
+        );
+        yPos += lineHeight;
+      });
+
+      doc.line(marginLeft, yPos, marginRight, yPos);
+      yPos += lineHeight;
+
+      const totalAmount = data?.amount
+        ?.map((item) => parseFloat(item.Amount))
+        .reduce((a, b) => a + b, 0);
+
+      doc.setFont("helvetica", "bold");
+      drawText(`Total In Figure`, marginLeft, yPos);
+      drawText(
+        `${formatAccounting2(totalAmount.toFixed(2))}`,
+        marginRight - 25,
+        yPos
+      );
+      yPos += lineHeight;
+
+      drawText(`Total In Words : `, marginLeft, yPos);
+      drawText(
+        `${capitalizeWords(
+          numberToWords.toWords(totalAmount.toFixed(2))
+        )} birr`,
+        marginLeft + 30,
+        yPos,
+        {
+          maxWidth: maxWidth - 30, // to fit within the page
+          align: "left",
+        }
+      );
+      yPos += lineHeight * 2;
+
+      doc.setFont("helvetica", "normal");
+      drawText(
+        "This Receipt is invalid unless it is stamped.",
+        pageWidth / 2,
+        yPos,
+        { align: "center" }
+      );
+
+      // Save & Print
+      doc.save("receipt.pdf");
+      printPDF(doc);
+    } catch (error) {
+      console.error(error.message);
     }
   };
 
@@ -816,6 +870,156 @@ const HospitalPayment = () => {
     }
   };
 
+  const handleAdditionalUser = async () => {
+    try {
+      setAddPatienthLoad(true);
+      if (formData.cardNumber.length <= 0 || !!cardNumberError) {
+        toast.error("please fill the card number!!");
+        return;
+      }
+
+      const response = await api.put("/Payment/patient-info", {
+        patientCardNumber: formData?.cardNumber,
+        hospital: tokenvalue?.Hospital,
+        cashier: tokenvalue?.name,
+      });
+      if (response.status === 200) {
+        if (response.data.length <= 0 || response.data === "user not found") {
+          setIsAdditionalInfo(true);
+        } else {
+          setRegisteredPatient(response?.data[0]);
+          setPatientName(response?.data?.map((item) => item.patientName));
+          setIsAdditionalInfo(true);
+          return response?.data[0];
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data);
+      return {};
+    } finally {
+      setAddPatienthLoad(false);
+    }
+  };
+
+  const handleResetPatientInfo = () => {
+    setRegisteredPatient(null);
+  };
+  const handleResetCBHIInfo = () => {
+    setRegisteredCBHI(null);
+  };
+
+  const handleAdditionalCBHI = async () => {
+    try {
+      setCbhiSearchLoad(true);
+      if (formData.cardNumber.length <= 0 || !!cardNumberError) {
+        toast.error("Please fill out The Card Number First");
+        return;
+      }
+
+      if (formData.woreda.length <= 0) {
+        toast.error("Please select The woreda First");
+        return;
+      }
+
+      const response = await api.put("/Payment/get-service-provider", {
+        cardnumber: formData?.cardNumber,
+        user: tokenvalue?.name,
+      });
+      if (response.status === 200) {
+        setCbhiId(response?.data?.map((item) => item.idNo));
+        const woreda = response?.data?.map((item) => item.provider)[0];
+        if (response?.data?.length > 0) {
+          setFormData((prev) => ({
+            ...prev,
+            woreda: woredas.includes(woreda) ? woreda : "",
+          }));
+        }
+
+        setRegisteredCBHI(response?.data[0]);
+        setIsAdditionalCBHIInfo(true);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setCbhiSearchLoad(false);
+    }
+  };
+
+  const handleAddtionalPAtientInfo = async (Data) => {
+    try {
+      setCardSearchLoad(true);
+      if (formData.cardNumber.length <= 0 || cardNumberError) {
+        toast.error("Please fill out The Card Number First");
+        return;
+      } else {
+        const response = await api.post("/Payment/add-patient-info", {
+          patientCardNumber: formData?.cardNumber,
+          patientName: Data.fullName,
+          patientGender: Data.gender,
+          patientAddress: Data.address,
+          patientAge: Number(Data.age),
+          createdBy: tokenvalue?.name,
+          patientPhoneNumber: Data.phone,
+        });
+        if (response.status === 201) {
+          toast.success(
+            `${response?.data?.patientName} Is Registered Success Fully!`
+          );
+          setPatientName(response?.data?.patientName);
+          setIsAdditionalInfo(false);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Internal Server Error!!");
+    } finally {
+      setCardSearchLoad(false);
+    }
+  };
+
+  const handleAddtionalCBHIInfo = async (Data) => {
+    try {
+      if (formData.cardNumber.length <= 0) {
+        toast.error("Please fill out The Card Number First");
+        return;
+      } else if (formData.woreda.length <= 0) {
+        toast.error("Please fill out Woreda First");
+        return;
+      } else {
+        setIsAdditionalCBHIInfo(true);
+        try {
+          setIsAdditionalCBHILoading(true);
+          const response = await api.post("/Payment/add-service-provider", {
+            provider: formData?.woreda,
+            service: "CBHI",
+            kebele: Data?.kebele,
+            goth: Data?.goth,
+            idNo: Data?.idNumber,
+            referalNo: Data?.referalNum,
+            letterNo: Data?.letterNum,
+            examination: Data?.examination,
+            cashier: tokenvalue?.name,
+            cardNumber: formData?.cardNumber,
+          });
+
+          if (response.status === 201) {
+            setCbhiId(response?.data?.idNo);
+            toast.success("Add Successfully!");
+            setIsAdditionalCBHIInfo(false);
+          }
+        } catch (error) {
+          console.error(error);
+        } finally {
+          setIsAdditionalCBHILoading(false);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Internal Server Error!!");
+    }
+  };
+
   return (
     <Container>
       <Typography variant="h5" gutterBottom>
@@ -830,7 +1034,7 @@ const HospitalPayment = () => {
             onChange={handleChange}
             fullWidth
             error={!!cardNumberError}
-            helperText={cardNumberError}
+            helperText={!!cardNumberError ? cardNumberError : patientName}
             margin="normal"
             variant="outlined"
             sx={{
@@ -851,6 +1055,29 @@ const HospitalPayment = () => {
                 color: !!cardNumberError ? "red" : "green",
                 fontSize: "14px",
               },
+            }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Button
+                    variant="contained"
+                    color="info"
+                    onClick={handleAdditionalUser}
+                    sx={{
+                      borderRadius: "20px", // More rounded button
+                      fontWeight: "bold",
+                      textTransform: "none", // Removes uppercase
+                      padding: "6px 16px",
+                    }}
+                  >
+                    {cardsearchLoad ? (
+                      <CircularProgress size={24} color="inherit" />
+                    ) : (
+                      "Optional"
+                    )}
+                  </Button>
+                </InputAdornment>
+              ),
             }}
           />
           <Typography variant="subtitle1" gutterBottom>
@@ -996,17 +1223,19 @@ const HospitalPayment = () => {
                     </InputAdornment>
                   ),
                 }}
-              ></TextField>
+              />
             </>
           )}
           {formData?.method.trim().toUpperCase().includes("CBHI") && (
             <TextField
-              label="CBHI ID Number"
-              name="cbhiId"
-              value={formData.cbhiId}
+              select
+              label="woreda/Kebele"
+              name="woreda"
+              value={formData.woreda}
               onChange={handleChange}
               fullWidth
               required
+              helperText={cbhiId}
               margin="normal"
               FormHelperTextProps={{
                 style: { color: "green", fontSize: "14px" },
@@ -1024,7 +1253,36 @@ const HospitalPayment = () => {
                   },
                 },
               }}
-            />
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Button
+                      variant="contained"
+                      color="info"
+                      onClick={handleAdditionalCBHI}
+                      sx={{
+                        borderRadius: "20px", // More rounded button
+                        fontWeight: "bold",
+                        textTransform: "none", // Removes uppercase
+                        padding: "6px 16px",
+                      }}
+                    >
+                      {cbhisearchLoad ? (
+                        <CircularProgress size={24} color="inherit" />
+                      ) : (
+                        "Optional"
+                      )}
+                    </Button>
+                  </InputAdornment>
+                ),
+              }}
+            >
+              {woredas?.map((woreda) => (
+                <MenuItem key={woreda} value={woreda}>
+                  {woreda}
+                </MenuItem>
+              ))}
+            </TextField>
           )}
           {formData?.method.toUpperCase().includes("CREDIT") && (
             <>
@@ -1153,19 +1411,6 @@ const HospitalPayment = () => {
               </Typography>
             </Box>
           </Paper>
-          <Button
-            variant="contained"
-            color="success"
-            //startIcon={<AttachMoneyIcon />}
-            onClick={() => navigate("/payment-entry")}
-            sx={{
-              display: "flex",
-              marginTop: "100px",
-              justifySelf: "flex-end",
-            }}
-          >
-            Back To List
-          </Button>
         </Box>
       </Paper>
       <Paper sx={{ height: 400 }}>
@@ -1184,6 +1429,22 @@ const HospitalPayment = () => {
         data={receiptData}
         onPrint={handleRegisterAndPrint}
         onloading={isPrintLoading}
+      />
+      <AddPatientInfo
+        isOpen={isAdditonalInfo}
+        onClose={() => setIsAdditionalInfo(false)}
+        onSubmit={handleAddtionalPAtientInfo}
+        userData={registeredPatient}
+        resetUserData={handleResetPatientInfo}
+        adding={addPatientLoad}
+      />
+      <AddCBHIInfo
+        isOpen={isAdditonalCBHIInfo}
+        onClose={() => setIsAdditionalCBHIInfo(false)}
+        onSubmit={handleAddtionalCBHIInfo}
+        userData={registeredCBHI}
+        resetUserData={handleResetCBHIInfo}
+        adding={isAdditionalCBHILoading}
       />
       <ToastContainer />
     </Container>

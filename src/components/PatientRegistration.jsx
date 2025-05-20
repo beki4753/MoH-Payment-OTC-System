@@ -1,4 +1,4 @@
-import React, { useReducer, useRef, useState } from "react";
+import React, { useEffect, useReducer, useRef, useState } from "react";
 import {
   Grid,
   TextField,
@@ -186,7 +186,7 @@ const initialState = {
   vdate: "",
   dep: "",
   mrn: "",
-  regin: "",
+  region: "",
   nregion: "",
   woreda: "",
   nworeda: "",
@@ -240,35 +240,43 @@ function PatientRegistration() {
     setFormDataError({ name: "Reset" });
     setActiveStep(0);
   };
-
   const handleChangeTime = (fieldName, selectedDate) => {
-    let jsDate;
-    if (selectedDate instanceof Date) {
-      jsDate = selectedDate;
-    } else {
-      jsDate = new Date(selectedDate);
+    try {
+      const jsDate =
+        selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
+
+      if (isNaN(jsDate.getTime())) {
+        console.error(
+          "Invalid date provided to handleChangeTime:",
+          selectedDate
+        );
+        toast.error("Invalid date selected.");
+        return;
+      }
+
+      // Adjust for local timezone
+      const tzOffsetMinutes = jsDate.getTimezoneOffset();
+      const offsetSign = tzOffsetMinutes <= 0 ? "+" : "-";
+      const offsetHours = String(
+        Math.floor(Math.abs(tzOffsetMinutes) / 60)
+      ).padStart(2, "0");
+      const offsetMinutes = String(Math.abs(tzOffsetMinutes) % 60).padStart(
+        2,
+        "0"
+      );
+
+      const localTime = new Date(jsDate.getTime() - tzOffsetMinutes * 60000);
+      const formattedDate = localTime
+        .toISOString()
+        .slice(0, 19)
+        .replace("T", " ");
+      const finalDateTime = `${formattedDate} ${offsetSign}${offsetHours}:${offsetMinutes}`;
+
+      setFormData({ name: fieldName, values: finalDateTime });
+    } catch (error) {
+      console.error("Date Picker Change Error:", error);
+      toast.error("Unable to select the date properly.");
     }
-
-    if (isNaN(jsDate.getTime())) {
-      console.error("Invalid date provided to handleChangeTime:", selectedDate);
-      return;
-    }
-
-    const tzOffsetMinutes = jsDate.getTimezoneOffset();
-    const absOffset = Math.abs(tzOffsetMinutes);
-    const offsetHours = String(Math.floor(absOffset / 60)).padStart(2, "0");
-    const offsetMinutes = String(absOffset % 60).padStart(2, "0");
-    const sign = tzOffsetMinutes <= 0 ? "+" : "-";
-
-    const localDate = new Date(jsDate.getTime() - tzOffsetMinutes * 60000);
-    const dateStr = localDate.toISOString().slice(0, 19).replace("T", " ");
-
-    const sqlDateOffset = `${dateStr} ${sign}${offsetHours}:${offsetMinutes}`;
-
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: sqlDateOffset,
-    }));
   };
 
   const handleChange = (e) => {
@@ -301,6 +309,7 @@ function PatientRegistration() {
     } else if (e.target.name === "mobile" || e.target.name === "nmobile") {
       validatePhoneNumber(e.target.name, e.target.value);
     }
+
     setFormData({ name: e.target.name, values: e.target.value });
   };
 
@@ -414,11 +423,121 @@ function PatientRegistration() {
     }
   };
 
-  const handleNext = () => {
-    if (activeStep < steps.length - 1) {
-      setActiveStep((prev) => prev + 1);
-    } else {
-      console.log("Submitting: " + JSON.stringify(formData, null, 2));
+  const handleNext = async () => {
+    try {
+      const step1Fields = [
+        "fname",
+        "fatname",
+        "gender",
+        "providers",
+        "dep",
+        "mrn",
+        "dob",
+      ];
+      const step2Fields = [
+        "region",
+        "nregion",
+        "woreda",
+        "nworeda",
+        "kebele",
+        "nkebele",
+      ];
+
+      const requiredMessage = "Please fill the required fields first.";
+      const errorFixMessage = "Please fix the errors.";
+
+      const isEmpty = (field) =>
+        !formData?.[field] || formData[field].length === 0;
+
+      const hasStep1Empty = step1Fields.some(isEmpty);
+      const hasStep2Empty = step2Fields.some(isEmpty);
+
+      const hasFieldErrors = Object.values({
+        fname: formDataError.fname,
+        fatname: formDataError.fatname,
+        gfname: formDataError.gfname,
+        maname: formDataError.maname,
+        pbirth: formDataError.pbirth,
+        sname: formDataError.sname,
+        sfname: formDataError.sfname,
+        mrn: formDataError.mrn,
+      }).some(Boolean);
+
+      if (activeStep < steps.length - 1) {
+        if (hasStep1Empty) {
+          toast.error(requiredMessage);
+          return;
+        }
+        if (hasFieldErrors) {
+          toast.error(errorFixMessage);
+          return;
+        }
+        setActiveStep((prev) => prev + 1);
+      } else {
+        if (hasStep1Empty || hasStep2Empty) {
+          toast.error(requiredMessage);
+          return;
+        }
+        if (Object.values(formDataError).some((err) => err.length > 0)) {
+          toast.error(errorFixMessage);
+          return;
+        }
+        const response = await api.post("/Patient/add-patient-info", {
+          patientCardNumber: formData?.mrn,
+          patientFirstName: formData?.fname,
+          patientMiddleName: formData?.fatname,
+          patientLastName: formData?.gfname,
+          patientMotherName: formData?.maname,
+          patientAge: 0,
+          patientDOB: formData?.dob?.replace(" +03:00", ""),
+          patientGender: formData?.gender,
+          patientReligion: formData?.religion,
+          patientPlaceofbirth: formData?.pbirth,
+          multiplebirth: formData?.mbirth,
+          appointment: formData?.providers,
+          patientAddress: formData?.mrn,
+          patientkinAddress: formData?.mrn,
+          patientPhoneNumber: formData?.mobile,
+          iscreadituser: 0,
+          iscbhiuser: 0,
+          //patientEmployementID: formData?.mrn,
+          patientOccupation: formData?.occ,
+          department: formData?.dep,
+          patientEducationlevel: formData?.edu,
+          patientMaritalstatus: formData?.mstatus,
+          patientSpouseFirstName: formData?.sname,
+          patientSpouselastName: formData?.sfname,
+          patientRegisteredBy: tokenvalue?.name, //token name
+          patientVisitingDate: formData?.vdate?.replace(" +03:00", ""),
+          // patientType: formData?.mrn,
+          patientRegion: formData?.region,
+          patientWoreda: formData?.woreda,
+          patientKebele: formData?.kebele,
+          patientHouseNo: formData?.hn,
+          patientAddressDetail: formData?.addD,
+          patientPhone: formData?.phone,
+          patientKinRegion: formData?.nregion,
+          patientKinWoreda: formData?.nworeda,
+          patientKinKebele: formData?.nkebele,
+          patientKinHouseNo: formData?.nhn,
+          patientKinAddressDetail: formData?.naddD,
+          patientKinPhone: formData?.nphone,
+          patientKinMobile: formData?.nmobile,
+          // woreda: formData?.mrn,
+          // kebele: formData?.mrn,
+          // goth: formData?.mrn,
+          // idNo: formData?.mrn,
+          // referalNo: formData?.mrn,
+          // letterNo: formData?.mrn,
+          // examination: formData?.mrn,
+        });
+
+        console.log("The respone is >> ", response);
+        console.log("Submitting:", JSON.stringify(formData, null, 2));
+      }
+    } catch (error) {
+      console.error("Error Happened on Next Step and Submit handler:", error);
+      toast.error(error?.response?.data?.message || "Internal Server Error.");
     }
   };
 
@@ -433,14 +552,14 @@ function PatientRegistration() {
       }
       const response = await api.put("/Patient/get-patient-info", {
         patientCardNumber: formData?.mrn,
-        patientFirstName: "-",
-        patientLastName: "-",
-        patientMiddleName: "-",
-        patientPhone: "-",
         cashier: tokenvalue?.name,
       });
-
-      console.log("Search Logic for: ", response);
+      if (response?.data?.length <= 0) {
+        toast.info("MRN Not Found!");
+        return;
+      } else {
+        console.log(response?.data);
+      }
     } catch (error) {
       console.error("This Is CHeck Error: ", error);
       toast.error(error?.reponse?.data?.message || "Internal Server Error.");
@@ -506,10 +625,17 @@ function PatientRegistration() {
               <Grid item xs={12} sm={6} md={4}>
                 <EtLocalizationProvider localType="EC">
                   <EtDatePicker
+                    key={formData.dob || "dob-empty"}
                     label="Date of Birth *"
                     name="dob"
-                    value={formData?.dob ? new Date(formData?.dob) : null}
-                    onChange={(e) => handleChangeTime("dob", e)}
+                    value={
+                      formData?.dob && !["", null].includes(formData.dob)
+                        ? new Date(formData.dob.replace(" +03:00", ""))
+                        : null
+                    }
+                    onChange={(e) => {
+                      handleChangeTime("dob", e);
+                    }}
                     sx={{ width: "100%" }}
                   />
                 </EtLocalizationProvider>
@@ -726,6 +852,7 @@ function PatientRegistration() {
               <Grid item xs={12} sm={6} md={4}>
                 <EtLocalizationProvider localType="EC">
                   <EtDatePicker
+                    key={formData?.vdate || "dob-empty"}
                     label="Visit Date"
                     name="vdate"
                     value={formData?.vdate ? new Date(formData?.vdate) : ""}
@@ -772,7 +899,7 @@ function PatientRegistration() {
                   <Grid item xs={12}>
                     <TextField
                       select
-                      value={formData.regin}
+                      value={formData.region}
                       name="region"
                       onChange={handleChange}
                       label="Region"

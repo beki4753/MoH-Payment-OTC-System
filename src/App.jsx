@@ -36,7 +36,6 @@ import {
   PaymentManagementLists,
   EmployeeUploadManager,
   ReportReceiptFetcher,
-  SearchableList,
   PatientRegistration,
   PatientSearch,
   CBHIUsersManager,
