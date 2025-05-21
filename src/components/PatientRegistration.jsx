@@ -324,10 +324,6 @@ function PatientRegistration() {
     setFormData({ name: e.target.name, values: e.target.value });
   };
 
-  useEffect(() => {
-    console.log("formData", formData);
-  }, [formData]);
-
   const validateName = (name, value) => {
     const usernameRegex = /^[a-zA-Z\u1200-\u137F]{3,}$/;
     if (!usernameRegex.test(value) && value.length > 0) {
@@ -568,6 +564,7 @@ function PatientRegistration() {
         toast.error("Please Insert Valid MRN first.");
         return;
       }
+      
       const response = await api.put("/Patient/get-patient-info", {
         patientCardNumber: formData?.mrn,
         cashier: tokenvalue?.name,
@@ -576,7 +573,6 @@ function PatientRegistration() {
         toast.info("MRN Not Found!");
         return;
       } else {
-        console.log("This is the response: ", response?.data);
         if (response?.data?.data?.length) {
           const check = response?.data?.data;
 
@@ -620,7 +616,7 @@ function PatientRegistration() {
             values: renamedData[0],
           });
           toast.success("Patient record found for this card number.");
-          console.log("renamedData >>", renamedData);
+          
         } else {
           toast.info("Patient record not found for this card number.");
         }
