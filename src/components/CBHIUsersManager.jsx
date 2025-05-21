@@ -155,7 +155,7 @@ function CBHIUsersManager() {
   };
 
   const letterNumberCheck = (name, value) => {
-    const comp = /^[A-Za-z0-9\s]+$/;
+    const comp = /^[a-zA-Z0-9\u1200-\u137F\s]+$/;
     if (!comp.test(value) && value.length > 0) {
       setFormDataError({
         name: name,
@@ -198,7 +198,6 @@ function CBHIUsersManager() {
       [fieldName]: sqlDateOffset,
     }));
   };
-
 
   return (
     <Box p={4}>

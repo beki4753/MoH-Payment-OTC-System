@@ -18,6 +18,7 @@ import {
   IconButton,
   Checkbox,
   Avatar,
+  CircularProgress,
 } from "@mui/material";
 import { PDFDocument, rgb } from "pdf-lib";
 import ReactDOM from "react-dom/client";
@@ -25,7 +26,7 @@ import RenderPDF from "../pages/hospitalpayment/RenderPDF";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { DataGrid } from "@mui/x-data-grid";
 import { useNavigate } from "react-router-dom";
-import PaidIcon from "@mui/icons-material/Paid";
+
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import LocalAtmIcon from "@mui/icons-material/LocalAtm";
@@ -42,7 +43,7 @@ const tokenvalue = getTokenValue();
 
 const dummyData = [
   {
-    patientCardNumber: "000000002",
+    patientCardNumber: "152568",
 
     patientFirstName: "string1",
 
@@ -67,6 +68,7 @@ const dummyData = [
         groupID: "casheir-d2bf74cb-09ab-402d-9d86-dfced2e6ebac",
 
         amount: 100.0,
+        isPaid: true,
 
         purpose: "Laboratory",
       },
@@ -75,6 +77,7 @@ const dummyData = [
         groupID: "casheir-d2bf74cb-09ab-402d-9d86-dfced2e6ebac",
 
         amount: 100.0,
+        isPaid: true,
 
         purpose: "X-Ray/Ultrasound",
       },
@@ -106,15 +109,14 @@ const icons = {
 const initialState = {
   cbhiId: "",
   method: "",
-  reason: "",
-  amount: "",
+  // reason: "",
   digitalChannel: "",
   trxref: "",
   organization: "",
   employeeId: "",
 };
 function PaymentManagement() {
-  const [rows, setRows] = useState(dummyData);
+  const [rows, setRows] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const [paymentOptions, setPaymentOptions] = useState([]);
@@ -123,6 +125,7 @@ function PaymentManagement() {
   const [creditOrganizations, setcreditOrganizations] = useState([]);
   const [totals, setTotals] = useState({});
   const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   //Fetch Organization with agreement
@@ -172,11 +175,11 @@ function PaymentManagement() {
 
   const updatePaymentSummary = (payments) => {
     const summary = payments.reduce((acc, payment) => {
-      const { type, amount } = payment;
-      if (!acc[type]) {
-        acc[type] = 0;
+      const { paymentType, paymentAmount } = payment;
+      if (!acc[paymentType]) {
+        acc[paymentType] = 0;
       }
-      acc[type] += parseFloat(amount);
+      acc[paymentType] += parseFloat(paymentAmount);
       return acc;
     }, {});
 
@@ -227,16 +230,8 @@ function PaymentManagement() {
       const datavisualization = dummyData.filter(
         (item) => item?.patientCardNumber === row?.patientCardNumber
       );
-      const modData = datavisualization.map(
-        ({ requestedCatagories, ...rest }) => ({
-          requestedCatagories: requestedCatagories.map((item) => ({
-            ...item,
-            isOk: true,
-          })),
-          ...rest,
-        })
-      );
-      setSelectedRow(modData[0]);
+
+      setSelectedRow(datavisualization[0]);
       setOpenModal(true);
     } catch (error) {
       console.error("This is The Open Modal error: ", error);
@@ -251,40 +246,58 @@ function PaymentManagement() {
   };
 
   const handleSave = async () => {
-    if (
-      !formData.method ||
-      (formData.method.toUpperCase().includes("DIGITAL") &&
-        (!formData.digitalChannel || !formData.trxref)) ||
-      (formData.method.toUpperCase().includes("CBHI") && !formData.cbhiId) ||
-      (formData.method.toUpperCase().includes("CREDIT") &&
-        (!formData.organization || !formData.employeeId))
-    ) {
-      toast.error("Please Fill All Fields");
-      return;
-    }
+    try {
+      setLoading(true);
+      if (
+        !formData.method ||
+        (formData.method.toUpperCase().includes("DIGITAL") &&
+          (!formData.digitalChannel || !formData.trxref)) ||
+        (formData.method.toUpperCase().includes("CBHI") && !formData.cbhiId) ||
+        (formData.method.toUpperCase().includes("CREDIT") &&
+          (!formData.organization || !formData.employeeId))
+      ) {
+        toast.error("Please Fill All Fields");
+        return;
+      }
 
-    if (
-      !selectedRow.requestedCatagories
-        .map((item) => item.isOk)
-        .some((item) => item === true)
-    ) {
-      toast.error("Should have at least one payment.");
-      return;
+      if (
+        !selectedRow.requestedCatagories
+          .map((item) => item.isPaid)
+          .some((item) => item === true)
+      ) {
+        toast.error("Should have at least one payment.");
+        return;
+      }
+
+      const payload = {
+        paymentType: formData?.method,
+        cardNumber: selectedRow?.patientCardNumber,
+        amount: selectedRow?.requestedCatagories,
+        description: "-",
+        createdby: tokenvalue?.name,
+        channel: formData.digitalChannel || "-",
+        paymentVerifingID: formData.trxref || "-",
+        patientWorkID: formData.employeeId || "-",
+        organization: formData?.organization || "-",
+        groupID: "-",
+      };
+
+      const response = await api.post("/Payment/add-payment", payload, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("Trasnsaction Detail Recorded is: ", response?.data);
+      if (response?.data?.lenght > 0) {
+        handleCloseModal();
+      }
+    } catch (error) {
+      console.error("This is Error on handle Save: ", error);
+      toast.error(error?.response?.data?.msg || "Internal Server Error.");
+    } finally {
+      setLoading(false);
     }
-    const updatedRows = rows.map((r) =>
-      r.id === selectedRow.id
-        ? {
-            ...r,
-            method: formData?.method,
-            status: "Completed",
-            payerId: formData?.cbhiId,
-            transactionRef: formData?.trxref,
-            creditOrg: formData?.organization,
-          }
-        : r
-    );
-    setRows(updatedRows);
-    handleCloseModal();
   };
 
   const columns = [
@@ -341,24 +354,20 @@ function PaymentManagement() {
     },
   ];
 
-  const getSummary = () => {
-    const totals = {};
-    paymentOptions.forEach((method) => {
-      totals[method] = 0;
-    });
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await api.put("/Patient/get-patient-request-cashier", {
+          loggedInUser: tokenvalue?.name,
+        });
 
-    rows.forEach((r) => {
-      if (r.status === "Completed" && r.method) {
-        if (!totals[r.method]) totals[r.method] = 0;
-        totals[r.method] += r.amount;
+        setRows(response?.data || []);
+      } catch (error) {
+        console.error("This is Fetch Table Data Error: ", error);
       }
-    });
-
-    const total = Object.values(totals).reduce((a, b) => a + b, 0);
-    return { totals, total };
-  };
-
-  //const { totals, total } = getSummary();
+    };
+    fetchData();
+  }, []);
 
   const openNewTab = (id) => {
     window.open(
@@ -590,7 +599,7 @@ function PaymentManagement() {
             Amount to Pay:{" "}
             <strong>
               {selectedRow?.requestedCatagories
-                .filter((item) => item.isOk)
+                .filter((item) => item.isPaid)
                 .reduce((sum, item) => sum + item.amount, 0)}
               Birr
             </strong>
@@ -601,14 +610,14 @@ function PaymentManagement() {
               control={
                 <Checkbox
                   name={item.purpose}
-                  checked={!!item.isOk}
+                  checked={!!item.isPaid}
                   onChange={(e) => {
                     const isChecked = e.target.checked;
 
                     // Create a copy and update the relevant item
                     const updatedCategories =
                       selectedRow.requestedCatagories.map((cat, i) =>
-                        i === index ? { ...cat, isOk: isChecked } : cat
+                        i === index ? { ...cat, isPaid: isChecked } : cat
                       );
 
                     // Update selectedRow state
@@ -744,11 +753,16 @@ function PaymentManagement() {
               <Button
                 variant="contained"
                 color="primary"
+                disabled={loading}
                 fullWidth
                 onClick={handleSave}
-                startIcon={<PaidIcon />}
+                // startIcon={<PaidIcon />}
               >
-                Complete
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Complete"
+                )}
               </Button>
             </Grid>
           </Grid>

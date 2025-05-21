@@ -30,12 +30,12 @@ const EmployeeUploadManager = () => {
   const [isConfOpen, setIsConfOpen] = useState(false);
   const [deleteId, setDeleteId] = useState("");
 
-  const handleSave = async (paylod) => {
+  const handleSave = async (payload) => {
     try {
       setLoading(true);
       if (fileData?.length > 0) {
         const updatedArray = fileData.map((item) =>
-          item.id === paylod.id ? { ...item, ...paylod } : item
+          item.id === payload.id ? { ...item, ...payload } : item
         );
 
         setFileData(updatedArray);
@@ -53,8 +53,8 @@ const EmployeeUploadManager = () => {
     setDeleteId("");
   };
 
-  const handleDelConf = (paylod) => {
-    console.log("Recived Data is: ", paylod);
+  const handleDelConf = (payload) => {
+    console.log("Recived Data is: ", payload);
     handleConfClose();
   };
 

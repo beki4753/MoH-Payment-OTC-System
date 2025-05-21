@@ -217,7 +217,7 @@ function TrafficAccidentCrud() {
   };
 
   const validateName = (name, value) => {
-    const comp = /^[A-Za-z\s]{3,}$/;
+    const comp = /^[a-zA-Z\u1200-\u137F\s]{3,}$/;
     if (!comp.test(value) && value.length > 0) {
       setFormDataError({
         name: name,
@@ -248,7 +248,7 @@ function TrafficAccidentCrud() {
   };
 
   const letterNumberCheck = (name, value) => {
-    const comp = /^[A-Za-z0-9\s]+$/;
+    const comp = /^[a-zA-Z0-9\u1200-\u137F\s]+$/;
     if (!comp.test(value) && value.length > 0) {
       setFormDataError({
         name: name,

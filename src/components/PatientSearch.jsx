@@ -109,7 +109,7 @@ const PatientSearch = () => {
   };
 
  const validateName = (name, value) => {
-    const usernameRegex = /^[A-Za-z]{3,}$/;
+    const usernameRegex = /^[a-zA-Z\u1200-\u137F]{3,}$/;
     if (!usernameRegex.test(value) && value.length > 0) {
       setFormDataError({
         name: name,

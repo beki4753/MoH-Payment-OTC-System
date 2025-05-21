@@ -12,7 +12,6 @@ import {
   InputAdornment,
   IconButton,
   CircularProgress,
-  colors,
 } from "@mui/material";
 import { PDFDocument, rgb } from "pdf-lib";
 import numberToWords from "number-to-words";
@@ -31,7 +30,7 @@ import RenderPDF from "./RenderPDF";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
-import { green, red, orange, grey } from "@mui/material/colors";
+import { green, orange, grey } from "@mui/material/colors";
 
 const capitalize = (str) => {
   if (!str) return "";
@@ -384,6 +383,7 @@ const HospitalPayment = () => {
           const sortedPayment = await response?.data.sort(
             (a, b) => b.id - a.id
           );
+          console.log("What is wrong with you man: ", response?.data);
           setPayments(sortedPayment);
         }
       } catch (error) {
@@ -393,8 +393,8 @@ const HospitalPayment = () => {
 
     fetchPaymetInfo();
     updatePaymentSummary(payments);
-  }, [refresh, payments]);
-
+  }, [refresh]);
+  //payments
   useEffect(() => {
     setReasons([
       "Card",
@@ -417,8 +417,8 @@ const HospitalPayment = () => {
         if (response?.status === 200) {
           setPaymentMehods(
             response?.data
-              ?.filter((item) => item.type !== "ALL")
-              .map((item) => item.type)
+              ?.filter((item) => item.paymentType !== "ALL")
+              .map((item) => item.paymentType)
           );
         }
       } catch (error) {
@@ -462,11 +462,11 @@ const HospitalPayment = () => {
 
   const updatePaymentSummary = (payments) => {
     const summary = payments.reduce((acc, payment) => {
-      const { type, amount } = payment;
-      if (!acc[type]) {
-        acc[type] = 0;
+      const { paymentType, paymentAmount } = payment;
+      if (!acc[paymentType]) {
+        acc[paymentType] = 0;
       }
-      acc[type] += parseFloat(amount);
+      acc[paymentType] += parseFloat(paymentAmount);
       return acc;
     }, {});
 
@@ -629,31 +629,25 @@ const HospitalPayment = () => {
         ...receiptData,
         reason: receiptData.reason.join(", "),
       };
-      const trxDate = new Date().toISOString();
-      const response = await api.post(
-        "/Payment/add-payment",
-        {
-          paymentType: formData.method,
-          cardNumber: formData.cardNumber,
-          hospital: tokenvalue?.Hospital,
-          amount: formData.amount,
-          description: formData?.description || "-",
-          createdby: tokenvalue?.name,
-          createdOn: trxDate,
-          channel: formData.digitalChannel || "-",
-          department: tokenvalue?.Departement,
-          paymentVerifingID: formData.trxref || "-",
-          patientLocation: formData.woreda || "-",
-          patientWorkID: formData.employeeId || "-",
-          patientWorkingPlace: formData?.organization || "-",
-          userType: tokenvalue?.UserType,
+
+      const payload = {
+        paymentType: formData?.method,
+        cardNumber: formData.cardNumber,
+        amount: formData.amount,
+        description: formData?.description || "-",
+        createdby: tokenvalue?.name,
+        channel: formData.digitalChannel || "-",
+        paymentVerifingID: formData.trxref || "-",
+        patientWorkID: formData.employeeId || "-",
+        organization: formData?.organization || "-",
+        groupID: "-",
+      };
+
+      const response = await api.post("/Payment/add-payment", payload, {
+        headers: {
+          "Content-Type": "application/json",
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      });
 
       if (response.status === 201) {
         try {
@@ -683,54 +677,61 @@ const HospitalPayment = () => {
     } catch (error) {
       console.error(error);
       setIsPrintLoading(false);
-      toast.error(error?.response?.data || "Internal Server Error.");
+      toast.error(error?.response?.data?.msg || "Internal Server Error.");
     }
   };
 
+ 
   const columns = [
     { field: "id", headerName: "ID", width: 90 },
-    { field: "createdOn", headerName: "Date", width: 200 },
-    { field: "refNo", headerName: "Reciept Number", width: 200 },
-    { field: "cardNumber", headerName: "Card Number", width: 150 },
+    { field: "registeredOn", headerName: "Date", width: 200 },
+    { field: "referenceNo", headerName: "Reciept Number", width: 200 },
+    { field: "patientCardNumber", headerName: "Card Number", width: 150 },
     {
-      field: "amount",
+      field: "paymentAmount",
       headerName: "Amount",
       width: 120,
-      renderCell: (params) => formatAccounting2(params.row.amount),
+      renderCell: (params) => formatAccounting2(params.row.paymentAmount),
     },
     {
-      field: "type",
+      field: "paymentType",
       headerName: "Payment Method",
       width: 120,
       renderCell: (params) => (
-        <Typography
-          color={
-            params.row.type === "CASH"
-              ? "green"
-              : params.row.type.toUpperCase().includes("CREDIT")
-              ? "red"
-              : "black"
-          }
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
+            margin: 0,
+            color:
+              params?.row?.paymentType === "CASH"
+                ? "green"
+                : params?.row?.paymentType?.toUpperCase()?.includes("CREDIT")
+                ? "red"
+                : "black",
+          }}
         >
-          {params.row.type}
-        </Typography>
+          {params?.row?.paymentType}
+        </span>
       ),
     },
-    { field: "purpose", headerName: "Reason", width: 190 },
+    { field: "paymentReason", headerName: "Reason", width: 190 },
     {
-      field: "isCollected",
+      field: "paymentIsCollected",
       headerName: "Coll",
       width: 10,
       renderCell: (params) => {
-        const { isCollected, type } = params.row;
-        const isCash = type?.toLowerCase().includes("cash");
+        const { paymentIsCollected, paymentType } = params.row;
+        const isCash = paymentType?.toLowerCase()?.includes("cash");
 
-        if (isCash && isCollected === 1) {
+        if (isCash && paymentIsCollected === 1) {
           return <CheckCircleIcon sx={{ color: green[500] }} />;
-        } else if (isCash && isCollected !== 1) {
-          return <CancelIcon sx={{ color: orange[500] }} />; // or use WarningAmberIcon
+        } else if (isCash && paymentIsCollected !== 1) {
+          return <CancelIcon sx={{ color: orange[500] }} />;
         } else {
-          return <RemoveCircleOutlineIcon sx={{ color: grey[500] }} />; // Not applicable
+          return <RemoveCircleOutlineIcon sx={{ color: grey[500] }} />;
         }
       },
     },
@@ -1172,8 +1173,7 @@ const HospitalPayment = () => {
         <DataGrid
           rows={payments.length ? payments : []}
           columns={columns}
-          // pageSize={5}
-          // rowsPerPageOptions={[5, 10, 20]}
+          getRowId={(row) => row.patientCardNumber}
         />
       </Paper>
       <ReceiptModal

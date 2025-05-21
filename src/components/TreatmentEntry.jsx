@@ -10,6 +10,8 @@ import {
   InputLabel,
   OutlinedInput,
   Chip,
+  Card,
+  CardContent,
   ListItemText,
   ListSubheader,
   Select,
@@ -17,11 +19,6 @@ import {
   CircularProgress,
   Paper,
 } from "@mui/material";
-import DoneIcon from "@mui/icons-material/Done";
-import DoneAllIcon from "@mui/icons-material/DoneAll";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import FactCheckIcon from "@mui/icons-material/FactCheck";
-import HowToRegIcon from "@mui/icons-material/HowToReg";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import SearchIcon from "@mui/icons-material/Search";
 import { DataGrid } from "@mui/x-data-grid";
@@ -29,6 +26,9 @@ import api from "../utils/api";
 import { useLang } from "../contexts/LangContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { getTokenValue } from "../services/user_service";
+
+const tokenvalue = getTokenValue();
 
 const treatmentCategories = ["Laboratory", "X-ray/Ultrasound", "Other"];
 
@@ -74,6 +74,41 @@ const TreatmentEntry = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [markDoneLoading, setMarkDoneLoading] = useState(false);
 
+  //fetchData for the data grid
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await api.put("/Patient/get-patient-request-cashier", {
+          loggedInUser: tokenvalue?.name,
+        });
+        const datas = response?.data
+          ? response?.data.map((item, index) => ({ ...item, id: index + 1 }))
+          : [];
+        const ModData = datas?.map(
+          ({
+            patientFirstName,
+            patientMiddleName,
+            patientLastName,
+            ...rest
+          }) => ({
+            patientFName:
+              patientFirstName +
+              " " +
+              patientMiddleName +
+              " " +
+              patientLastName,
+            ...rest,
+          })
+        );
+
+        setTreatmentList(ModData || []);
+      } catch (error) {
+        console.error("This is Fetch Table Data Error: ", error);
+      }
+    };
+    fetchData();
+  }, []);
+
   //Main Patient Searching Logic
   const handleSearch = async () => {
     try {
@@ -86,7 +121,7 @@ const TreatmentEntry = () => {
         return;
       }
 
-      if (cardNumberSearch.length <= 0 || fullNameSearch.length <= 0) {
+      if (cardNumberSearch.length <= 0 && fullNameSearch.length <= 0) {
         toast.error("Please Write in the fields first.");
         return;
       }
@@ -149,6 +184,7 @@ const TreatmentEntry = () => {
     }
   };
 
+
   const handleSave = async () => {
     try {
       setSaveloading(true);
@@ -157,29 +193,21 @@ const TreatmentEntry = () => {
         return;
       }
 
-      if (
-        formData?.cardNumber &&
-        formData?.category &&
-        formData?.reason.length > 0
-      ) {
-        setTreatmentList((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            cardNumber: formData.cardNumber,
-            category: formData.category,
-            reason: formData.reason,
-            amount: formData.amount,
-            status: "Pending",
-            date: new Date().toLocaleString(),
-          },
-        ]);
+      if (formData?.reason.length > 0) {
+        const response = await api.post("/Patient/add-patient-request", {
+          patientCardNumber: "string",
+          requestedServices: [0],
+          purpose: "string",
+          createdBy: "string",
+        });
+
+        console.log("This is the Treatment saved: ", response?.data);
 
         setFormData(initialState);
       }
     } catch (error) {
       console.error("This is Save Error: ", error);
-      toast.error(error?.response?.data?.message || "Internal Server Error.");
+      toast.error(error?.response?.data?.msg || "Internal Server Error.");
     } finally {
       setSaveloading(false);
     }
@@ -221,22 +249,44 @@ const TreatmentEntry = () => {
   };
 
   const columns = [
-    { field: "cardNumber", headerName: "Card Number", flex: 1 },
-    { field: "category", headerName: "Category", flex: 1 },
+    { field: "patientCardNumber", headerName: "Card Number", flex: 1 },
+    { field: "patientFName", headerName: "First Name", flex: 1 },
     {
-      field: "amount",
+      field: "requestedCatagories",
+      headerName: "Category",
+      flex: 1,
+      renderCell: (params) => {
+        return params.row.requestedCatagories
+          .map((item) => item.purpose)
+          .join(", ");
+      },
+    },
+    {
+      field: "totalPrice",
       headerName: "Amount",
       flex: 1,
       renderCell: (params) => {
-        const total = params.row.amount?.reduce(
-          (sum, item) => sum + (item.Amount || 0),
-          0
-        );
-        return `ETB ${total}`;
+        return `ETB ${params.row.totalPrice}`;
       },
     },
-    { field: "status", headerName: "Status", flex: 1 },
-    { field: "date", headerName: "Date", flex: 1 },
+    {
+      field: "paid",
+      headerName: "Status",
+      flex: 1,
+      renderCell: (params) => {
+        const status = params?.row?.isCompleted;
+        const result = status ? "Completede" : "Pending";
+        return result;
+      },
+    },
+    {
+      field: "createdOn",
+      headerName: "Date",
+      flex: 1,
+      renderCell: (params) => {
+        return params?.row?.createdOn.split("T")[0];
+      },
+    },
     {
       field: "Action",
       headerName: "Action",
@@ -251,7 +301,7 @@ const TreatmentEntry = () => {
               textTransform: "none",
               borderRadius: 2,
               fontWeight: 600,
-              "&:hover": { transform: "scale(1.05)" },
+              "&:hover": { transform: "scale(1.01)" },
             }}
             onClick={() => handleMarkDone()}
           >
@@ -289,7 +339,7 @@ const TreatmentEntry = () => {
   };
 
   const onlyLetterCheck = (name, value) => {
-    const comp = /^[A-Za-z\s]+$/;
+    const comp = /^[a-zA-Z\u1200-\u137F\s]+$/;
     if (!comp.test(value) && value.length > 0) {
       setFormDataError((prev) => ({
         ...prev,
@@ -343,7 +393,6 @@ const TreatmentEntry = () => {
 
           <Grid item xs={12} sm={4}>
             <FormControl
-              // sx={{ m: 1, width: "100%", padding: 0 }}
               sx={{
                 width: "100%",
                 "& .MuiOutlinedInput-root": {
@@ -353,8 +402,8 @@ const TreatmentEntry = () => {
                     borderColor: "info.main",
                   },
                   "&.Mui-focused fieldset": {
-                    borderColor: "primary.main", // Focus effect
-                    boxShadow: "0px 0px 8px rgba(0, 0, 255, 0.2)", // Nice glow
+                    borderColor: "primary.main",
+                    boxShadow: "0px 0px 8px rgba(0, 0, 255, 0.2)",
                   },
                 },
               }}
@@ -436,15 +485,69 @@ const TreatmentEntry = () => {
             </FormControl>
           </Grid>
 
+          <Grid container spacing={3} marginLeft={2} marginTop={1}>
+            {formData?.amount?.map((treatment, index) => (
+              <Grid item xs={6} sm={6} md={3} key={treatment.purpose}>
+                <Card sx={{ backgroundColor: "#f5f5f5" }}>
+                  <CardContent>
+                    <Typography variant="h6" color="primary">
+                      {treatment.purpose}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      Amount: {treatment.Amount} Birr
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+          {formData?.reason?.length > 0 && (
+            <Grid container justifyContent="center" marginTop={2}>
+              <Grid item xs={12} sm={12} md={3}>
+                <Card sx={{ backgroundColor: "#CECECE" }}>
+                  <CardContent>
+                    <Typography
+                      variant="h5"
+                      color="#3E7C28"
+                      sx={{ mt: 1, fontWeight: "bold" }}
+                    >
+                      Total Amount
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ mt: 1, fontWeight: "bold" }}
+                    >
+                      {formData?.amount?.reduce(
+                        (total, item) => total + parseFloat(item.Amount || 0),
+                        0
+                      )}{" "}
+                      Birr
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          )}
+
           <Grid item xs={12}>
             <Button
               variant="contained"
-              color="primary"
+              sx={{
+                backgroundColor: "#478594",
+                color: "white", // Added text color for better visibility
+                px: 4,
+                py: 1.5,
+                fontWeight: "bold",
+                "&:hover": {
+                  backgroundColor: "#1f5459",
+                },
+              }}
               onClick={handleSave}
               disabled={
                 !formData?.cardNumber ||
                 !formData?.category ||
-                !formData?.reason?.length > 0
+                !formData?.reason?.length > 0 //||
+                // Object.values(formDataError).some((item) => item.length > 0)
               }
             >
               {saveLoading ? (
@@ -536,8 +639,6 @@ const TreatmentEntry = () => {
               : treatmentList
           }
           columns={columns}
-          pageSize={5}
-          rowsPerPageOptions={[5, 10]}
           disableSelectionOnClick
         />
       </Paper>

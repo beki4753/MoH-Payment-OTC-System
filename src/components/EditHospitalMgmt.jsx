@@ -43,16 +43,22 @@ const EditHospitalMgmt = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if(
-      (formData.director.length <= 0 || nameError.length > 0)||
-      (formData.directorEmail.length <=0 || emailError.length > 0)||
-      (formData.directorPhone.length <= 0 || phoneError.length > 0)||
-      (formData.district.length <= 0 || nameError2.length > 0)||
-      (formData.districtEmail.length <=0 || emailError2.length > 0)||
-      (formData.districtPhone.length <= 0 || phoneError2.length > 0) ||
-      formData.contactMethode.length <=0
-    ){
-      toast.error('Please first fix The Error!!')
+    if (
+      formData.director.length <= 0 ||
+      nameError.length > 0 ||
+      formData.directorEmail.length <= 0 ||
+      emailError.length > 0 ||
+      formData.directorPhone.length <= 0 ||
+      phoneError.length > 0 ||
+      formData.district.length <= 0 ||
+      nameError2.length > 0 ||
+      formData.districtEmail.length <= 0 ||
+      emailError2.length > 0 ||
+      formData.districtPhone.length <= 0 ||
+      phoneError2.length > 0 ||
+      formData.contactMethode.length <= 0
+    ) {
+      toast.error("Please first fix The Error!!");
       return;
     }
     onSubmit(formData);
@@ -95,14 +101,12 @@ const EditHospitalMgmt = ({
     if (name === "districtPhone" || name === "directorPhone") {
       validatePhoneNumber(value, name);
     }
-    if(name === "districtEmail" || name === "directorEmail")
-    {
-      validateEmail(value,name)
+    if (name === "districtEmail" || name === "directorEmail") {
+      validateEmail(value, name);
     }
 
-    if(name === "director"|| name === "district")
-    {
-      validateName(value,name)
+    if (name === "director" || name === "district") {
+      validateName(value, name);
     }
   };
 
@@ -123,9 +127,10 @@ const EditHospitalMgmt = ({
         if (name === "directorPhone") {
           setPhoneError("Phone number starting with +251 must have 13 digits.");
         } else {
-          setPhoneError2("Phone number starting with +251 must have 13 digits.");
+          setPhoneError2(
+            "Phone number starting with +251 must have 13 digits."
+          );
         }
-        
       } else if (
         (phone.startsWith("09") || phone.startsWith("07")) &&
         phone.length !== 10
@@ -139,65 +144,50 @@ const EditHospitalMgmt = ({
             "Phone number starting with 09 or 07 must have 10 digits."
           );
         }
-
       } else {
         if (name === "directorPhone") {
           setPhoneError("");
         } else {
           setPhoneError2("");
         }
-       
       }
     }
   };
 
   const validateEmail = (email, name) => {
-     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       if (name === "directorEmail") {
-        setEmailError(
-          "Please keep the email format."
-        );
+        setEmailError("Please keep the email format.");
       } else {
-        setEmailError2(
-          "Please keep the email format."
-        );
+        setEmailError2("Please keep the email format.");
       }
     } else {
-      
-        if (name === "directorEmail") {
-          setEmailError("");
-        } else {
-          setEmailError2("");
-        }
-       
-
+      if (name === "directorEmail") {
+        setEmailError("");
+      } else {
+        setEmailError2("");
+      }
     }
   };
 
-
   const validateName = (value, name) => {
-    const nameRegx = /^[A-Za-z]+(?:\s[A-Za-z]+)+(?:\s[A-Za-z]+)?$/;
+    const nameRegx = /^[a-zA-Z\u1200-\u137F]+(?:\s[a-zA-Z\u1200-\u137F]+)*$/;
 
-   if (!nameRegx.test(value)) {
-     if (name === "director") {
-       setNameError(
-         "Please Insert Valid Name."
-       );
-     } else {
-      setNameError2(
-         "Please Insert Valid Name."
-       );
-     }
-   } else {
-     
-       if (name === "director") {
+    if (!nameRegx.test(value)) {
+      if (name === "director") {
+        setNameError("Please Insert Valid Name.");
+      } else {
+        setNameError2("Please Insert Valid Name.");
+      }
+    } else {
+      if (name === "director") {
         setNameError("");
-       } else {
+      } else {
         setNameError2("");
-       }
-   }
- };
+      }
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -220,7 +210,9 @@ const EditHospitalMgmt = ({
     >
       <Box sx={modalStyle}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">Update District - Director - Hospital Mapping</Typography>
+          <Typography variant="h6">
+            Update District - Director - Hospital Mapping
+          </Typography>
           <IconButton onClick={handleClose}>
             <CloseIcon />
           </IconButton>

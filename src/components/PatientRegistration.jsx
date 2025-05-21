@@ -20,6 +20,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import api from "../utils/api";
 import { getTokenValue } from "../services/user_service";
+import { values } from "lodash";
 
 const tokenvalue = getTokenValue();
 
@@ -200,12 +201,15 @@ const initialState = {
   nphone: "",
   mobile: "",
   nmobile: "",
+  isUpdate: false,
 };
 
 const controller = (state, action) => {
   try {
     if (action.name === "reset") {
       return initialState;
+    } else if (action.name === "bulk") {
+      return { ...state, ...action.values }; // merge all keys
     } else {
       return { ...state, [action.name]: action.values };
     }
@@ -234,6 +238,7 @@ function PatientRegistration() {
   );
   const [activeStep, setActiveStep] = useState(0);
   const [checkLoading, setCheckLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleCancel = () => {
     setFormData({ name: "reset" });
@@ -303,6 +308,12 @@ function PatientRegistration() {
     ) {
       letterNumberCheck(e.target.name, e.target.value);
     } else if (e.target.name === "mrn") {
+      if (formData?.isUpdate) {
+        toast.info(
+          "You changed the MRN so now you are recording a new data, not updating the existing one."
+        );
+        setFormData({ name: "isUpdate", values: false });
+      }
       mrnCheck(e.target.name, e.target.value);
     } else if (e.target.name === "phone" || e.target.name === "nphone") {
       phoneCheck(e.target.name, e.target.value);
@@ -313,8 +324,12 @@ function PatientRegistration() {
     setFormData({ name: e.target.name, values: e.target.value });
   };
 
+  useEffect(() => {
+    console.log("formData", formData);
+  }, [formData]);
+
   const validateName = (name, value) => {
-    const usernameRegex = /^[A-Za-z]{3,}$/;
+    const usernameRegex = /^[a-zA-Z\u1200-\u137F]{3,}$/;
     if (!usernameRegex.test(value) && value.length > 0) {
       setFormDataError({
         name: name,
@@ -394,7 +409,7 @@ function PatientRegistration() {
   };
 
   const onlyLetterCheck = (name, value) => {
-    const comp = /^[A-Za-z\s]+$/;
+    const comp = /^[a-zA-Z\u1200-\u137F\s]+$/;
     if (!comp.test(value) && value.length > 0) {
       setFormDataError({
         name: name,
@@ -409,7 +424,8 @@ function PatientRegistration() {
   };
 
   const letterNumberCheck = (name, value) => {
-    const comp = /^[A-Za-z0-9\s]+$/;
+    const comp = /^[a-zA-Z0-9\u1200-\u137F\s]+$/;
+
     if (!comp.test(value) && value.length > 0) {
       setFormDataError({
         name: name,
@@ -474,6 +490,7 @@ function PatientRegistration() {
         }
         setActiveStep((prev) => prev + 1);
       } else {
+        setLoading(true);
         if (hasStep1Empty || hasStep2Empty) {
           toast.error(requiredMessage);
           return;
@@ -482,25 +499,22 @@ function PatientRegistration() {
           toast.error(errorFixMessage);
           return;
         }
-        const response = await api.post("/Patient/add-patient-info", {
+
+        const payload = {
           patientCardNumber: formData?.mrn,
           patientFirstName: formData?.fname,
           patientMiddleName: formData?.fatname,
           patientLastName: formData?.gfname,
           patientMotherName: formData?.maname,
-          // patientAge: 0,
           patientDOB: formData?.dob?.replace(" +03:00", ""),
           patientGender: formData?.gender,
           patientReligion: formData?.religion,
           patientPlaceofbirth: formData?.pbirth,
           multiplebirth: formData?.mbirth,
           appointment: formData?.providers,
-          patientAddress: formData?.mrn,
-          patientkinAddress: formData?.mrn,
           patientPhoneNumber: formData?.mobile,
           iscreadituser: 0,
           iscbhiuser: 0,
-          //patientEmployementID: formData?.mrn,
           patientOccupation: formData?.occ,
           department: formData?.dep,
           patientEducationlevel: formData?.edu,
@@ -508,8 +522,7 @@ function PatientRegistration() {
           patientSpouseFirstName: formData?.sname,
           patientSpouselastName: formData?.sfname,
           patientRegisteredBy: tokenvalue?.name, //token name
-          patientVisitingDate: new Date(),
-          // patientType: formData?.mrn,
+          patientVisitingDate: formData?.vdate?.replace(" +03:00", ""),
           patientRegion: formData?.region,
           patientWoreda: formData?.woreda,
           patientKebele: formData?.kebele,
@@ -523,21 +536,26 @@ function PatientRegistration() {
           patientKinAddressDetail: formData?.naddD,
           patientKinPhone: formData?.nphone,
           patientKinMobile: formData?.nmobile,
-          // woreda: formData?.mrn,
-          // kebele: formData?.mrn,
-          // goth: formData?.mrn,
-          // idNo: formData?.mrn,
-          // referalNo: formData?.mrn,
-          // letterNo: formData?.mrn,
-          // examination: formData?.mrn,
-        });
-
-        console.log("The respone is >> ", response);
-        console.log("Submitting:", JSON.stringify(formData, null, 2));
+          patientChangedBy: tokenvalue?.name,
+        };
+        let response;
+        if (!formData?.isUpdate) {
+          response = await api.post("/Patient/add-patient-info", payload);
+        } else {
+          response = await api.put("/Patient/update-patient-info", payload);
+        }
+        if (Object.values(response?.data)?.length > 0) {
+          setFormData({ name: "reset" });
+          setFormDataError({ name: "Reset" });
+          setActiveStep(0);
+          toast.success("Patient Information Recorded Successfully.");
+          setLoading(false);
+        }
       }
     } catch (error) {
       console.error("Error Happened on Next Step and Submit handler:", error);
       toast.error(error?.response?.data?.msg || "Internal Server Error.");
+      setLoading(false);
     }
   };
 
@@ -558,7 +576,54 @@ function PatientRegistration() {
         toast.info("MRN Not Found!");
         return;
       } else {
-        console.log(response?.data);
+        console.log("This is the response: ", response?.data);
+        if (response?.data?.data?.length) {
+          const check = response?.data?.data;
+
+          const renamedData = check?.map((item) => ({
+            mrn: item.patientCardNumber,
+            fname: item.patientFirstName,
+            fatname: item.patientMiddleName,
+            gfname: item.patientLastName,
+            maname: item.patientMotherName,
+            dob: item.patientDOB,
+            gender: item.patientGender,
+            religion: item.patientReligion,
+            pbirth: item.patientPlaceofbirth,
+            mbirth: item.multiplebirth,
+            providers: item.appointment,
+            hn: item.patientHouseNo,
+            nhn: item.patientKinHouseNo,
+            mobile: item.patientPhoneNumber,
+            occ: item.patientOccupation,
+            dep: item.department,
+            edu: item.patientEducationlevel,
+            mstatus: item.patientMaritalstatus,
+            sfname: item.patientSpouseFirstName,
+            sname: item.patientSpouselastName,
+            vdate: item.patientVisitingDate,
+            region: item.patientRegion,
+            woreda: item.patientWoreda,
+            kebele: item.patientKebele,
+            addD: item.patientAddressDetail,
+            phone: item.patientPhone,
+            nregion: item.patientKinRegion,
+            nworeda: item.patientKinWoreda,
+            nkebele: item.patientKinKebele,
+            naddD: item.patientKinAddressDetail,
+            nphone: item.patientKinPhone,
+            nmobile: item.patientKinMobile,
+            isUpdate: true,
+          }));
+          setFormData({
+            name: "bulk",
+            values: renamedData[0],
+          });
+          toast.success("Patient record found for this card number.");
+          console.log("renamedData >>", renamedData);
+        } else {
+          toast.info("Patient record not found for this card number.");
+        }
       }
     } catch (error) {
       console.error("This Is CHeck Error: ", error);
@@ -597,6 +662,7 @@ function PatientRegistration() {
               <Button
                 variant="contained"
                 sx={{ marginInline: "15px" }}
+                disabled={checkLoading}
                 onClick={() => handleCheck()}
               >
                 {checkLoading ? (
@@ -629,7 +695,7 @@ function PatientRegistration() {
                     label="Date of Birth *"
                     name="dob"
                     value={
-                      formData?.dob && !["", null].includes(formData.dob)
+                      !!formData?.dob && !["", null].includes(formData.dob)
                         ? new Date(formData.dob.replace(" +03:00", ""))
                         : null
                     }
@@ -1141,8 +1207,16 @@ function PatientRegistration() {
             >
               Back
             </Button>
-            <Button variant="contained" onClick={handleNext}>
-              {activeStep === steps.length - 1 ? "Submit" : "Next"}
+            <Button variant="contained" disabled={loading} onClick={handleNext}>
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : activeStep === steps.length - 1 && !formData?.isUpdate ? (
+                "Submit"
+              ) : activeStep === steps.length - 1 && formData?.isUpdate ? (
+                "Update"
+              ) : (
+                "Next"
+              )}
             </Button>
             <Button
               variant="outlined"
