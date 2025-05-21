@@ -41,62 +41,6 @@ import { formatAccounting2 } from "../pages/hospitalpayment/HospitalPayment";
 
 const tokenvalue = getTokenValue();
 
-const dummyData = [
-  {
-    patientCardNumber: "152568",
-
-    patientFirstName: "string1",
-
-    patientMiddleName: "string2",
-
-    patientLastName: "string3",
-
-    patientMotherName: null,
-
-    patientAge: 20,
-
-    patientGender: "Male",
-
-    requestGroup: null,
-
-    noRequestedServices: 2,
-
-    rquestedServices: ["Card/ካርድ [100.00] ", "Medicne/መድሃኒት [100.00] "],
-
-    requestedCatagories: [
-      {
-        groupID: "casheir-d2bf74cb-09ab-402d-9d86-dfced2e6ebac",
-
-        amount: 100.0,
-        isPaid: true,
-
-        purpose: "Laboratory",
-      },
-
-      {
-        groupID: "casheir-d2bf74cb-09ab-402d-9d86-dfced2e6ebac",
-
-        amount: 100.0,
-        isPaid: true,
-
-        purpose: "X-Ray/Ultrasound",
-      },
-    ],
-
-    totalPrice: 200.0,
-
-    requestedReason: null,
-
-    paid: false,
-
-    isCompleted: false,
-
-    requestedBy: "test1",
-
-    createdOn: "2025-05-19T00:00:00",
-  },
-];
-
 const icons = {
   Cash: <LocalAtmIcon />,
   CBHI: <VolunteerActivismIcon />,
@@ -109,7 +53,6 @@ const icons = {
 const initialState = {
   cbhiId: "",
   method: "",
-  // reason: "",
   digitalChannel: "",
   trxref: "",
   organization: "",
@@ -126,6 +69,7 @@ function PaymentManagement() {
   const [totals, setTotals] = useState({});
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [refresh, setRefresh] = useState(false);
   const navigate = useNavigate();
 
   //Fetch Organization with agreement
@@ -171,7 +115,7 @@ function PaymentManagement() {
       }
     };
     fetchPaymetInfo();
-  }, []);
+  }, [refresh]);
 
   const updatePaymentSummary = (payments) => {
     const summary = payments.reduce((acc, payment) => {
@@ -222,16 +166,24 @@ function PaymentManagement() {
   }, []);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (e.target.name === "method") {
+      setFormData({
+        ...formData,
+        method: e.target.value,
+        cbhiId: "",
+        digitalChannel: "",
+        trxref: "",
+        organization: "",
+        employeeId: "",
+      });
+    } else {
+      setFormData({ ...formData, [e.target.name]: e.target.value });
+    }
   };
 
   const handleOpenModal = (row) => {
     try {
-      const datavisualization = dummyData.filter(
-        (item) => item?.patientCardNumber === row?.patientCardNumber
-      );
-
-      setSelectedRow(datavisualization[0]);
+      setSelectedRow(row);
       setOpenModal(true);
     } catch (error) {
       console.error("This is The Open Modal error: ", error);
@@ -263,9 +215,18 @@ function PaymentManagement() {
       if (
         !selectedRow.requestedCatagories
           .map((item) => item.isPaid)
-          .some((item) => item === true)
+          .some((isPaid) => isPaid === true)
       ) {
         toast.error("Should have at least one payment.");
+        return;
+      }
+
+      const totalPaidAmount = selectedRow?.requestedCatagories
+        ?.filter((item) => item.isPaid === true)
+        ?.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+      if (totalPaidAmount <= 0) {
+        toast.error("Should have Total Amount Greater than zero (0).");
         return;
       }
 
@@ -287,9 +248,10 @@ function PaymentManagement() {
           "Content-Type": "application/json",
         },
       });
-
-      console.log("Trasnsaction Detail Recorded is: ", response?.data);
-      if (response?.data?.lenght > 0) {
+      console.log("Th response is this one: ", response?.data);
+      if (response?.data?.refNo?.length > 0) {
+        toast.success(`Payment Regitstered Under ${response?.data?.refNo}`);
+        setRefresh((prev) => !prev);
         handleCloseModal();
       }
     } catch (error) {
@@ -302,19 +264,25 @@ function PaymentManagement() {
 
   const columns = [
     { field: "patientCardNumber", headerName: "Card Number", flex: 1 },
-    { field: "patientFirstName", headerName: "First Name", flex: 1 },
-    { field: "patientMiddleName", headerName: "Father Name", flex: 1 },
-    { field: "patientLastName", headerName: "Grand Father Name", flex: 1 },
+    { field: "patientFName", headerName: "First Name", flex: 1 },
     { field: "patientGender", headerName: "Gender", flex: 1 },
-    { field: "noRequestedServices", headerName: "Requested Services", flex: 1 },
+    {
+      field: "noRequestedServices",
+      headerName: "No of Requested Services",
+      flex: 1,
+    },
     {
       field: "requestedCatagories",
       headerName: "Reason",
       flex: 1,
       renderCell: (params) => {
-        return params.row.requestedCatagories
-          .map((item) => item.purpose)
-          .join(", ");
+        try {
+          return params.row.requestedCatagories
+            .map((item) => item.purpose)
+            .join(", ");
+        } catch (error) {
+          console.error("Error Occured on rendering: ", error);
+        }
       },
     },
     {
@@ -322,7 +290,11 @@ function PaymentManagement() {
       headerName: "Amount",
       flex: 1,
       renderCell: (params) => {
-        return formatAccounting2(params.row.totalPrice);
+        try {
+          return formatAccounting2(params.row.totalPrice);
+        } catch (error) {
+          console.error("Error Occured on rendering: ", error);
+        }
       },
     },
     {
@@ -330,7 +302,11 @@ function PaymentManagement() {
       headerName: "Status",
       flex: 1,
       renderCell: (params) => {
-        return params.row.paid ? "Completed" : "Pending";
+        try {
+          return params.row.paid ? "Completed" : "Pending";
+        } catch (error) {
+          console.error("Error Occured on rendering: ", error);
+        }
       },
     },
     {
@@ -338,8 +314,12 @@ function PaymentManagement() {
       headerName: "Date",
       flex: 1,
       renderCell: (params) => {
-        const date = new Date(params.row.createdOn);
-        return date.toISOString().split("T")[0];
+        try {
+          const date = new Date(params.row.createdOn);
+          return date.toISOString().split("T")[0];
+        } catch (error) {
+          console.error("Error Occured on rendering: ", error);
+        }
       },
     },
     {
@@ -354,20 +334,40 @@ function PaymentManagement() {
     },
   ];
 
+  //Fetch DataGrid Data
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await api.put("/Patient/get-patient-request-cashier", {
           loggedInUser: tokenvalue?.name,
         });
+        const modData =
+          response?.data?.length > 0
+            ? response?.data?.map(
+                ({
+                  patientFirstName,
+                  patientMiddleName,
+                  patientLastName,
+                  ...rest
+                }) => ({
+                  patientFName:
+                    patientFirstName +
+                    " " +
+                    patientMiddleName +
+                    " " +
+                    patientLastName,
+                  ...rest,
+                })
+              )
+            : [];
 
-        setRows(response?.data || []);
+        setRows(modData || []);
       } catch (error) {
         console.error("This is Fetch Table Data Error: ", error);
       }
     };
     fetchData();
-  }, []);
+  }, [refresh]);
 
   const openNewTab = (id) => {
     window.open(
@@ -586,14 +586,7 @@ function PaymentManagement() {
           </Typography>
 
           <Typography variant="body1" color="text.secondary" gutterBottom>
-            Patient:{" "}
-            <strong>
-              {selectedRow?.patientFirstName +
-                " " +
-                selectedRow?.patientMiddleName +
-                " " +
-                selectedRow?.patientLastName}
-            </strong>
+            Patient: <strong>{selectedRow?.patientFName}</strong>
           </Typography>
           <Typography variant="body2" mb={2} color="text.secondary">
             Amount to Pay:{" "}

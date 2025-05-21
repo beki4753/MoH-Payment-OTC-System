@@ -381,10 +381,13 @@ const HospitalPayment = () => {
         );
         if (response.status === 200) {
           const sortedPayment = await response?.data.sort(
-            (a, b) => b.id - a.id
+            (a, b) => b.rowId - a.rowId
           );
-          console.log("What is wrong with you man: ", response?.data);
-          setPayments(sortedPayment);
+          const reNamedData = sortedPayment.map(({ rowId, ...rest }) => ({
+            id: rowId,
+            ...rest,
+          }));
+          setPayments(reNamedData);
         }
       } catch (error) {
         console.error(error);
@@ -393,7 +396,7 @@ const HospitalPayment = () => {
 
     fetchPaymetInfo();
     updatePaymentSummary(payments);
-  }, [refresh]);
+  }, [refresh,payments]);
   //payments
   useEffect(() => {
     setReasons([
@@ -417,8 +420,8 @@ const HospitalPayment = () => {
         if (response?.status === 200) {
           setPaymentMehods(
             response?.data
-              ?.filter((item) => item.paymentType !== "ALL")
-              .map((item) => item.paymentType)
+              ?.filter((item) => item.type !== "ALL")
+              .map((item) => item.type)
           );
         }
       } catch (error) {
@@ -681,7 +684,6 @@ const HospitalPayment = () => {
     }
   };
 
- 
   const columns = [
     { field: "id", headerName: "ID", width: 90 },
     { field: "registeredOn", headerName: "Date", width: 200 },
@@ -1173,7 +1175,6 @@ const HospitalPayment = () => {
         <DataGrid
           rows={payments.length ? payments : []}
           columns={columns}
-          getRowId={(row) => row.patientCardNumber}
         />
       </Paper>
       <ReceiptModal

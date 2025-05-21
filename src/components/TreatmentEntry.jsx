@@ -73,17 +73,20 @@ const TreatmentEntry = () => {
   const [saveLoading, setSaveloading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [markDoneLoading, setMarkDoneLoading] = useState(false);
+  const [refresh, setRefresh] = useState(false);
 
   //fetchData for the data grid
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await api.put("/Patient/get-patient-request-cashier", {
+        const response = await api.put("/Patient/get-patient-request", {
           loggedInUser: tokenvalue?.name,
         });
-        const datas = response?.data
-          ? response?.data.map((item, index) => ({ ...item, id: index + 1 }))
-          : [];
+        const datas =
+          response?.data?.length > 0
+            ? response?.data.map((item, index) => ({ ...item, id: index + 1 }))
+            : [];
+
         const ModData = datas?.map(
           ({
             patientFirstName,
@@ -107,7 +110,7 @@ const TreatmentEntry = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [refresh]);
 
   //Main Patient Searching Logic
   const handleSearch = async () => {
@@ -184,7 +187,6 @@ const TreatmentEntry = () => {
     }
   };
 
-
   const handleSave = async () => {
     try {
       setSaveloading(true);
@@ -195,15 +197,18 @@ const TreatmentEntry = () => {
 
       if (formData?.reason.length > 0) {
         const response = await api.post("/Patient/add-patient-request", {
-          patientCardNumber: "string",
-          requestedServices: [0],
-          purpose: "string",
-          createdBy: "string",
+          patientCardNumber: formData?.cardNumber,
+          requestedServices: fullReasons
+            .filter((item) => formData?.reason?.includes(item.purpose))
+            .map((item) => item.id),
+          purpose: formData?.category,
+          createdBy: tokenvalue?.name,
         });
-
-        console.log("This is the Treatment saved: ", response?.data);
-
-        setFormData(initialState);
+        if (Object.values(response?.data?.data).length > 0) {
+          toast.success("Request Registered Successfully.");
+          setRefresh((prev) => !prev);
+          setFormData(initialState);
+        }
       }
     } catch (error) {
       console.error("This is Save Error: ", error);
@@ -235,14 +240,27 @@ const TreatmentEntry = () => {
       )
     : reasons;
 
-  const handleMarkDone = async () => {
+  const handleMarkDone = async (data) => {
     try {
       setMarkDoneLoading(true);
 
-      console.log("Task Done!");
+      const payload = {
+        patientCardNumber: data?.patientCardNumber,
+        groupID: data?.requestGroup,
+        isComplete: true,
+        loggedInUser: tokenvalue?.name,
+      };
+      const response = await api.put(
+        "/Patient/complete-patient-request",
+        payload
+      );
+      if (response.status === 200) {
+        toast.success(response?.data?.msg);
+        setRefresh((prev) => !prev);
+      }
     } catch (error) {
       console.error("This IS mark as done Error: ", error);
-      toast.error(error?.response?.data?.message || "Internal Server Error.");
+      toast.error(error?.response?.data?.msg || "Internal Server Error.");
     } finally {
       setMarkDoneLoading(false);
     }
@@ -250,23 +268,22 @@ const TreatmentEntry = () => {
 
   const columns = [
     { field: "patientCardNumber", headerName: "Card Number", flex: 1 },
-    { field: "patientFName", headerName: "First Name", flex: 1 },
+    { field: "patientFName", headerName: "Patient Name", flex: 1 },
     {
-      field: "requestedCatagories",
+      field: "requestedReason",
       headerName: "Category",
       flex: 1,
-      renderCell: (params) => {
-        return params.row.requestedCatagories
-          .map((item) => item.purpose)
-          .join(", ");
-      },
     },
     {
       field: "totalPrice",
       headerName: "Amount",
       flex: 1,
       renderCell: (params) => {
-        return `ETB ${params.row.totalPrice}`;
+        try {
+          return `ETB ${params?.row?.totalPrice}`;
+        } catch (error) {
+          console.error("Error Occured on rendering: ", error);
+        }
       },
     },
     {
@@ -274,9 +291,13 @@ const TreatmentEntry = () => {
       headerName: "Status",
       flex: 1,
       renderCell: (params) => {
-        const status = params?.row?.isCompleted;
-        const result = status ? "Completede" : "Pending";
-        return result;
+        try {
+          const status = params?.row?.paid;
+          const result = status ? "Paid" : "Pending";
+          return result;
+        } catch (error) {
+          console.error("Error Occured on rendering: ", error);
+        }
       },
     },
     {
@@ -284,34 +305,44 @@ const TreatmentEntry = () => {
       headerName: "Date",
       flex: 1,
       renderCell: (params) => {
-        return params?.row?.createdOn.split("T")[0];
+        try {
+          return params?.row?.createdOn.split("T")[0];
+        } catch (error) {
+          console.error("Error Occured on rendering: ", error);
+        }
       },
     },
     {
       field: "Action",
       headerName: "Action",
       flex: 1,
-      renderCell: () => {
-        return (
-          <Button
-            variant="outlined"
-            color="success"
-            startIcon={<TaskAltIcon />}
-            sx={{
-              textTransform: "none",
-              borderRadius: 2,
-              fontWeight: 600,
-              "&:hover": { transform: "scale(1.01)" },
-            }}
-            onClick={() => handleMarkDone()}
-          >
-            {markDoneLoading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              "Mark as Completed"
-            )}
-          </Button>
-        );
+      renderCell: (params) => {
+        try {
+          return params?.row?.paid ? (
+            <Button
+              variant="outlined"
+              color="success"
+              startIcon={<TaskAltIcon />}
+              sx={{
+                textTransform: "none",
+                borderRadius: 2,
+                fontWeight: 600,
+                "&:hover": { transform: "scale(1.01)" },
+              }}
+              onClick={() => handleMarkDone(params.row)}
+            >
+              {markDoneLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Mark as Completed"
+              )}
+            </Button>
+          ) : (
+            <></>
+          );
+        } catch (error) {
+          console.error("Error Occured on rendering: ", error);
+        }
       },
     },
   ];
