@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Dialog,
   DialogTitle,
@@ -10,8 +10,9 @@ import {
   useMediaQuery,
   useTheme,
   CircularProgress,
-} from '@mui/material';
-import { styled } from '@mui/system';
+} from "@mui/material";
+import { styled } from "@mui/system";
+import { EthiopianDate } from "habesha-datepicker/dist/util/EthiopianDateUtils";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -29,48 +30,75 @@ const formatAccounting = (num) => {
 };
 
 const StyledDialog = styled(Dialog)(({ theme }) => ({
-  '& .MuiPaper-root': {
+  "& .MuiPaper-root": {
     borderRadius: theme.shape.borderRadius * 2,
     boxShadow: theme.shadows,
     padding: theme.spacing(2),
   },
-  backdropFilter: 'blur(5px)',
+  backdropFilter: "blur(5px)",
 }));
 
-const ReceiptModal = ({ open, onClose, data, onPrint ,onloading}) => {
+const ReceiptModal = ({ open, onClose, data, onPrint, onloading }) => {
   const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const getEthiopianDate = () => {
+    const ndate = new Date();
+    const etDate = EthiopianDate.toEth(ndate);
+    const formattedString = `${etDate.Year}-${String(etDate.Month).padStart(
+      2,
+      "0"
+    )}-${String(etDate.Day).padStart(2, "0")}`;
+    return formattedString;
+  };
+
 
   return (
     <StyledDialog
       open={open}
-      onClose={onClose}
+      onClose={(event, reason) => {
+        if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
+          onClose(); // Reset and close the modal
+        }
+      }}
       TransitionComponent={Transition}
       fullScreen={fullScreen}
     >
       <DialogTitle>Payment Receipt</DialogTitle>
       <DialogContent dividers>
         {data && data !== null && (
-          <Typography component="pre" style={{ fontFamily: 'Courier, monospace' }}>
-                  -----------------------------------
-            {'\n'}       Hospital Payment Receipt
-            {'\n'}-----------------------------------
-            {'\n'}Card Number : {data?.cardNumber}
-            {'\n'}Amount      : {formatAccounting(data?.amount?.map((item)=>item.Amount).reduce((a,b)=>parseFloat(a)+parseFloat(b),0) )}
-            {'\n'}Method      : {data?.method}
-            {'\n'}Reason      : {Array.isArray(data?.reason) ? data?.reason.join(", ") : 'N/A'}
-            {'\n'}Description : {data?.description}
-            {'\n'}Date        : {new Date().toLocaleDateString()}
-            {'\n'}-----------------------------------
-            {'\n'}       Thank you for your visit!
-            {'\n'}-----------------------------------
+          <Typography
+            component="pre"
+            style={{ fontFamily: "Courier, monospace" }}
+          >
+            -----------------------------------
+            {"\n"} Hospital Payment Receipt
+            {"\n"}-----------------------------------
+            {"\n"}Card Number : {data?.cardNumber}
+            {"\n"}Amount :{" "}
+            {formatAccounting(
+              data?.amount
+                ?.map((item) => item.amount)
+                .reduce((a, b) => a + b, 0)
+            )}
+            {"\n"}Method : {data?.method}
+            {"\n"}Reason :{" "}
+            {Array.isArray(data?.reason) ? data?.reason.join(", ") : "N/A"}
+            {"\n"}Description : {data?.description}
+            {"\n"}Date : {getEthiopianDate()}
+            {"\n"}-----------------------------------
+            {"\n"} Thank you for your visit!
+            {"\n"}-----------------------------------
           </Typography>
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onPrint} color="primary">
-          {onloading ? <CircularProgress size={24} color="inherit" />:"Confirm"}
-          
+        <Button disabled={onloading} onClick={onPrint} color="primary">
+          {onloading ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            "Confirm"
+          )}
         </Button>
         <Button onClick={onClose} color="secondary">
           Close

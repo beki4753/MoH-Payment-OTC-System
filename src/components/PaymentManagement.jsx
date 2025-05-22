@@ -9,17 +9,14 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel,
   Paper,
   Card,
-  CardContent,
-  FormControlLabel,
-  InputAdornment,
-  IconButton,
-  Checkbox,
   Avatar,
   CircularProgress,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
+
 import { PDFDocument, rgb } from "pdf-lib";
 import ReactDOM from "react-dom/client";
 import RenderPDF from "../pages/hospitalpayment/RenderPDF";
@@ -38,6 +35,11 @@ import { getTokenValue } from "../services/user_service";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { formatAccounting2 } from "../pages/hospitalpayment/HospitalPayment";
+import CategoryCheckboxList from "./CategoryCheckboxList";
+import ReceiptModal from "../pages/hospitalpayment/ReceiptModal";
+import { generatePDF } from "../pages/hospitalpayment/HospitalPayment";
+import PatientTransactionsModal from "./PatientTransactionsModal";
+import CancelConfirm from "./CancelConfirm";
 
 const tokenvalue = getTokenValue();
 
@@ -70,6 +72,13 @@ function PaymentManagement() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [refresh, setRefresh] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
+  const [isPrintLoading, setIsPrintLoading] = useState(false);
+  const [openDetail, setOpenDetail] = useState(false);
+  const [detailData, setDetailData] = useState([]);
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [cancelLoad, setCancelLoad] = useState(false);
   const navigate = useNavigate();
 
   //Fetch Organization with agreement
@@ -120,6 +129,7 @@ function PaymentManagement() {
   const updatePaymentSummary = (payments) => {
     const summary = payments.reduce((acc, payment) => {
       const { paymentType, paymentAmount } = payment;
+
       if (!acc[paymentType]) {
         acc[paymentType] = 0;
       }
@@ -165,6 +175,28 @@ function PaymentManagement() {
     fetchChane();
   }, []);
 
+  const handleConfClose = () => {
+    setOpenConfirm(false);
+    setSelectedRow(null);
+  };
+
+  const handleCancel = async (confirm) => {
+    try {
+      if (confirm.message === "Yes Please!") {
+        console.log("This transaction canceled: ", selectedRow);
+        handleConfClose();
+      } else {
+        setCancelLoad(true);
+        setSelectedRow(confirm);
+        setOpenConfirm(true);
+      }
+    } catch (error) {
+      console.error("This is canceling Payment error: ", error);
+    } finally {
+      setCancelLoad(false);
+    }
+  };
+
   const handleChange = (e) => {
     if (e.target.name === "method") {
       setFormData({
@@ -197,9 +229,8 @@ function PaymentManagement() {
     setSelectedRow(null);
   };
 
-  const handleSave = async () => {
+  const handleConfSave = () => {
     try {
-      setLoading(true);
       if (
         !formData.method ||
         (formData.method.toUpperCase().includes("DIGITAL") &&
@@ -230,6 +261,28 @@ function PaymentManagement() {
         return;
       }
 
+      const checkData = {
+        cardNumber: selectedRow?.patientCardNumber,
+        amount: selectedRow?.requestedCatagories.filter(
+          (item) => item.isPaid === true
+        ),
+        method: formData?.method,
+        reason: selectedRow?.requestedCatagories?.map((item) => item.purpose),
+        description: "-",
+      };
+
+      setReceiptOpen(true);
+      setReceiptData(checkData || []);
+    } catch (error) {
+      console.error("This is Handle Confirm Error: ", error);
+      toast.error("Internal Server Error.");
+    }
+  };
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      setIsPrintLoading(true);
+
       const payload = {
         paymentType: formData?.method,
         cardNumber: selectedRow?.patientCardNumber,
@@ -248,10 +301,27 @@ function PaymentManagement() {
           "Content-Type": "application/json",
         },
       });
-      console.log("Th response is this one: ", response?.data);
       if (response?.data?.refNo?.length > 0) {
         toast.success(`Payment Regitstered Under ${response?.data?.refNo}`);
         setRefresh((prev) => !prev);
+        const data = {
+          method: formData.method || "",
+          amount:
+            selectedRow?.requestedCatagories.filter(
+              (item) => item.isPaid === true
+            ) || "",
+          patientName: selectedRow?.patientFName || "",
+          cardNumber: selectedRow?.patientCardNumber || "",
+          digitalChannel: formData?.digitalChannel || "",
+          trxref: formData?.trxref || "",
+          cbhiId: formData?.cbhiId || "",
+          organization: formData?.organization || "",
+          employeeId: formData?.employeeId || "",
+        };
+
+        await generatePDF(data, response?.data?.refNo);
+        setIsPrintLoading(false);
+        setReceiptData(null);
         handleCloseModal();
       }
     } catch (error) {
@@ -259,6 +329,8 @@ function PaymentManagement() {
       toast.error(error?.response?.data?.msg || "Internal Server Error.");
     } finally {
       setLoading(false);
+      setIsPrintLoading(false);
+      setReceiptOpen(false);
     }
   };
 
@@ -332,6 +404,20 @@ function PaymentManagement() {
         </Button>
       ),
     },
+    {
+      field: "cancel",
+      headerName: "Cancel",
+      flex: 1,
+      renderCell: (params) => (
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={() => handleCancel(params.row)}
+        >
+          Cancel
+        </Button>
+      ),
+    },
   ];
 
   //Fetch DataGrid Data
@@ -361,7 +447,14 @@ function PaymentManagement() {
               )
             : [];
 
-        setRows(modData || []);
+        const ModDataID = modData.map((item, index) => {
+          return {
+            ...item,
+            id:index+1,
+          };
+        });
+
+        setRows(ModDataID || []);
       } catch (error) {
         console.error("This is Fetch Table Data Error: ", error);
       }
@@ -418,6 +511,33 @@ function PaymentManagement() {
     } catch (err) {
       console.error("generateAndOpenPDF error:", err);
     }
+  };
+
+  const handleDoubleClick = (data) => {
+    try {
+      const services = data.row.rquestedServices || [];
+
+      setOpenDetail(true);
+
+      const dataToSet =
+        services.length > 0
+          ? services.map((item, index) => ({
+              id: index + 1,
+              patientFName: data.row.patientFName,
+              patientCardNumber: data.row.patientCardNumber,
+              ...item, // includes amount, service, catagory
+            }))
+          : [];
+      setDetailData(dataToSet);
+    } catch (error) {
+      console.error("Double-click error: ", error);
+      toast.error("Unable to open Detail Data.");
+    }
+  };
+
+  const handleDetailClose = () => {
+    setOpenDetail(false);
+    setDetailData([]);
   };
 
   const handleOpenPage = async () => {
@@ -492,6 +612,27 @@ function PaymentManagement() {
     }
   };
 
+  const normalizeText = (text) => {
+    try {
+      if (text.toLowerCase() === "cash") {
+        return "Cash";
+      } else if (text.toLowerCase() === "cbhi") {
+        return "CBHI";
+      } else if (text.toLowerCase() === "credit") {
+        return "Credit";
+      } else if (text.toLowerCase() === "digital") {
+        return "Digital";
+      } else if (text.toLowerCase() === "free of charge") {
+        return "Free of Charge";
+      } else {
+        return text;
+      }
+    } catch (error) {
+      console.error("This is text Normalizig Error: ", error);
+      return "";
+    }
+  };
+
   return (
     <Box p={3}>
       {/* 🔝 Summary */}
@@ -511,7 +652,7 @@ function PaymentManagement() {
               }}
             >
               <Avatar sx={{ bgcolor: "#1976d2", mr: 2 }} variant="rounded">
-                {icons[method] || <PaymentIcon />}
+                {icons[normalizeText(method)] || <PaymentIcon />}
               </Avatar>
               <Box>
                 <Typography variant="subtitle2">{method}</Typography>
@@ -558,120 +699,149 @@ function PaymentManagement() {
         <Grid item xs={12}>
           <DataGrid
             rows={rows}
-            getRowId={(row) => row.patientCardNumber}
+            // getRowId={(row) => row.patientCardNumber}
             columns={columns}
+            onRowDoubleClick={handleDoubleClick}
           />
         </Grid>
       </Grid>
 
       {/* 💳 Modal */}
-      <Modal open={openModal} onClose={() => {}} disableEscapeKeyDown>
+      <Modal
+        open={openModal}
+        onClose={(event, reason) => {
+          if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
+            handleCloseModal();
+          }
+        }}
+      >
         <Box
           sx={{
             position: "absolute",
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 500,
-            bgcolor: "background.paper",
-            p: 4,
-            boxShadow: 10,
-            borderRadius: 3,
+            width: {
+              xs: "90vw",
+              sm: 500,
+              md: 600,
+              lg: 700,
+            },
+            maxWidth: "95vw",
             maxHeight: "90vh",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            borderRadius: 3,
+            p: 4,
             overflowY: "auto",
           }}
         >
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            💳 Manage Payment
+          <Typography variant="h6" gutterBottom color="primary">
+            Manage Payment for: {selectedRow?.patientFName}
           </Typography>
 
-          <Typography variant="body1" color="text.secondary" gutterBottom>
-            Patient: <strong>{selectedRow?.patientFName}</strong>
-          </Typography>
-          <Typography variant="body2" mb={2} color="text.secondary">
-            Amount to Pay:{" "}
-            <strong>
-              {selectedRow?.requestedCatagories
-                .filter((item) => item.isPaid)
-                .reduce((sum, item) => sum + item.amount, 0)}
-              Birr
-            </strong>
-          </Typography>
-          {selectedRow?.requestedCatagories.map((item, index) => (
-            <FormControlLabel
-              key={item.purpose}
-              control={
-                <Checkbox
-                  name={item.purpose}
-                  checked={!!item.isPaid}
-                  onChange={(e) => {
-                    const isChecked = e.target.checked;
+          <Card sx={{ mb: 2, p: 2 }}>
+            <Typography variant="subtitle1">
+              Card Number: <strong>{selectedRow?.patientCardNumber}</strong>
+            </Typography>
+            <Typography variant="subtitle1" color="text.secondary">
+              Total Amount:{" "}
+              {/* <strong>{formatAccounting2(selectedRow?.totalPrice)}</strong> */}
+              <strong>
+                {formatAccounting2(
+                  selectedRow?.requestedCatagories
+                    .filter((item) => item.isPaid)
+                    .reduce((sum, item) => sum + item.amount, 0)
+                )}
+                &nbsp; Birr
+              </strong>
+            </Typography>
+          </Card>
 
-                    // Create a copy and update the relevant item
-                    const updatedCategories =
-                      selectedRow.requestedCatagories.map((cat, i) =>
-                        i === index ? { ...cat, isPaid: isChecked } : cat
-                      );
-
-                    // Update selectedRow state
-                    setSelectedRow((prev) => ({
-                      ...prev,
-                      requestedCatagories: updatedCategories,
-                    }));
-                  }}
-                />
-              }
-              label={item.purpose}
-            />
-          ))}
+          {/* Categories (External Component) */}
+          <CategoryCheckboxList
+            selectedRow={selectedRow}
+            setSelectedRow={setSelectedRow}
+          />
 
           {/* Payment Method */}
-
-          <FormControl fullWidth margin="dense">
-            <InputLabel>Payment Method</InputLabel>
+          <FormControl fullWidth margin="normal">
             <Select
-              value={formData?.method}
               name="method"
-              label="Payment Method"
+              value={formData.method}
               onChange={handleChange}
-              required
+              displayEmpty
+              renderValue={(selected) =>
+                selected ? (
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    {icons[normalizeText(selected)]}&nbsp;{selected}
+                  </Box>
+                ) : (
+                  <span style={{ color: "#888" }}>
+                    Select Payment Method...
+                  </span>
+                )
+              }
             >
+              <MenuItem disabled value="">
+                <em>Select Payment Method...</em>
+              </MenuItem>
               {paymentOptions.map((option) => (
                 <MenuItem key={option} value={option}>
-                  {option}
+                  {icons[normalizeText(option)]} &nbsp; {option}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
-          {/* Digital Payment Fields */}
-          {formData?.method === "Digital" && (
-            <>
-              <TextField
-                select
-                label="Digital Channel"
-                name="digitalChannel"
-                value={formData?.digitalChannel}
-                onChange={handleChange}
-                fullWidth
-                margin="dense"
-                required
-              >
-                {digitalChannels.map((channel) => (
-                  <MenuItem key={channel} value={channel}>
-                    {channel}
-                  </MenuItem>
-                ))}
-              </TextField>
+          {/* CBHI */}
+          {formData.method === "CBHI" && (
+            <TextField
+              fullWidth
+              name="cbhiId"
+              label="CBHI ID"
+              value={formData.cbhiId}
+              onChange={handleChange}
+              margin="normal"
+            />
+          )}
 
+          {/* Digital */}
+          {formData.method === "Digital" && (
+            <>
+              <FormControl fullWidth margin="normal">
+                <Select
+                  name="digitalChannel"
+                  value={formData.digitalChannel}
+                  onChange={handleChange}
+                  displayEmpty
+                  renderValue={(selected) =>
+                    selected ? (
+                      selected
+                    ) : (
+                      <span style={{ color: "#888" }}>
+                        Select Digital Channel...
+                      </span>
+                    )
+                  }
+                >
+                  <MenuItem disabled value="">
+                    <em>Select Digital Channel...</em>
+                  </MenuItem>
+                  {digitalChannels.map((channel) => (
+                    <MenuItem key={channel} value={channel}>
+                      {channel}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <TextField
-                label="Transaction Reference No"
-                name="trxref"
-                value={formData?.trxref}
-                onChange={handleChange}
                 fullWidth
-                required
-                margin="dense"
+                name="trxref"
+                label="Transaction Ref. No"
+                value={formData.trxref}
+                onChange={handleChange}
+                margin="normal"
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -685,18 +855,28 @@ function PaymentManagement() {
             </>
           )}
 
-          {/* Credit Fields */}
-          {formData?.method === "Credit" && (
+          {/* Credit */}
+          {formData.method === "Credit" && (
             <>
-              <FormControl fullWidth margin="dense">
-                <InputLabel>Organization</InputLabel>
+              <FormControl fullWidth margin="normal">
                 <Select
-                  value={formData?.organization}
                   name="organization"
-                  label="Organization"
+                  value={formData.organization}
                   onChange={handleChange}
-                  required
+                  displayEmpty
+                  renderValue={(selected) =>
+                    selected ? (
+                      selected
+                    ) : (
+                      <span style={{ color: "#888" }}>
+                        Select Organization...
+                      </span>
+                    )
+                  }
                 >
+                  <MenuItem disabled value="">
+                    <em>Select Organization...</em>
+                  </MenuItem>
                   {creditOrganizations.map((org) => (
                     <MenuItem key={org} value={org}>
                       {org}
@@ -704,39 +884,24 @@ function PaymentManagement() {
                   ))}
                 </Select>
               </FormControl>
-
               <TextField
                 fullWidth
-                margin="dense"
-                label="Employee ID"
-                required
                 name="employeeId"
-                value={formData?.employeeId}
+                label="Employee ID"
+                value={formData.employeeId}
                 onChange={handleChange}
+                margin="normal"
               />
             </>
           )}
 
-          {/* CBHI Field */}
-          {formData?.method === "CBHI" && (
-            <TextField
-              fullWidth
-              margin="dense"
-              label="CBHI ID Number"
-              name="cbhiId"
-              value={formData?.cbhiId}
-              onChange={handleChange}
-              required
-            />
-          )}
-
           {/* Action Buttons */}
-          <Grid container spacing={2} mt={3}>
+          <Grid container spacing={2} sx={{ mt: 2 }}>
             <Grid item xs={6}>
               <Button
-                variant="outlined"
-                color="inherit"
+                variant="contained"
                 fullWidth
+                color="secondary"
                 onClick={handleCloseModal}
               >
                 Cancel
@@ -745,22 +910,42 @@ function PaymentManagement() {
             <Grid item xs={6}>
               <Button
                 variant="contained"
-                color="primary"
-                disabled={loading}
                 fullWidth
-                onClick={handleSave}
-                // startIcon={<PaidIcon />}
+                color="primary"
+                onClick={handleConfSave}
+                disabled={loading}
+                startIcon={
+                  loading ? <CircularProgress size={20} /> : <PaymentIcon />
+                }
               >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  "Complete"
-                )}
+                {loading ? "Processing..." : "Confirm Payment"}
               </Button>
             </Grid>
           </Grid>
         </Box>
       </Modal>
+      <ReceiptModal
+        open={receiptOpen}
+        onClose={() => {
+          setReceiptOpen(false);
+          setReceiptData(null);
+        }}
+        data={receiptData}
+        onPrint={handleSave}
+        onloading={isPrintLoading}
+      />
+      <PatientTransactionsModal
+        open={openDetail}
+        onClose={handleDetailClose}
+        rows={detailData}
+      />
+      <CancelConfirm
+        isOpen={openConfirm}
+        onClose={handleConfClose}
+        onConfirm={handleCancel}
+        userData={selectedRow}
+        onloading={cancelLoad}
+      />
       <ToastContainer />
     </Box>
   );

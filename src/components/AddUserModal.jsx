@@ -42,7 +42,7 @@ const AddUserModal = ({
   const departments = ["Card", "Pharmacy", "Hospital", "Tsedey Bank"];
   const hospitals = ["DB Tena tabiya"];
   //"DB Referral Hospital",  "DB Tena tabiya"
-  const usertypes = ["Cashier", "Supervisor", "Admin"];
+  const usertypes = ["Cashier", "Supervisor", "Admin","Laboratory Tech"];
   // Reset form data when modal is closed
   const handleClose = () => {
     setFormData({

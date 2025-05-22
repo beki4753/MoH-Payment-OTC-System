@@ -13,8 +13,7 @@ import {
   Divider,
   CircularProgress,
 } from "@mui/material";
-import { EtLocalizationProvider } from "habesha-datepicker";
-import EtDatePicker from "habesha-datepicker";
+import EtDatePicker from "mui-ethiopian-datepicker";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import api from "../utils/api";
@@ -516,7 +515,10 @@ function PatientRegistration() {
           patientSpouseFirstName: formData?.sname,
           patientSpouselastName: formData?.sfname,
           patientRegisteredBy: tokenvalue?.name, //token name
-          patientVisitingDate: formData?.vdate?.replace(" +03:00", ""),
+          patientVisitingDate:
+            formData?.vdate?.length > 0
+              ? formData?.vdate?.replace(" +03:00", "")
+              : new Date(),
           patientRegion: formData?.region,
           patientWoreda: formData?.woreda,
           patientKebele: formData?.kebele,
@@ -562,19 +564,18 @@ function PatientRegistration() {
         toast.error("Please Insert Valid MRN first.");
         return;
       }
-      
-      const response = await api.put("/Patient/get-patient-info", {
+
+      const response = await api.put("/Patient/get-one-patient-info", {
         patientCardNumber: formData?.mrn,
-        cashier: tokenvalue?.name,
       });
       if (response?.data?.length <= 0) {
         toast.info("MRN Not Found!");
         return;
       } else {
-        if (response?.data?.data?.length) {
-          const check = response?.data?.data;
+        if (Object.values(response?.data)?.length > 0) {
+          const item = response?.data;
 
-          const renamedData = check?.map((item) => ({
+          const renamedData = {
             mrn: item.patientCardNumber,
             fname: item.patientFirstName,
             fatname: item.patientMiddleName,
@@ -608,20 +609,19 @@ function PatientRegistration() {
             nphone: item.patientKinPhone,
             nmobile: item.patientKinMobile,
             isUpdate: true,
-          }));
+          };
           setFormData({
             name: "bulk",
-            values: renamedData[0],
+            values: renamedData,
           });
           toast.success("Patient record found for this card number.");
-          
         } else {
           toast.info("Patient record not found for this card number.");
         }
       }
     } catch (error) {
       console.error("This Is CHeck Error: ", error);
-      toast.error(error?.reponse?.data?.message || "Internal Server Error.");
+      toast.error(error?.response?.data?.msg || "Internal Server Error.");
     } finally {
       setCheckLoading(false);
     }
@@ -683,22 +683,20 @@ function PatientRegistration() {
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <EtLocalizationProvider localType="EC">
-                  <EtDatePicker
-                    key={formData.dob || "dob-empty"}
-                    label="Date of Birth *"
-                    name="dob"
-                    value={
-                      !!formData?.dob && !["", null].includes(formData.dob)
-                        ? new Date(formData.dob.replace(" +03:00", ""))
-                        : null
-                    }
-                    onChange={(e) => {
-                      handleChangeTime("dob", e);
-                    }}
-                    sx={{ width: "100%" }}
-                  />
-                </EtLocalizationProvider>
+                <EtDatePicker
+                  key={formData.dob || "dob-empty"}
+                  label="Date of Birth *"
+                  name="dob"
+                  value={
+                    !!formData?.dob && !["", null].includes(formData.dob)
+                      ? new Date(formData.dob.replace(" +03:00", ""))
+                      : null
+                  }
+                  onChange={(e) => {
+                    handleChangeTime("dob", e);
+                  }}
+                  sx={{ width: "100%" }}
+                />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
                 <TextField
@@ -910,16 +908,14 @@ function PatientRegistration() {
               </Grid>
 
               <Grid item xs={12} sm={6} md={4}>
-                <EtLocalizationProvider localType="EC">
-                  <EtDatePicker
-                    key={formData?.vdate || "dob-empty"}
-                    label="Visit Date"
-                    name="vdate"
-                    value={formData?.vdate ? new Date(formData?.vdate) : ""}
-                    onChange={(e) => handleChangeTime("vdate", e)}
-                    sx={{ width: "100%" }}
-                  />
-                </EtLocalizationProvider>
+                <EtDatePicker
+                  key={formData?.vdate || "vdate-empty"}
+                  label="Visit Date"
+                  name="vdate"
+                  value={formData?.vdate ? new Date(formData?.vdate) : ""}
+                  onChange={(e) => handleChangeTime("vdate", e)}
+                  sx={{ width: "100%" }}
+                />
               </Grid>
 
               <Grid item xs={12} sm={6} md={4}>

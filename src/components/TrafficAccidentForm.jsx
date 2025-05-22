@@ -13,10 +13,9 @@ import { DataGrid } from "@mui/x-data-grid";
 import { Edit, Delete } from "@mui/icons-material";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { EtLocalizationProvider } from "habesha-datepicker";
-import format from "date-fns/format";
-import EtDatePicker from "habesha-datepicker";
-import { EthiopianDate } from "habesha-datepicker/dist/util/EthiopianDateUtils";
+import EtDatePicker from "mui-ethiopian-datepicker";
+import { EthDateTime } from "ethiopian-calendar-date-converter";
+
 const initialForm = {
   mrn: "",
   age: "",
@@ -142,20 +141,32 @@ function TrafficAccidentCrud() {
   const columns = [
     { field: "mrn", headerName: "MRN", flex: 1 },
     { field: "age", headerName: "Age", flex: 1 },
+
     {
       field: "accidentDate",
       headerName: "Date",
       flex: 1,
       renderCell: (params) => {
-        const ndate = new Date(
-          params?.row?.accidentDate.replace(" ", "T").replace(" +", "+")
-        );
-        const etDate = EthiopianDate.toEth(ndate);
-        const formattedString = `${etDate.Year}-${String(etDate.Month).padStart(
-          2,
-          "0"
-        )}-${String(etDate.Day).padStart(2, "0")}`;
-        return formattedString;
+        try {
+          const rawDate = params?.row?.accidentDate;
+          if (!rawDate) return "";
+
+          // Parse the raw date string to a JS Date
+          const gDate = new Date(rawDate.replace(" ", "T").replace(" +", "+"));
+
+          // Convert Gregorian date to Ethiopian date
+          const etDate = EthDateTime.fromEuropeanDate(gDate);
+
+          // Format as YYYY-MM-DD (Ethiopian calendar)
+          const formattedString = `${etDate.year}-${String(
+            etDate.month
+          ).padStart(2, "0")}-${String(etDate.date).padStart(2, "0")}`;
+
+          return formattedString;
+        } catch (err) {
+          console.error("Failed to format Ethiopian date:", err);
+          return "";
+        }
       },
     },
     { field: "carPlateNumber", headerName: "Plate Number", flex: 1 },
@@ -302,20 +313,18 @@ function TrafficAccidentCrud() {
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <EtLocalizationProvider localType="EC">
-              <EtDatePicker
-                label="Accident Date"
-                name="accidentDate"
-                value={
-                  formData?.accidentDate
-                    ? new Date(formData?.accidentDate)
-                    : null
-                }
-                onChange={(e) => handleChangeTime("accidentDate", e)}
-                sx={{ width: "100%" }}
-                required
-              />
-            </EtLocalizationProvider>
+            <EtDatePicker
+              key={formData?.accidentDate || "accidentDate-date"}
+              label="Accident Date"
+              name="accidentDate"
+              value={
+                formData?.accidentDate ? new Date(formData?.accidentDate) : null
+              }
+              onChange={(e) => handleChangeTime("accidentDate", e)}
+              sx={{ width: "100%" }}
+              required
+            />
+
             {/* <TextField
               label="Accident Date"
               name="accidentDate"

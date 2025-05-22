@@ -11,7 +11,6 @@ import {
   Checkbox,
   InputAdornment,
   IconButton,
-  CircularProgress,
 } from "@mui/material";
 import { PDFDocument, rgb } from "pdf-lib";
 import numberToWords from "number-to-words";
@@ -31,7 +30,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import { green, orange, grey } from "@mui/material/colors";
-
+import "./NotoSansEthiopic-Regular-normal.js";
 const capitalize = (str) => {
   if (!str) return "";
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -197,7 +196,7 @@ export const generatePDF = (data, refNo) => {
     };
 
     // Header
-    doc.setFont("helvetica", "bold");
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText("*************************", pageWidth / 2, yPos, {
       align: "center",
     });
@@ -218,7 +217,7 @@ export const generatePDF = (data, refNo) => {
     yPos += lineHeight;
 
     // Receipt Info
-    doc.setFont("helvetica", "normal");
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`Receipt NO: ${refNo || "N/A"}`, marginLeft, yPos);
     yPos += lineHeight;
     drawText(`Address: Debre Brihan`, marginLeft, yPos);
@@ -233,51 +232,51 @@ export const generatePDF = (data, refNo) => {
     yPos += lineHeight;
 
     // Patient Info
-    doc.setFont("helvetica", "bold");
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`Patient Name:`, marginLeft, yPos);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`${data?.patientName || "N/A"}`, marginLeft + 35, yPos);
     yPos += lineHeight;
 
-    doc.setFont("helvetica", "bold");
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`Card Number:`, marginLeft, yPos);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`${data.cardNumber || "N/A"}`, marginLeft + 35, yPos);
     yPos += lineHeight;
 
-    doc.setFont("helvetica", "bold");
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`Payment Method:`, marginLeft, yPos);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`${data.method || "N/A"}`, marginLeft + 35, yPos);
     yPos += lineHeight;
 
     if (data.method.toUpperCase().includes("DIGITAL")) {
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText("Channel:", marginLeft, yPos);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`${data.digitalChannel || "N/A"}`, marginLeft + 35, yPos);
       yPos += lineHeight;
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText("Transaction Ref No:", marginLeft, yPos);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`${data.trxref || "N/A"}`, marginLeft + 35, yPos);
       yPos += lineHeight;
     } else if (data.method.toUpperCase().includes("CBHI")) {
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`CBHI ID:`, marginLeft, yPos);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`${data.cbhiId || "N/A"}`, marginLeft + 35, yPos);
       yPos += lineHeight;
     } else if (data.method.toUpperCase().includes("CREDIT")) {
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`Organization:`, marginLeft, yPos);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`${data.organization || "N/A"}`, marginLeft + 35, yPos);
       yPos += lineHeight;
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`Employee Id:`, marginLeft, yPos);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`${data.employeeId || "N/A"}`, marginLeft + 35, yPos);
       yPos += lineHeight;
     }
@@ -286,16 +285,16 @@ export const generatePDF = (data, refNo) => {
     yPos += lineHeight;
 
     // Item Table
-    doc.setFont("helvetica", "bold");
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`Reason`, marginLeft, yPos);
     drawText(`Price`, marginRight - 25, yPos);
     yPos += lineHeight;
 
-    doc.setFont("helvetica", "normal");
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
     data?.amount?.forEach((item) => {
       drawText(`${item.purpose}`, marginLeft, yPos);
       drawText(
-        `${formatAccounting2(parseFloat(item.Amount).toFixed(2))}`,
+        `${formatAccounting2(parseFloat(item.amount).toFixed(2))}`,
         marginRight - 25,
         yPos
       );
@@ -306,10 +305,10 @@ export const generatePDF = (data, refNo) => {
     yPos += lineHeight;
 
     const totalAmount = data?.amount
-      ?.map((item) => parseFloat(item.Amount))
+      ?.map((item) => parseFloat(item.amount))
       .reduce((a, b) => a + b, 0);
 
-    doc.setFont("helvetica", "bold");
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`Total In Figure`, marginLeft, yPos);
     drawText(
       `${formatAccounting2(totalAmount.toFixed(2))}`,
@@ -330,7 +329,7 @@ export const generatePDF = (data, refNo) => {
     );
     yPos += lineHeight * 2;
 
-    doc.setFont("helvetica", "normal");
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(
       "This Receipt is invalid unless it is stamped.",
       pageWidth / 2,
@@ -396,7 +395,7 @@ const HospitalPayment = () => {
 
     fetchPaymetInfo();
     updatePaymentSummary(payments);
-  }, [refresh,payments]);
+  }, [refresh, payments]);
   //payments
   useEffect(() => {
     setReasons([
@@ -483,7 +482,7 @@ const HospitalPayment = () => {
 
   const handleChange = (e) => {
     try {
-      setFormData({ ...formData, [e.target.name]: e.target.value });
+      setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
       if (e.target.name === "trxref") {
         validateTransactionRef(e.target.value);
@@ -525,50 +524,73 @@ const HospitalPayment = () => {
   const handleCheckboxChange = (reason) => {
     try {
       setFormData((prev) => {
-        // Update reason array (toggle selection)
         const updatedReason = prev.reason.includes(reason)
           ? prev.reason.filter((r) => r !== reason)
           : [...prev.reason, reason];
 
-        // Create a proper copy of the amount array
-        const updatedAmount = [...prev.amount];
+        // if unchecking, drop any amount entry for that reason:
+        const finalAmount = updatedReason.includes(reason)
+          ? prev.amount
+          : prev.amount.filter((item) => item.purpose !== reason);
 
-        // If the reason is being removed, remove the corresponding amount entry
-        if (!updatedReason.includes(reason)) {
-          return {
-            ...prev,
-            reason: updatedReason,
-            amount: updatedAmount.filter((item) => item.purpose !== reason), // Remove related amount
-          };
-        }
-
-        return { ...prev, reason: updatedReason, amount: updatedAmount };
+        return {
+          ...prev,
+          reason: updatedReason,
+          amount: finalAmount,
+        };
       });
     } catch (error) {
-      console.error(error.message);
+      console.error(error);
     }
   };
 
+  // const handleAmountChange = (e, reason) => {
+  //   try {
+  //     setFormData((prev) => {
+  //       const updatedAmount = prev.amount.map((item) =>
+  //         item.purpose === reason
+  //           ? { ...item, amount: Math.abs(parseFloat(e.target.value)) }
+  //           : item
+  //       );
+
+  //       if (!updatedAmount.some((item) => item.purpose === reason)) {
+  //         updatedAmount.push({
+  //           purpose: reason,
+  //           amount: Math.abs(parseFloat(e.target.value)),
+  //         });
+  //       }
+
+  //       return { ...prev, amount: updatedAmount };
+  //     });
+  //   } catch (error) {
+  //     console.error(error.message);
+  //   }
+  // };
+
   const handleAmountChange = (e, reason) => {
     try {
+      const rawValue = e.target.value;
+
+      const parsed = parseFloat(rawValue) || 0;
+
       setFormData((prev) => {
         const updatedAmount = prev.amount.map((item) =>
-          item.purpose === reason
-            ? { ...item, Amount: Math.abs(parseFloat(e.target.value)) }
-            : item
+          item.purpose === reason ? { ...item, amount: Math.abs(parsed) } : item
         );
 
-        if (!updatedAmount.some((item) => item.purpose === reason)) {
-          updatedAmount.push({
-            purpose: reason,
-            Amount: Math.abs(parseFloat(e.target.value)),
-          });
-        }
+        const finalAmounts = updatedAmount.some(
+          (item) => item.purpose === reason
+        )
+          ? updatedAmount
+          : [...updatedAmount, { purpose: reason, amount: Math.abs(parsed) }];
 
-        return { ...prev, amount: updatedAmount };
+        return {
+          ...prev,
+          amount: finalAmounts,
+        };
       });
-    } catch (error) {
-      console.error(error.message);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -607,7 +629,7 @@ const HospitalPayment = () => {
       // Validate amount based on reason
       const isAmountValid = formData.reason.every((reason) =>
         formData.amount.some(
-          (item) => item.purpose === reason && item.Amount > 0
+          (item) => item.purpose === reason && item.amount > 0
         )
       );
 
@@ -651,31 +673,18 @@ const HospitalPayment = () => {
           "Content-Type": "application/json",
         },
       });
-
       if (response.status === 201) {
-        try {
-          // To Add patient Name on the Reciept
-          const add = await api.put("/Payment/patient-info", {
-            patientCardNumber: formData?.cardNumber,
-            hospital: tokenvalue?.Hospital,
-            cashier: tokenvalue?.name,
-          });
+        const final = {
+          ...newPayment,
+          patientName: response?.data?.data?.map((item) => item.patientName)[0],
+        };
+        setReceiptOpen(false);
+        setFormData(initialState);
+        toast.success(`Payment Regitstered Under ${response?.data?.refNo}`);
+        setRefresh((prev) => !prev);
 
-          const final = {
-            ...newPayment,
-            patientName: add?.data[0]?.patientName,
-          };
-          setReceiptOpen(false);
-          setFormData(initialState);
-          toast.success(`Payment Regitstered Under ${response?.data?.refNo}`);
-          setRefresh((prev) => !prev);
-
-          generatePDF(final, response?.data?.refNo);
-          setIsPrintLoading(false);
-        } catch (error) {
-          console.error(error);
-          setIsPrintLoading(false);
-        }
+        generatePDF(final, response?.data?.refNo);
+        setIsPrintLoading(false);
       }
     } catch (error) {
       console.error(error);
@@ -883,7 +892,7 @@ const HospitalPayment = () => {
               margin="normal"
               value={
                 formData?.amount?.find((item) => item.purpose === reason)
-                  ?.Amount || ""
+                  ?.amount || ""
               }
               onChange={(e) => handleAmountChange(e, reason)}
               type="number"
@@ -1172,15 +1181,13 @@ const HospitalPayment = () => {
         </Box>
       </Paper>
       <Paper sx={{ height: 400 }}>
-        <DataGrid
-          rows={payments.length ? payments : []}
-          columns={columns}
-        />
+        <DataGrid rows={payments.length ? payments : []} columns={columns} />
       </Paper>
       <ReceiptModal
         open={receiptOpen}
         onClose={() => {
           setReceiptOpen(false);
+          setReceiptData(null);
         }}
         data={receiptData}
         onPrint={handleRegisterAndPrint}

@@ -1,6 +1,5 @@
-import React, { useState, useReducer, useEffect } from "react";
-import { EtLocalizationProvider } from "habesha-datepicker";
-import EtDatePicker from "habesha-datepicker";
+import React, { useState, useReducer } from "react";
+import EtDatePicker from "mui-ethiopian-datepicker";
 import {
   Box,
   Button,
@@ -255,7 +254,7 @@ function CBHIUsersManager() {
             ].map(({ label, name }) => (
               <Grid item xs={12} sm={6} key={name}>
                 {["sdate", "edate"].includes(name) ? (
-                  <EtLocalizationProvider localType="EC">
+
                     <EtDatePicker
                       label={label}
                       name={name}
@@ -263,7 +262,7 @@ function CBHIUsersManager() {
                       onChange={(e) => handleChangeTime(name, e)}
                       sx={{ width: "100%" }}
                     />
-                  </EtLocalizationProvider>
+
                 ) : (
                   <TextField
                     fullWidth
