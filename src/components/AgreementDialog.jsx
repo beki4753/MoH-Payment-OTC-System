@@ -20,8 +20,10 @@ import VerifiedIcon from "@mui/icons-material/Verified";
 import { toast } from "react-toastify";
 import api from "../utils/api";
 import { getTokenValue } from "../services/user_service";
-
+import { convertToEthDateWithTime } from "../pages/reports/CollectedReport";
 const tokenvalue = getTokenValue();
+
+
 const formatter2 = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -72,6 +74,10 @@ const AgreementDialog = ({
     setVerifyEmp(undefined);
     setEmpVerified("no");
   };
+
+  useEffect(() => {
+    console.log("signature >> ", signature);
+  }, [signature]);
 
   const handleVerify = async () => {
     try {
@@ -276,7 +282,7 @@ const AgreementDialog = ({
                   setSignature(date.toISOString());
                 }}
               >
-                {signature || "Click to Sign"}
+                {convertToEthDateWithTime(signature) || "Click to Sign"}
               </Button>
             </Box>
           </DialogContent>

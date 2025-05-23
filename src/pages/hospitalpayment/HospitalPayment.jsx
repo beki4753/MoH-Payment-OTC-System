@@ -668,7 +668,6 @@ const HospitalPayment = () => {
         },
       });
       if (response.status === 201) {
-        console.log("Response is: ", response?.data);
         const final = {
           ...newPayment,
           patientName: response?.data?.data?.map((item) => item.patientName)[0],
@@ -719,6 +718,7 @@ const HospitalPayment = () => {
                 : params?.row?.paymentType?.toUpperCase()?.includes("CREDIT")
                 ? "red"
                 : "black",
+            fontSize: "0.9rem",
           }}
         >
           {params?.row?.paymentType}
@@ -826,7 +826,7 @@ const HospitalPayment = () => {
   };
 
   return (
-    <Container>
+    <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom>
         {language === "AMH" ? "የክፍያ መቆጣጠሪያ" : "Hospital Payment Management"}
       </Typography>
@@ -1164,7 +1164,7 @@ const HospitalPayment = () => {
         onloading={isPrintLoading}
       />
       <ToastContainer />
-    </Container>
+    </Box>
   );
 };
 export default HospitalPayment;

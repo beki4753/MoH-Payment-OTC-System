@@ -26,7 +26,6 @@ import { EthDateTime } from "ethiopian-calendar-date-converter";
 // Replace with your actual token getter and API helper
 import api from "../utils/api";
 import { getTokenValue } from "../services/user_service";
-import { filter } from "lodash";
 
 const tokenvalue = getTokenValue();
 
@@ -57,7 +56,6 @@ function CBHIUsersManager() {
   const [users, setUsers] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [formData, setFormData] = useState(initialFormState);
-  const [editingIndex, setEditingIndex] = useState(null);
   const [formDataError, setFormDataError] = useReducer(
     controllerError,
     initialFormState
@@ -89,7 +87,11 @@ function CBHIUsersManager() {
       try {
         const response = await api.get(`/Payment/get-service-provider`);
         if (response.status === 200) {
-          setUsers(response?.data);
+          const dataMod =
+            response?.data?.length > 0
+              ? response?.data?.sort((a, b) => b.id - a.id)
+              : [];
+          setUsers(dataMod);
         }
       } catch (error) {
         console.error("Fetch woredas error:", error);
@@ -100,7 +102,6 @@ function CBHIUsersManager() {
   }, [refresh]);
 
   const handleOpen = (data = null) => {
-    console?.log("Params: ", data);
     if (data !== null) {
       const updateData = {
         mrn: data?.mrn,
@@ -113,10 +114,8 @@ function CBHIUsersManager() {
         examination: data?.examination,
       };
       setFormData(updateData);
-      setEditingIndex(data?.id);
     } else {
       setFormData(initialFormState);
-      setEditingIndex(null);
     }
     setOpenDialog(true);
   };
@@ -125,7 +124,6 @@ function CBHIUsersManager() {
     setOpenDialog(false);
     setFormData(initialFormState);
     setFormDataError({ name: "Reset" });
-    setEditingIndex(null);
   };
 
   const handleChange = (e) => {
@@ -171,21 +169,12 @@ function CBHIUsersManager() {
         cardNumber: formData?.mrn,
       };
 
-      if (editingIndex !== null) {
-        const updated = [...users];
-        updated[editingIndex] = formData;
-        setUsers(updated);
-      } else {
-        const response = await api.post(
-          "/Payment/add-service-provider",
-          payload
-        );
-        if (response?.status === 201) {
-          toast.success("CBHI User Regustered Success Fully.");
-          setReferesh((prev) => !prev);
-        }
+      const response = await api.post("/Payment/add-service-provider", payload);
+      if (response?.status === 201) {
+        toast.success("CBHI User Regustered Success Fully.");
+        setReferesh((prev) => !prev);
+        handleClose();
       }
-      handleClose();
     } catch (error) {
       console.error("Save error:", error);
       toast.error("Failed to save user.");
@@ -219,7 +208,6 @@ function CBHIUsersManager() {
 
           const etDate = EthDateTime.fromEuropeanDate(correctedDate);
 
-         
           return `${etDate.year}-${String(etDate.month).padStart(
             2,
             "0"
@@ -229,17 +217,6 @@ function CBHIUsersManager() {
           return "";
         }
       },
-    },
-    {
-      field: "actions",
-      headerName: "Actions",
-      renderCell: (params) => (
-        <IconButton color="primary" onClick={() => handleOpen(params.row)}>
-          <Edit />
-        </IconButton>
-      ),
-      sortable: false,
-      width: 100,
     },
   ];
 
@@ -252,10 +229,10 @@ function CBHIUsersManager() {
   };
 
   const letterNumberCheck = (name, value) => {
-    const valid = /^[a-zA-Z0-9\u1200-\u137F\s]+$/.test(value);
+    const valid = /^[a-zA-Z0-9\u1200-\u137F\s\\\/]+$/.test(value);
     setFormDataError({
       name,
-      values: valid ? "" : "Letters and numbers only.",
+      values: valid ? "" : "Letters and numbers and \\ / only.",
     });
   };
 
@@ -297,10 +274,15 @@ function CBHIUsersManager() {
         sx={{ boxShadow: 3, borderRadius: 2 }}
       />
 
-      <Dialog open={openDialog} onClose={handleClose} fullWidth maxWidth="md">
-        <DialogTitle>
-          {editingIndex !== null ? "Edit" : "Add"} CBHI User
-        </DialogTitle>
+      <Dialog
+        open={openDialog}
+        onClose={handleClose}
+        fullWidth
+        maxWidth="md"
+        disableEnforceFocus // to remove focus warning
+        
+      >
+        <DialogTitle>Add CBHI User</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} mt={1}>
             {[

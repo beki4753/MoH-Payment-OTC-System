@@ -18,8 +18,25 @@ import { getTokenValue } from "../../services/user_service";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { formatAccounting2 } from "../hospitalpayment/HospitalPayment";
-
+import EtDatePicker from "mui-ethiopian-datepicker";
+import { EthDateTime } from "ethiopian-calendar-date-converter";
+import { renderETDateAtCell } from "../../components/PatientSearch";
 const tokenvalue = getTokenValue();
+
+export function convertToEthDateWithTime(isoDateStr) {
+  try {
+    if (!isoDateStr) return "";
+    //GMT+0300 (East Africa Time)
+    const europeanDate = new Date(
+      isoDateStr.replace("T", " ") + " GMT+0300 (East Africa Time)"
+    );
+    const ethDateTime = EthDateTime.fromEuropeanDate(europeanDate);
+    return ethDateTime.toFullDateTimeString();
+  } catch (error) {
+    console.error("Ethiopian DateTime Conversion Error:", error);
+    return "Invalid Ethiopian Date";
+  }
+}
 const CollectedReport = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -30,12 +47,14 @@ const CollectedReport = () => {
   const fetchReportData = async (e) => {
     try {
       e.preventDefault();
+
       const response = await api.put("/Collection/Get-all-Collection", {
         startDate: startDate,
         endDate: endDate,
         user: tokenvalue?.name,
         isCollected: 0,
       });
+
       if (response?.data.length <= 0) toast.info("Report not found!");
       const data =
         response?.data.length > 0
@@ -70,6 +89,37 @@ const CollectedReport = () => {
     } catch (error) {
       console.error(error);
       return [];
+    }
+  };
+
+  const dateObj = {
+    sdate: setStartDate,
+    edate: setEndDate,
+  };
+
+  const handleChangeTime = (fieldName, selectedDate) => {
+    try {
+      const jsDate =
+        selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
+
+      if (isNaN(jsDate.getTime())) {
+        console.error(
+          "Invalid date provided to handleChangeTime:",
+          selectedDate
+        );
+        toast.error("Invalid date selected.");
+        return;
+      }
+
+      // Adjust for local timezone
+      const tzOffsetMinutes = jsDate.getTimezoneOffset();
+      const localTime = new Date(jsDate.getTime() - tzOffsetMinutes * 60000);
+      const formattedDate = localTime.toISOString().split("T")[0];
+
+      dateObj[fieldName](formattedDate);
+    } catch (error) {
+      console.error("Date Picker Change Error:", error);
+      toast.error("Unable to select the date properly.");
     }
   };
 
@@ -124,7 +174,7 @@ const CollectedReport = () => {
             gap: 2,
           }}
         >
-          <TextField
+          {/* <TextField
             label="Start Date"
             type="date"
             value={startDate}
@@ -134,13 +184,36 @@ const CollectedReport = () => {
             }}
             InputLabelProps={{ shrink: true }}
             required
+          /> */}
+          <EtDatePicker
+            label="Start Date"
+            value={startDate.length > 0 ? new Date(startDate) : null}
+            onChange={(e) => {
+              // setStartDate(e);
+              handleChangeTime("sdate", e);
+              setShowOnlyHighAmount(false);
+            }}
+            InputLabelProps={{ shrink: true }}
+            required
           />
-          <TextField
+          {/* <TextField
             label="End Date"
             type="date"
             value={endDate}
             onChange={(e) => {
               setEndDate(e.target.value);
+              setShowOnlyHighAmount(false);
+            }}
+            InputLabelProps={{ shrink: true }}
+            required
+          /> */}
+
+          <EtDatePicker
+            label="End Date"
+            value={endDate?.length > 0 ? new Date(endDate) : null}
+            onChange={(e) => {
+              // setEndDate(e);
+              handleChangeTime("edate", e);
               setShowOnlyHighAmount(false);
             }}
             InputLabelProps={{ shrink: true }}
@@ -165,8 +238,22 @@ const CollectedReport = () => {
           rows={showOnlyHighAmount ? filteredData : data}
           columns={[
             { field: "id", headerName: "ID", width: 40 },
-            { field: "fromDate", headerName: "Start Date", width: 150 },
-            { field: "toDate", headerName: "End Date", width: 140 },
+            {
+              field: "fromDate",
+              headerName: "Start Date",
+              width: 150,
+              renderCell: (params) => {
+                return renderETDateAtCell(params?.row?.fromDate);
+              },
+            },
+            {
+              field: "toDate",
+              headerName: "End Date",
+              width: 140,
+              renderCell: (params) => {
+                return renderETDateAtCell(params?.row?.toDate);
+              },
+            },
             {
               field: "collectedAmount",
               headerName: "Amount",
@@ -180,6 +267,9 @@ const CollectedReport = () => {
               field: "collectedOn",
               headerName: "Collected Date",
               width: 170,
+              renderCell: (params) => {
+                return convertToEthDateWithTime(params?.row?.collectedOn);
+              },
             },
           ]}
         />

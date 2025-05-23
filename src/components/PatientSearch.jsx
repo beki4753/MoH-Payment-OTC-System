@@ -1,4 +1,4 @@
-import React, { useReducer, useState } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 import {
   Box,
   Typography,
@@ -12,12 +12,34 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import api from "../utils/api";
+import { EthDateTime } from "ethiopian-calendar-date-converter";
 
 const initialState = {
   fname: "",
   fatname: "",
   gfatname: "",
   mobile: "",
+};
+
+export const renderETDateAtCell = (data) => {
+  try {
+    const rawDate = data;
+    if (!rawDate) return "";
+
+    const parsedDate = new Date(rawDate);
+
+    const correctedDate = new Date(parsedDate.getTime() + 3 * 60 * 60 * 1000);
+
+    const etDate = EthDateTime.fromEuropeanDate(correctedDate);
+
+    return `${etDate.year}-${String(etDate.month).padStart(2, "0")}-${String(
+      etDate.date
+    ).padStart(2, "0")}`;
+  } catch (err) {
+    console.error("Date conversion error:", err);
+    return "";
+  }
 };
 
 const controller = (state, action) => {
@@ -44,6 +66,44 @@ const controllerError = (state, action) => {
   }
 };
 
+const dataModFunc = async (data) => {
+  try {
+    const dataMod =
+      data.length > 0
+        ? data.map(
+            (
+              {
+                rowID,
+                patientFirstName,
+                patientMiddleName,
+                patientLastName,
+                patientSpouseFirstName,
+                patientSpouselastName,
+                ...rest
+              },
+              index
+            ) => ({
+              id: index + 1,
+              patientFName:
+                patientFirstName +
+                " " +
+                patientMiddleName +
+                " " +
+                patientLastName,
+              patientSpouseName:
+                patientSpouseFirstName + " " + patientSpouselastName,
+              ...rest,
+            })
+          )
+        : [];
+
+    return dataMod;
+  } catch (error) {
+    console.error("This is the Data Modification Error: ", error);
+    return [];
+  }
+};
+
 const PatientSearch = () => {
   const theme = useTheme();
   const [formData, setFormData] = useReducer(controller, initialState);
@@ -52,14 +112,79 @@ const PatientSearch = () => {
     initialState
   );
   const [loading, setLoading] = useState(false);
-  const rows = [
-    { id: 1, name: "bereket" },
-    { id: 2, name: "bereket" },
-  ];
+  const [rows, setRows] = useState([]);
+  const [searchData, setSearchData] = useState([]);
+  const [totalP, setTotalP] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
+
+  //fetch Data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await api.put("/Patient/get-patient-info", {
+          currentTime: new Date(),
+        });
+        if (response?.status === 200) {
+          const dataMod = await dataModFunc(response?.data?.data);
+          setRows(dataMod);
+          setTotalP(response?.data?.totalPatient || 0);
+        }
+      } catch (error) {
+        console.error("This is Fetch Data Error: ", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  //Searching Check Task
+  useEffect(() => {
+    setIsSearching(checkSeacrh());
+  }, [formData]);
+
+  const conditionalObje = async (gfatname, fatname, fname, mobile) => {
+    try {
+      const result = { currentTime: new Date() };
+      if (!!gfatname) result.patientLastName = gfatname;
+      if (!!fatname) result.patientMiddleName = fatname;
+      if (!!fname) result.patientFirstName = fname;
+      if (!!mobile) result.patientPhone = mobile;
+      return result;
+    } catch (error) {
+      console.error("This is the Conditional Rendering Error: ", error);
+      return {};
+    }
+  };
 
   const columns = [
-    { field: "id", headerName: "ID", flex: 1 },
-    { field: "name", headerName: "Name", flex: 1 },
+    { field: "patientCardNumber", headerName: "Patient MRN", flex: 1 },
+    { field: "patientFName", headerName: "Patient Name", flex: 1 },
+    { field: "patientMotherName", headerName: "Mother Name", flex: 1 },
+    {
+      field: "patientGender",
+      headerName: "Gender",
+      flex: 1,
+      maxWidth: "10px",
+    },
+    {
+      field: "patientDOB",
+      headerName: "Date of Birth",
+      flex: 1,
+      renderCell: (params) => {
+        return renderETDateAtCell(params?.row?.patientDOB);
+      },
+    },
+    { field: "patientPhoneNumber", headerName: "Mobile", flex: 1 },
+    { field: "appointment", headerName: "Provider", flex: 1 },
+    { field: "department", headerName: "Department", flex: 1 },
+    { field: "patientSpouseName", headerName: "Spouse Name", flex: 1 },
+    {
+      field: "patientVisitingDate",
+      headerName: "Visiting Date",
+      flex: 1,
+      renderCell: (params) => {
+        return renderETDateAtCell(params?.row?.patientVisitingDate);
+      },
+    },
   ];
 
   const handleChange = (e) => {
@@ -85,13 +210,28 @@ const PatientSearch = () => {
     setFormDataError({ name: "Reset" });
   };
 
-  const hadndleSearch = async () => {
+  const checkSeacrh = () => {
+    if (
+      formData.fname.length > 0 ||
+      formData.fatname.length > 0 ||
+      formData.gfatname.length > 0 ||
+      formData?.mobile.length > 0
+    ) {
+      return true;
+    } else {
+      setSearchData([]);
+      return false;
+    }
+  };
+
+  const handleSeacrh = async () => {
     try {
       setLoading(true);
       if (
         formData.fname.length <= 0 &&
         formData.fatname.length <= 0 &&
-        formData.gfatname.length <= 0
+        formData.gfatname.length <= 0 &&
+        formData?.mobile.length <= 0
       ) {
         toast.info("Please fill at least one of field to search.");
         return;
@@ -99,7 +239,22 @@ const PatientSearch = () => {
         toast.info("Please fix the errors first.");
         return;
       }
-      console.log("formData >> : ", formData);
+      const payload = await conditionalObje(
+        formData.gfatname,
+        formData.fatname,
+        formData.fname,
+        formData.mobile
+      );
+      console.log("This is the Paylod: ", payload);
+      const response = await api.put("/Patient/get-patient-info", payload);
+      if (response?.status === 200) {
+        const modDat = await dataModFunc(response?.data?.data);
+        if (modDat.length > 0) {
+          setSearchData(modDat);
+        } else {
+          toast.info("Data not found!");
+        }
+      }
     } catch (error) {
       console.error("The Searching Error: ", error);
       toast.error(error?.response?.data?.message || "Internal server error.");
@@ -108,7 +263,7 @@ const PatientSearch = () => {
     }
   };
 
- const validateName = (name, value) => {
+  const validateName = (name, value) => {
     const usernameRegex = /^[a-zA-Z\u1200-\u137F]{3,}$/;
     if (!usernameRegex.test(value) && value.length > 0) {
       setFormDataError({
@@ -167,7 +322,7 @@ const PatientSearch = () => {
           borderRadius: 2,
           backgroundColor: "#f9f9f9",
           boxShadow: 3,
-          marginInline:"15px"
+          marginInline: "15px",
         }}
       >
         <Paper elevation={1} sx={{ p: { xs: 2, sm: 3 } }}>
@@ -237,7 +392,7 @@ const PatientSearch = () => {
                 variant="contained"
                 color="primary"
                 fullWidth
-                onClick={hadndleSearch}
+                onClick={handleSeacrh}
                 sx={{ height: "100%" }}
               >
                 {loading ? (
@@ -261,16 +416,33 @@ const PatientSearch = () => {
             </Grid>
           </Grid>
 
-          <Typography
-            variant="subtitle1"
-            sx={{ mb: 1, fontWeight: 500, color: "text.secondary" }}
-          >
-            Patients Information
-          </Typography>
+          <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+            <Grid item xs={12} sm={6} md={6}>
+              <Typography
+                variant="subtitle1"
+                sx={{ mb: 1, fontWeight: 500, color: "text.secondary" }}
+              >
+                Patients Information
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} md={6}>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  mb: 1,
+                  fontWeight: 500,
+                  color: "text.secondary",
+                  justifySelf: "end",
+                }}
+              >
+                Total Patient is &nbsp; <strong>{totalP}</strong>
+              </Typography>
+            </Grid>
+          </Grid>
 
           <Box sx={{ height: 300, width: "100%" }}>
             <DataGrid
-              rows={rows}
+              rows={isSearching ? searchData : rows}
               columns={columns}
               pageSize={5}
               rowsPerPageOptions={[5]}

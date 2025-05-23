@@ -29,7 +29,6 @@ const formatAccounting2 = (num) => {
   return num < 0 ? `(${formatted})` : formatted;
 };
 
-
 const COLORS = ["#00C49F", "#FF8042"];
 
 const isNumber = (value) => !isNaN(parseFloat(value)) && isFinite(value);
@@ -46,7 +45,7 @@ const PaymentStatusCard = ({ title, amount, trend, status }) => {
         </Typography>
         <Box display="flex" alignItems="center" mt={2}>
           <Typography variant="body2" color="textSecondary">
-            {isNumber(trend)?trend:0}% {status}
+            {isNumber(trend) ? trend : 0}% {status}
           </Typography>
         </Box>
       </CardContent>
@@ -60,7 +59,6 @@ const FinancialDashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [refresh, setRefresh] = useState(false);
 
-
   useEffect(() => {
     const fetchColl1 = async () => {
       try {
@@ -69,22 +67,26 @@ const FinancialDashboard = () => {
         );
 
         const updatedUncollectedData =
-        response1?.data.length >0 ? response1?.data?.map(({ uncollectedCashAmount, ...rest }) => ({
-            collectedAmount: uncollectedCashAmount,
-            ...rest,
-          })) || [] :[];
+          response1?.data.length > 0
+            ? response1?.data?.map(({ uncollectedCashAmount, ...rest }) => ({
+                collectedAmount: uncollectedCashAmount,
+                ...rest,
+              })) || []
+            : [];
 
         const fetchColl = async () => {
           try {
             const response2 = await api.get(
               `/Collection/collection/${tokenvalue.name}`
             );
-             
+
             const updatedCollectedData =
-            response2?.data.length >0 ? response2?.data?.map(({ collectionId, ...rest }) => ({
-                id: collectionId,
-                ...rest,
-              })) || [] : [];
+              response2?.data.length > 0
+                ? response2?.data?.map(({ collectionId, ...rest }) => ({
+                    id: collectionId,
+                    ...rest,
+                  })) || []
+                : [];
 
             return updatedCollectedData
               .map((prev) => ({ ...prev, status: "collected" }))
@@ -99,7 +101,7 @@ const FinancialDashboard = () => {
         };
 
         const collected = await fetchColl();
-          
+
         const maxId =
           collected.length > 0
             ? Math.max(...collected.map((item) => item.id))
@@ -127,9 +129,7 @@ const FinancialDashboard = () => {
     fetchColl1();
   }, [refresh]);
 
-
-
-  const generatePDF = (data,amount) => {
+  const generatePDF = (data, amount) => {
     try {
       const doc = new jsPDF();
 
@@ -182,7 +182,16 @@ const FinancialDashboard = () => {
       doc.setFont("helvetica", "bold");
       doc.text(`RECEIVED DATE:`, 20, yPos);
       doc.setFont("helvetica", "normal");
-      doc.text(`${new Date(data?.signature).toISOString().slice(0, 19).replace("T", " , ")  || "N/A"}`, 100, yPos);
+      doc.text(
+        `${
+          new Date(data?.signature)
+            .toISOString()
+            .slice(0, 19)
+            .replace("T", " , ") || "N/A"
+        }`,
+        100,
+        yPos
+      );
       yPos += 20;
 
       doc.setFont("helvetica", "bold");
@@ -205,16 +214,18 @@ const FinancialDashboard = () => {
       doc.line(140, yPos, 190, yPos);
       yPos += 10;
 
-
       // Save PDF
       doc.save(
-        `${data?.signature || "unknown date"}_aggrement_between_${tokenvalue?.name || "unknown cashier"}_and_${data?.empName || "unknown banker"}_on_${amount?amount:"unknown amount"}_money.pdf`
+        `${data?.signature || "unknown date"}_aggrement_between_${
+          tokenvalue?.name || "unknown cashier"
+        }_and_${data?.empName || "unknown banker"}_on_${
+          amount ? amount : "unknown amount"
+        }_money.pdf`
       );
     } catch (error) {
       console.error(error.message);
     }
   };
-
 
   const handleSubmit = async (data) => {
     try {
@@ -228,16 +239,16 @@ const FinancialDashboard = () => {
         casher: tokenvalue.name,
       });
       if (response.status === 201) {
-        toast.success("Cash Collected Successfully!")
-        setRefresh((prev)=>!prev)
-        generatePDF(data,selectedTransaction.collectedAmount)
-        setSelectedTransaction(null)
+        toast.success("Cash Collected Successfully!");
+        setRefresh((prev) => !prev);
+        generatePDF(data, selectedTransaction.collectedAmount);
+        setSelectedTransaction(null);
 
         setOpenDialog(false);
       }
     } catch (error) {
       console.error(error);
-      toast.error(error?.response?.data || "Internal Server Error!")
+      toast.error(error?.response?.data || "Internal Server Error!");
     }
   };
 
@@ -268,17 +279,26 @@ const FinancialDashboard = () => {
       minWidth: 120,
       renderCell: (params) => formatAccounting(params.value),
     },
+
     {
       field: "status",
       headerName: "Status",
       flex: 1,
       minWidth: 150,
       renderCell: (params) => (
-        <Typography
-          color={params.row.status === "collected" ? "green" : "orange"}
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
+            margin: 0,
+            color: params.row.status === "collected" ? "green" : "orange",
+            fontSize: "0.9rem",
+          }}
         >
           {params.row.status}
-        </Typography>
+        </span>
       ),
     },
     { field: "collectedBy", headerName: "Collector", flex: 1, minWidth: 120 },
@@ -388,7 +408,7 @@ const FinancialDashboard = () => {
         BackdropProps={{ style: { backgroundColor: "rgba(0, 0, 0, 0.5)" } }}
         onSubmit={handleSubmit}
       />
-      <ToastContainer/>
+      <ToastContainer />
     </Box>
   );
 };

@@ -22,6 +22,7 @@ import { styled } from "@mui/material/styles";
 import { formatAccounting2 } from "../hospitalpayment/HospitalPayment";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import EtDatePicker from "mui-ethiopian-datepicker";
 
 const ReportPage = () => {
   const [payments, setPayments] = useState([]);
@@ -84,9 +85,13 @@ const ReportPage = () => {
 
   useEffect(() => {
     try {
-      const newSet = new Set(payments.map((item) => item.type));
-      const prev = new Set(paymentMethods.map((item) => item.type));
-      const diffSet = new Set([...newSet].filter((x) => !prev.has(x)));
+      const newSet = new Set(payments.map((item) => item.paymentType));
+      const prev = new Set(
+        paymentMethods.map((item) => item?.type?.toLowerCase())
+      );
+      const diffSet = new Set(
+        [...newSet].filter((x) => !prev.has(x?.toLowerCase()))
+      );
 
       if (diffSet.size === 0) return;
 
@@ -108,8 +113,8 @@ const ReportPage = () => {
 
   const exportToExcel = () => {
     const filtered = filteredPayments.map(
-      ({ id, collectionID, createdOn, ...rest }) => {
-        return { ...rest, createdOn: createdOn.split("T")[0] };
+      ({ id, collectionID, registeredOn, ...rest }) => {
+        return { ...rest, registeredOn: registeredOn.split("T")[0] };
       }
     );
     const ws = XLSX.utils.json_to_sheet(filtered);
@@ -128,8 +133,8 @@ const ReportPage = () => {
         return;
       }
       const modified = filteredPayments.map(
-        ({ refNo, id, collectionID, createdOn, isCollected, ...rest }) => {
-          return { ...rest, createdOn: createdOn.split("T")[0] };
+        ({ refNo, id, collectionID, registeredOn, isCollected, ...rest }) => {
+          return { ...rest, registeredOn: registeredOn.split("T")[0] };
         }
       );
 
@@ -163,8 +168,6 @@ const ReportPage = () => {
       toast.error("Report Generation Failed.");
     }
   };
-
-  
 
   const StyledGridOverlay = styled("div")(({ theme }) => ({
     display: "flex",
@@ -226,7 +229,8 @@ const ReportPage = () => {
           ? payments.filter((payment) =>
               selectedMethod === "ALL"
                 ? payment
-                : payment.type === selectedMethod
+                : payment.paymentType.toLowerCase() ===
+                  selectedMethod.toLocaleLowerCase()
             )
           : []
       );
@@ -246,31 +250,81 @@ const ReportPage = () => {
       return payments
         ? payments
             .filter((payment) =>
-              method === "ALL" ? payment : payment.type === method
+              method === "ALL"
+                ? payment
+                : payment.paymentType?.toLowerCase() === method?.toLowerCase()
             )
-            .reduce((sum, payment) => sum + Number(payment.amount), 0)
+            .reduce((sum, payment) => sum + Number(payment.paymentAmount), 0)
         : 0; // Ensure amount is treated as a number
     } catch (error) {
       console.error("Calc Error : ", error);
     }
   };
 
+
   const columns = [
-    { field: "refNo", headerName: "Ref No.", width: 200 },
+    { field: "referenceNo", headerName: "Ref No.", width: 200 },
     { field: "hospitalName", headerName: "Hospital Name", width: 150 },
-    { field: "cardNumber", headerName: "Card Number", width: 150 },
-    { field: "purpose", headerName: "Service", width: 150 },
+    { field: "patientCardNumber", headerName: "Card Number", width: 150 },
+    { field: "paymentReason", headerName: "Service", width: 150 },
     {
-      field: "amount",
+      field: "paymentAmount",
       headerName: "Amount",
       width: 120,
-      renderCell: (params) => formatAccounting2(params.row.amount),
+      renderCell: (params) => formatAccounting2(params.row.paymentAmount),
     },
-    { field: "type", headerName: "Payment Method", width: 150 },
-    { field: "description", headerName: "Description", width: 200 },
-    { field: "createdOn", headerName: "Date", width: 150 },
-    { field: "createdby", headerName: "Created by", width: 150 },
+    { field: "paymentType", headerName: "Payment Method", width: 150 },
+    { field: "paymentDescription", headerName: "Description", width: 200 },
+    { field: "registeredOn", headerName: "Date", width: 150 },
+    { field: "registeredBy", headerName: "Created by", width: 150 },
   ];
+
+  useEffect(() => {
+    console.log("This is the Date of Amharic: ", startDate, endDate);
+  }, [startDate, endDate]);
+
+  const dateObj = {
+    sdate: setStartDate,
+    edate: setEndDate,
+  };
+
+  const handleChangeTime = (fieldName, selectedDate) => {
+    try {
+      const jsDate =
+        selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
+
+      if (isNaN(jsDate.getTime())) {
+        console.error(
+          "Invalid date provided to handleChangeTime:",
+          selectedDate
+        );
+        toast.error("Invalid date selected.");
+        return;
+      }
+
+      // Adjust for local timezone
+      const tzOffsetMinutes = jsDate.getTimezoneOffset();
+      const offsetSign = tzOffsetMinutes <= 0 ? "+" : "-";
+      const offsetHours = String(
+        Math.floor(Math.abs(tzOffsetMinutes) / 60)
+      ).padStart(2, "0");
+      const offsetMinutes = String(Math.abs(tzOffsetMinutes) % 60).padStart(
+        2,
+        "0"
+      );
+
+      const localTime = new Date(jsDate.getTime() - tzOffsetMinutes * 60000);
+      const formattedDate = localTime
+        .toISOString()
+        .slice(0, 19)
+        .replace("T", " ");
+      const finalDateTime = `${formattedDate} ${offsetSign}${offsetHours}:${offsetMinutes}`;
+      dateObj[fieldName](finalDateTime);
+    } catch (error) {
+      console.error("Date Picker Change Error:", error);
+      toast.error("Unable to select the date properly.");
+    }
+  };
 
   const handleReportRequest = async () => {
     try {
@@ -280,8 +334,8 @@ const ReportPage = () => {
       }
 
       const datas = await GetAllPaymentByDate({
-        startDate,
-        endDate,
+        startDate: new Date(startDate.replace(" +03:00", "")),
+        endDate: new Date(endDate.replace(" +03:00", "")),
         user: tokenValue.name,
       });
 
@@ -293,7 +347,8 @@ const ReportPage = () => {
             ? payments.filter((payment) =>
                 selectedMethod === "ALL"
                   ? payment
-                  : payment.type === selectedMethod
+                  : payment.paymentType.toLowerCase() ===
+                    selectedMethod.toLowerCase()
               )
             : []
         );
@@ -306,7 +361,8 @@ const ReportPage = () => {
           ? payments.filter((payment) =>
               selectedMethod === "All"
                 ? payment
-                : payment.type === selectedMethod
+                : payment.paymentType.toLowerCase() ===
+                  selectedMethod.toLowerCase()
             )
           : []
       );
@@ -361,7 +417,7 @@ const ReportPage = () => {
       <Paper sx={{ padding: 2, margin: 2 }}>
         <Grid container spacing={1}>
           <Grid item xs={2}>
-            <TextField
+            {/* <TextField
               label="Start Date"
               type="date"
               value={startDate}
@@ -375,11 +431,42 @@ const ReportPage = () => {
               InputLabelProps={{ shrink: true }}
               required
               sx={{ marginRight: 2 }}
+            /> */}
+            <EtDatePicker
+              key={startDate || "startDate"}
+              label="Start Date"
+              value={startDate ? new Date(startDate) : null}
+              onChange={(e) => {
+                // setStartDate(e);
+                handleChangeTime("sdate", e);
+                setFormData({
+                  woreda: "",
+                  organization: "",
+                });
+              }}
+              required
+              sx={{ marginRight: 2 }}
             />
           </Grid>
 
           <Grid item xs={2}>
-            <TextField
+            <EtDatePicker
+              key={endDate || "endDate"}
+              label="End Date"
+              value={endDate ? new Date(endDate) : null}
+              onChange={(e) => {
+                // setEndDate(e);
+                handleChangeTime("edate", e);
+                setFormData({
+                  woreda: "",
+                  organization: "",
+                });
+              }}
+              InputLabelProps={{ shrink: true }}
+              required
+              sx={{ marginRight: 2 }}
+            />
+            {/* <TextField
               label="End Date"
               type="date"
               value={endDate}
@@ -393,7 +480,7 @@ const ReportPage = () => {
               InputLabelProps={{ shrink: true }}
               required
               sx={{ marginRight: 2 }}
-            />
+            /> */}
           </Grid>
           <Grid item xs={2}>
             <Button

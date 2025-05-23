@@ -242,6 +242,7 @@ function PatientRegistration() {
     setFormDataError({ name: "Reset" });
     setActiveStep(0);
   };
+  
   const handleChangeTime = (fieldName, selectedDate) => {
     try {
       const jsDate =
@@ -594,8 +595,8 @@ function PatientRegistration() {
             dep: item.department,
             edu: item.patientEducationlevel,
             mstatus: item.patientMaritalstatus,
-            sfname: item.patientSpouseFirstName,
-            sname: item.patientSpouselastName,
+            sname: item.patientSpouseFirstName,
+            sfname: item.patientSpouselastName,
             vdate: item.patientVisitingDate,
             region: item.patientRegion,
             woreda: item.patientWoreda,
