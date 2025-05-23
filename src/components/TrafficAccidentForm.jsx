@@ -151,13 +151,8 @@ function TrafficAccidentCrud() {
           const rawDate = params?.row?.accidentDate;
           if (!rawDate) return "";
 
-          // Parse the raw date string to a JS Date
           const gDate = new Date(rawDate.replace(" ", "T").replace(" +", "+"));
-
-          // Convert Gregorian date to Ethiopian date
           const etDate = EthDateTime.fromEuropeanDate(gDate);
-
-          // Format as YYYY-MM-DD (Ethiopian calendar)
           const formattedString = `${etDate.year}-${String(
             etDate.month
           ).padStart(2, "0")}-${String(etDate.date).padStart(2, "0")}`;

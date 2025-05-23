@@ -1,5 +1,4 @@
-import React, { useState, useReducer } from "react";
-import EtDatePicker from "mui-ethiopian-datepicker";
+import React, { useState, useReducer, useEffect } from "react";
 import {
   Box,
   Button,
@@ -12,34 +11,46 @@ import {
   Grid,
   IconButton,
   CircularProgress,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { Add, Edit } from "@mui/icons-material";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import EtDatePicker from "mui-ethiopian-datepicker";
+import { EthDateTime } from "ethiopian-calendar-date-converter";
+
+// Replace with your actual token getter and API helper
+import api from "../utils/api";
+import { getTokenValue } from "../services/user_service";
+import { filter } from "lodash";
+
+const tokenvalue = getTokenValue();
 
 const initialFormState = {
   mrn: "",
   id: "",
   goth: "",
   kebele: "",
-  sdate: "",
-  edate: "",
+  expDate: "",
   referralNumber: "",
   letterNumber: "",
   examination: "",
 };
 
 const controllerError = (state, action) => {
-  try {
-    if (action.name === "Reset") {
-      return initialFormState;
-    } else {
-      return { ...state, [action.name]: action.values };
-    }
-  } catch (error) {
-    console.error("State Update Error: ", error);
-  }
+  if (action.name === "Reset") return initialFormState;
+  return { ...state, [action.name]: action.values };
+};
+
+const requiredFields = {
+  mrn: "MRN",
+  id: "ID",
+  kebele: "Woreda/Kebele",
+  expDate: "Expiration Date",
 };
 
 function CBHIUsersManager() {
@@ -52,11 +63,57 @@ function CBHIUsersManager() {
     initialFormState
   );
   const [loading, setLoading] = useState(false);
+  const [woredas, setWoredas] = useState([]);
+  const [refresh, setReferesh] = useState(false);
 
-  const handleOpen = (index = null) => {
-    if (index !== null) {
-      setFormData(users[index]);
-      setEditingIndex(index);
+  //Fetch Providers
+  useEffect(() => {
+    const fetchWoredas = async () => {
+      try {
+        const response = await api.get(
+          `/Providers/list-providers/${tokenvalue.name}`
+        );
+        if (response.status === 200) {
+          setWoredas(response?.data?.map((item) => item.provider));
+        }
+      } catch (error) {
+        console.error("Fetch woredas error:", error);
+      }
+    };
+    fetchWoredas();
+  }, []);
+
+  //Get data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await api.get(`/Payment/get-service-provider`);
+        if (response.status === 200) {
+          setUsers(response?.data);
+        }
+      } catch (error) {
+        console.error("Fetch woredas error:", error);
+      }
+    };
+
+    fetchData();
+  }, [refresh]);
+
+  const handleOpen = (data = null) => {
+    console?.log("Params: ", data);
+    if (data !== null) {
+      const updateData = {
+        mrn: data?.mrn,
+        id: data?.idNo,
+        goth: data?.goth,
+        kebele: data?.provider,
+        expDate: data?.expDate,
+        referralNumber: data?.referalNo,
+        letterNumber: data?.letterNo,
+        examination: data?.examination,
+      };
+      setFormData(updateData);
+      setEditingIndex(data?.id);
     } else {
       setFormData(initialFormState);
       setEditingIndex(null);
@@ -73,41 +130,65 @@ function CBHIUsersManager() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === "mrn") {
-      mrnCheck(name, value);
-    } else {
-      letterNumberCheck(name, value);
-    }
+    if (name === "mrn") mrnCheck(name, value);
+    else letterNumberCheck(name, value);
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSave = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      if (
-        formData?.mrn?.length <= 0 ||
-        formData?.id?.length <= 0 ||
-        formData?.kebele?.length <= 0
-      ) {
-        toast.error("Please Insert the required fields.");
+      const missingFields = Object.keys(requiredFields).filter(
+        (key) => !formData[key]
+      );
+
+      if (missingFields.length > 0) {
+        const fieldNames = missingFields
+          .map((key) => requiredFields[key])
+          .join(", ");
+        toast.error(
+          `Please fill in the following required fields: ${fieldNames}`
+        );
         return;
       }
 
-      if (Object.values(formDataError).some((em) => em.length > 0)) {
-        toast.error("Please fix the errors first.");
+      if (Object.values(formDataError).some((err) => err.length > 0)) {
+        toast.error("Please fix the errors.");
         return;
       }
+
+      const payload = {
+        provider: formData?.kebele,
+        service: "CBHI",
+        kebele: formData?.kebele,
+        goth: formData?.goth,
+        idNo: formData?.id,
+        referalNo: formData?.referralNumber,
+        letterNo: formData?.letterNumber,
+        examination: formData?.examination,
+        expDate: formData?.expDate,
+        cardNumber: formData?.mrn,
+      };
 
       if (editingIndex !== null) {
         const updated = [...users];
         updated[editingIndex] = formData;
         setUsers(updated);
       } else {
-        setUsers((prev) => [...prev, formData]);
+        const response = await api.post(
+          "/Payment/add-service-provider",
+          payload
+        );
+        if (response?.status === 201) {
+          toast.success("CBHI User Regustered Success Fully.");
+          setReferesh((prev) => !prev);
+        }
       }
       handleClose();
     } catch (error) {
-      console.error("This is Submit Error: ", error);
+      console.error("Save error:", error);
+      toast.error("Failed to save user.");
     } finally {
       setLoading(false);
     }
@@ -115,19 +196,45 @@ function CBHIUsersManager() {
 
   const columns = [
     { field: "mrn", headerName: "MRN", flex: 1 },
-    { field: "id", headerName: "ID", flex: 1 },
-    { field: "kebele", headerName: "Woreda/Kebele", flex: 1 },
-    { field: "referralNumber", headerName: "Referral No.", flex: 1 },
-    { field: "letterNumber", headerName: "Letter No.", flex: 1 },
+    { field: "idNo", headerName: "ID", flex: 1 },
+    { field: "provider", headerName: "Woreda/Kebele", flex: 1 },
+    { field: "goth", headerName: "Goth", flex: 1 },
+    { field: "referalNo", headerName: "Referral No.", flex: 1 },
+    { field: "letterNo", headerName: "Letter No.", flex: 1 },
     { field: "examination", headerName: "Examination", flex: 1 },
+    {
+      field: "expDate",
+      headerName: "Expired Date",
+      flex: 1,
+      renderCell: (params) => {
+        try {
+          const rawDate = params?.row?.expDate;
+          if (!rawDate) return "";
+
+          const parsedDate = new Date(rawDate);
+
+          const correctedDate = new Date(
+            parsedDate.getTime() + 3 * 60 * 60 * 1000
+          );
+
+          const etDate = EthDateTime.fromEuropeanDate(correctedDate);
+
+         
+          return `${etDate.year}-${String(etDate.month).padStart(
+            2,
+            "0"
+          )}-${String(etDate.date).padStart(2, "0")}`;
+        } catch (err) {
+          console.error("Date conversion error:", err);
+          return "";
+        }
+      },
+    },
     {
       field: "actions",
       headerName: "Actions",
       renderCell: (params) => (
-        <IconButton
-          color="primary"
-          onClick={() => handleOpen(params.row.index)}
-        >
+        <IconButton color="primary" onClick={() => handleOpen(params.row)}>
           <Edit />
         </IconButton>
       ),
@@ -136,76 +243,39 @@ function CBHIUsersManager() {
     },
   ];
 
-  const rows = users.map((user, index) => ({ ...user, id: index, index }));
-
   const mrnCheck = (name, value) => {
-    const comp = /^[0-9]{5,}$/;
-    if (!comp.test(value) && value.length > 0) {
-      setFormDataError({
-        name: name,
-        values: "Please Insert Valid MRN, more than 5 digit only.",
-      });
-    } else {
-      setFormDataError({
-        name: name,
-        values: "",
-      });
-    }
+    const valid = /^[0-9]{5,}$/.test(value);
+    setFormDataError({
+      name,
+      values: valid ? "" : "Please enter valid MRN (5+ digits).",
+    });
   };
 
   const letterNumberCheck = (name, value) => {
-    const comp = /^[a-zA-Z0-9\u1200-\u137F\s]+$/;
-    if (!comp.test(value) && value.length > 0) {
-      setFormDataError({
-        name: name,
-        values: "Letters Number and space Only.",
-      });
-    } else {
-      setFormDataError({
-        name: name,
-        values: "",
-      });
-    }
+    const valid = /^[a-zA-Z0-9\u1200-\u137F\s]+$/.test(value);
+    setFormDataError({
+      name,
+      values: valid ? "" : "Letters and numbers only.",
+    });
   };
 
   const handleChangeTime = (fieldName, selectedDate) => {
-    let jsDate;
-    if (selectedDate instanceof Date) {
-      jsDate = selectedDate;
-    } else {
-      jsDate = new Date(selectedDate);
-    }
-
-    if (isNaN(jsDate.getTime())) {
-      console.error("Invalid date provided to handleChangeTime:", selectedDate);
-      return;
-    }
-
-    const tzOffsetMinutes = jsDate.getTimezoneOffset();
-    const absOffset = Math.abs(tzOffsetMinutes);
-    const offsetHours = String(Math.floor(absOffset / 60)).padStart(2, "0");
-    const offsetMinutes = String(absOffset % 60).padStart(2, "0");
-    const sign = tzOffsetMinutes <= 0 ? "+" : "-";
-
-    const localDate = new Date(jsDate.getTime() - tzOffsetMinutes * 60000);
+    const jsDate = new Date(selectedDate);
+    if (isNaN(jsDate.getTime())) return;
+    const tzOffset = jsDate.getTimezoneOffset();
+    const offsetStr = `${tzOffset <= 0 ? "+" : "-"}${String(
+      Math.abs(tzOffset / 60)
+    ).padStart(2, "0")}:${String(Math.abs(tzOffset % 60)).padStart(2, "0")}`;
+    const localDate = new Date(jsDate.getTime() - tzOffset * 60000);
     const dateStr = localDate.toISOString().slice(0, 19).replace("T", " ");
-
-    const sqlDateOffset = `${dateStr} ${sign}${offsetHours}:${offsetMinutes}`;
-
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: sqlDateOffset,
-    }));
+    const sqlDateOffset = `${dateStr} ${offsetStr}`;
+    setFormData((prev) => ({ ...prev, [fieldName]: sqlDateOffset }));
   };
 
   return (
     <Box p={4}>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={2}
-      >
+      <ToastContainer />
+      <Box display="flex" justifyContent="space-between" mb={2}>
         <Typography variant="h5" fontWeight="bold">
           CBHI Users Management
         </Typography>
@@ -217,25 +287,17 @@ function CBHIUsersManager() {
           Add CBHI User
         </Button>
       </Box>
+
       <DataGrid
         autoHeight
-        rows={rows}
+        rows={users}
         columns={columns}
         pageSize={5}
         rowsPerPageOptions={[5]}
         sx={{ boxShadow: 3, borderRadius: 2 }}
       />
-      <Dialog
-        open={openDialog}
-        onClose={(event, reason) => {
-          if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
-            handleClose(); // Reset and close the modal
-          }
-        }}
-        disablePortal={false} // default = false
-        fullWidth
-        maxWidth="md"
-      >
+
+      <Dialog open={openDialog} onClose={handleClose} fullWidth maxWidth="md">
         <DialogTitle>
           {editingIndex !== null ? "Edit" : "Add"} CBHI User
         </DialogTitle>
@@ -246,38 +308,47 @@ function CBHIUsersManager() {
               { label: "ID", name: "id" },
               { label: "Woreda/Kebele", name: "kebele" },
               { label: "Goth", name: "goth" },
-              { label: "Start Date", name: "sdate" },
-              { label: "End Date", name: "edate" },
+              { label: "Expired Date", name: "expDate" },
               { label: "Referral Number", name: "referralNumber" },
               { label: "Letter Number", name: "letterNumber" },
               { label: "Examination", name: "examination" },
             ].map(({ label, name }) => (
               <Grid item xs={12} sm={6} key={name}>
-                {["sdate", "edate"].includes(name) ? (
-
-                    <EtDatePicker
-                      label={label}
+                {name === "expDate" ? (
+                  <EtDatePicker
+                    label={label}
+                    name={name}
+                    required
+                    value={formData[name] ? new Date(formData[name]) : null}
+                    onChange={(e) => handleChangeTime(name, e)}
+                    sx={{ width: "100%" }}
+                  />
+                ) : name === "kebele" ? (
+                  <FormControl required fullWidth>
+                    <InputLabel>{label}</InputLabel>
+                    <Select
                       name={name}
-                      value={formData[name] ? new Date(formData[name]) : null}
-                      onChange={(e) => handleChangeTime(name, e)}
-                      sx={{ width: "100%" }}
-                    />
-
+                      value={formData[name]}
+                      onChange={handleChange}
+                      label={label}
+                    >
+                      {woredas.map((w) => (
+                        <MenuItem key={w} value={w}>
+                          {w}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 ) : (
                   <TextField
                     fullWidth
-                    variant="outlined"
                     label={label}
                     name={name}
                     value={formData[name]}
                     onChange={handleChange}
-                    multiline={label === "Examination" ? true : false}
-                    rows={label === "Examination" ? 4 : 0}
-                    required={
-                      ["MRN", "ID", "Woreda/Kebele"].includes(label)
-                        ? true
-                        : false
-                    }
+                    multiline={name === "examination"}
+                    rows={name === "examination" ? 4 : 1}
+                    required={["mrn", "id", "kebele"].includes(name)}
                     error={!!formDataError[name]}
                     helperText={formDataError[name]}
                   />
@@ -287,16 +358,14 @@ function CBHIUsersManager() {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} color="secondary">
-            Cancel
-          </Button>
-          <Button onClick={handleSave} variant="contained">
-            {loading ? <CircularProgress size={24} color="inherit" /> : "Save"}
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button variant="contained" onClick={handleSave} disabled={loading}>
+            {loading ? <CircularProgress size={20} /> : "Save"}
           </Button>
         </DialogActions>
       </Dialog>
-      <ToastContainer />
     </Box>
   );
 }
+
 export default CBHIUsersManager;

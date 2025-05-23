@@ -118,7 +118,6 @@ const initialState = {
   description: "",
   reason: [],
   digitalChannel: "",
-  cbhiId: "",
   trxref: "",
   organization: "",
   employeeId: "",
@@ -147,7 +146,7 @@ export const printPDF = (doc) => {
 };
 
 //Generate PDF
-export const generatePDF = (data, refNo) => {
+export const generatePDF = (data) => {
   try {
     const doc = new jsPDF({
       orientation: "portrait",
@@ -218,7 +217,7 @@ export const generatePDF = (data, refNo) => {
 
     // Receipt Info
     doc.setFont("NotoSansEthiopic-Regular", "normal");
-    drawText(`Receipt NO: ${refNo || "N/A"}`, marginLeft, yPos);
+    drawText(`Receipt NO: ${data?.refNo || "N/A"}`, marginLeft, yPos);
     yPos += lineHeight;
     drawText(`Address: Debre Brihan`, marginLeft, yPos);
     yPos += lineHeight;
@@ -360,7 +359,17 @@ const HospitalPayment = () => {
   const [paymentSummary, setPaymentSummary] = useState([]);
   const [paymentMethods, setPaymentMehods] = useState([]);
   const [digitalChannels, setDigitalChannels] = useState([]);
-  const [reasons, setReasons] = useState([]);
+  const [reasons, setReasons] = useState([
+    "Card",
+    "For Examination",
+    "Laboratory",
+    "X-ray/Ultrasound",
+    "Bed",
+    "Medicines",
+    "Surgery",
+    "Food",
+    "Other",
+  ]);
   const [isPrintLoading, setIsPrintLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -397,19 +406,6 @@ const HospitalPayment = () => {
     updatePaymentSummary(payments);
   }, [refresh, payments]);
   //payments
-  useEffect(() => {
-    setReasons([
-      "Card",
-      "For Examination",
-      "Laboratory",
-      "X-ray/Ultrasound",
-      "Bed",
-      "Medicines",
-      "Surgery",
-      "Food",
-      "Other",
-    ]);
-  }, []);
 
   //fetch paymentmethods
   useEffect(() => {
@@ -493,7 +489,6 @@ const HospitalPayment = () => {
       if (e.target.name === "method") {
         setFormData((prev) => ({
           ...prev,
-          cbhiId: "",
           trxref: "",
           organization: "",
           employeeId: "",
@@ -619,7 +614,6 @@ const HospitalPayment = () => {
           (!formData.digitalChannel ||
             !formData.trxref ||
             trxRefError.length > 0)) ||
-        (formData.method.toUpperCase().includes("CBHI") && !formData.cbhiId) ||
         (formData.method.toUpperCase().includes("CREDIT") &&
           (!formData.organization || !formData.employeeId))
       ) {
@@ -674,9 +668,12 @@ const HospitalPayment = () => {
         },
       });
       if (response.status === 201) {
+        console.log("Response is: ", response?.data);
         const final = {
           ...newPayment,
           patientName: response?.data?.data?.map((item) => item.patientName)[0],
+          cbhiId: response?.data?.data?.map((item) => item.patientCBHI_ID)[0],
+          refNo: response?.data?.refNo || "-",
         };
         setReceiptOpen(false);
         setFormData(initialState);
@@ -1010,33 +1007,6 @@ const HospitalPayment = () => {
                 }}
               ></TextField>
             </>
-          )}
-          {formData?.method.trim().toUpperCase().includes("CBHI") && (
-            <TextField
-              label="CBHI ID Number"
-              name="cbhiId"
-              value={formData.cbhiId}
-              onChange={handleChange}
-              fullWidth
-              required
-              margin="normal"
-              FormHelperTextProps={{
-                style: { color: "green", fontSize: "14px" },
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "10px", // Rounded edges for a modern look
-
-                  "&:hover fieldset": {
-                    borderColor: "info.main", // Changes border color on hover
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "primary.main", // Focus effect
-                    boxShadow: "0px 0px 8px rgba(0, 0, 255, 0.2)", // Nice glow
-                  },
-                },
-              }}
-            />
           )}
           {formData?.method.toUpperCase().includes("CREDIT") && (
             <>

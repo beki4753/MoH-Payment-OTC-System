@@ -53,7 +53,7 @@ const icons = {
 
 //const creditOrganizations = ["Tsedey Bank", "Amhara Bank", "Ethio Telecom"]; // example list
 const initialState = {
-  cbhiId: "",
+  // cbhiId: "",
   method: "",
   digitalChannel: "",
   trxref: "",
@@ -202,7 +202,6 @@ function PaymentManagement() {
       setFormData({
         ...formData,
         method: e.target.value,
-        cbhiId: "",
         digitalChannel: "",
         trxref: "",
         organization: "",
@@ -235,7 +234,6 @@ function PaymentManagement() {
         !formData.method ||
         (formData.method.toUpperCase().includes("DIGITAL") &&
           (!formData.digitalChannel || !formData.trxref)) ||
-        (formData.method.toUpperCase().includes("CBHI") && !formData.cbhiId) ||
         (formData.method.toUpperCase().includes("CREDIT") &&
           (!formData.organization || !formData.employeeId))
       ) {
@@ -267,7 +265,9 @@ function PaymentManagement() {
           (item) => item.isPaid === true
         ),
         method: formData?.method,
-        reason: selectedRow?.requestedCatagories?.map((item) => item.purpose),
+        reason: selectedRow?.requestedCatagories
+          ?.filter((item) => item.isPaid === true)
+          ?.map((item) => item.purpose),
         description: "-",
       };
 
@@ -314,12 +314,13 @@ function PaymentManagement() {
           cardNumber: selectedRow?.patientCardNumber || "",
           digitalChannel: formData?.digitalChannel || "",
           trxref: formData?.trxref || "",
-          cbhiId: formData?.cbhiId || "",
           organization: formData?.organization || "",
           employeeId: formData?.employeeId || "",
+          cbhiId: response?.data?.data?.map((item) => item.patientCBHI_ID)[0],
+          refNo: response?.data?.refNo || "-",
         };
 
-        await generatePDF(data, response?.data?.refNo);
+        await generatePDF(data);
         setIsPrintLoading(false);
         setReceiptData(null);
         handleCloseModal();
@@ -450,7 +451,7 @@ function PaymentManagement() {
         const ModDataID = modData.map((item, index) => {
           return {
             ...item,
-            id:index+1,
+            id: index + 1,
           };
         });
 
@@ -793,18 +794,6 @@ function PaymentManagement() {
               ))}
             </Select>
           </FormControl>
-
-          {/* CBHI */}
-          {formData.method === "CBHI" && (
-            <TextField
-              fullWidth
-              name="cbhiId"
-              label="CBHI ID"
-              value={formData.cbhiId}
-              onChange={handleChange}
-              margin="normal"
-            />
-          )}
 
           {/* Digital */}
           {formData.method === "Digital" && (

@@ -7,6 +7,8 @@ import {
   DialogActions,
   IconButton,
   Button,
+  Typography,
+  Box,
   useTheme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -16,19 +18,11 @@ import { formatAccounting2 } from "../pages/hospitalpayment/HospitalPayment";
 export default function PatientTransactionsModal({ open, onClose, rows }) {
   const theme = useTheme();
 
+  // Get shared patient card number and name from the first row
+  const sharedCardNumber = rows?.[0]?.patientCardNumber || "";
+  const sharedPatientName = rows?.[0]?.patientFName || "";
+
   const columns = [
-    {
-      field: "patientCardNumber",
-      headerName: "Card Number",
-      flex: 1,
-      minWidth: 120,
-    },
-    {
-      field: "patientFName",
-      headerName: "Patient Name",
-      flex: 1.5,
-      minWidth: 120,
-    },
     {
       field: "catagory",
       headerName: "Category",
@@ -63,7 +57,7 @@ export default function PatientTransactionsModal({ open, onClose, rows }) {
       maxWidth="md"
       fullWidth
       scroll="paper"
-      disableEnforceFocus //to remove focus warning
+      disableEnforceFocus // to remove focus warning
     >
       <DialogTitle sx={{ m: 0, p: 2 }}>
         Payment Detail
@@ -85,8 +79,30 @@ export default function PatientTransactionsModal({ open, onClose, rows }) {
         dividers
         sx={{ height: { xs: "60vh", sm: "70vh", md: "60vh" } }}
       >
+        {/* Display Shared Info */}
+        <Box
+          sx={{
+            mb: 2,
+            p: 2,
+            backgroundColor: theme.palette.grey[100],
+            borderRadius: 1,
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            justifyContent: "space-between",
+            gap: 2,
+          }}
+        >
+          <Typography variant="subtitle1">
+            <strong>Card Number:</strong> {sharedCardNumber}
+          </Typography>
+          <Typography variant="subtitle1">
+            <strong>Patient Name:</strong> {sharedPatientName}
+          </Typography>
+        </Box>
+
+        {/* Transactions Table */}
         <DataGrid
-          rows={rows || rows.length > 0 ? rows : []}
+          rows={rows || []}
           columns={columns}
           pageSize={10}
           rowsPerPageOptions={[5, 10, 20]}
@@ -117,7 +133,8 @@ PatientTransactionsModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   rows: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+        .isRequired,
       patientCardNumber: PropTypes.string.isRequired,
       patientFName: PropTypes.string.isRequired,
       catagory: PropTypes.string.isRequired,
