@@ -21,17 +21,19 @@ const BarChart = ({ isDashboard = false }) => {
           endDate: today,
           user: tokenvalue.name,
         });
+      
         const summary = response?.data
           ? response?.data?.reduce((acc, payment) => {
-              const { type, amount } = payment;
+              const { paymentType, paymentAmount } = payment;
               // const dateKey = new Date(createdOn).toISOString().split('T')[0];
-              if (!acc[type]) {
-                acc[type] = 0;
+              if (!acc[paymentType]) {
+                acc[paymentType] = 0;
               }
-              acc[type] += parseFloat(amount);
+              acc[paymentType] += parseFloat(paymentAmount);
               return acc;
             }, {})
           : [];
+      
 
         const mapped = Object.entries(summary).map(([key, value]) => ({
           method: key,

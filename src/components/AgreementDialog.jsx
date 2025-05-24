@@ -75,10 +75,6 @@ const AgreementDialog = ({
     setEmpVerified("no");
   };
 
-  useEffect(() => {
-    console.log("signature >> ", signature);
-  }, [signature]);
-
   const handleVerify = async () => {
     try {
       const response = await api.put("/Collection/collector-check", {

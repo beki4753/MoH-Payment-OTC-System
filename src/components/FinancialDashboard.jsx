@@ -16,6 +16,9 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { jsPDF } from "jspdf";
 import { formatAccounting } from "../pages/hospitalpayment/HospitalPayment";
+import { convertToEthDateWithTime } from "../pages/reports/CollectedReport";
+import "./NotoSansEthiopic-Regular-normal.js";
+
 const tokenvalue = getTokenValue();
 
 const formatter2 = new Intl.NumberFormat("en-US", {
@@ -138,7 +141,7 @@ const FinancialDashboard = () => {
 
       // Add Header
       doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       doc.text("AGREEMENT PAPER", 105, yPos, { align: "center" });
       yPos += 8;
 
@@ -148,53 +151,50 @@ const FinancialDashboard = () => {
       yPos += 10;
 
       doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       doc.text(`HOSPITAL NAME:`, 20, yPos);
       doc.setFont("helvetica", "normal");
       doc.text(`${tokenvalue?.Hospital || "N/A"}`, 100, yPos);
       yPos += 8;
 
       doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       doc.text(`CASHIER NAME:`, 20, yPos);
       doc.setFont("helvetica", "normal");
       doc.text(`${tokenvalue?.name || "N/A"}`, 100, yPos);
       yPos += 8;
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       doc.text(`BANKER ID:`, 20, yPos);
       doc.setFont("helvetica", "normal");
       doc.text(`${data?.empId || "N/A"}`, 100, yPos);
       yPos += 8;
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       doc.text("BANKER NAME:", 20, yPos);
       doc.setFont("helvetica", "normal");
       doc.text(`${data?.empName || "N/A"}`, 100, yPos);
       yPos += 8;
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       doc.text("MONEY AMOUNT:", 20, yPos);
       doc.setFont("helvetica", "normal");
       doc.text(`${formatAccounting2(amount) || "N/A"}`, 100, yPos);
       yPos += 8;
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       doc.text(`RECEIVED DATE:`, 20, yPos);
       doc.setFont("helvetica", "normal");
-      doc.text(
-        `${
-          new Date(data?.signature)
-            .toISOString()
-            .slice(0, 19)
-            .replace("T", " , ") || "N/A"
-        }`,
-        100,
-        yPos
-      );
+      doc.text(data?.signature || "N/A", 100, yPos);
       yPos += 20;
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
+      doc.text(`REGISTERED DATE:`, 20, yPos);
+      doc.setFont("helvetica", "normal");
+      doc.text(data?.createdOn || "N/A", 100, yPos);
+      yPos += 20;
+
+      doc.setFont("NotoSansEthiopic-Regular", "normal");
       doc.text(
         `I confirm this agreement paper and agree to the terms of service`,
         40,
@@ -239,9 +239,16 @@ const FinancialDashboard = () => {
         casher: tokenvalue.name,
       });
       if (response.status === 201) {
-        toast.success("Cash Collected Successfully!");
+        toast.success(response?.data?.msg || "Cash Collected Successfully!");
         setRefresh((prev) => !prev);
-        generatePDF(data, selectedTransaction.collectedAmount);
+        const modData = {
+          empId: data?.empId,
+          empName: data?.empName,
+          signature: convertToEthDateWithTime(data?.signature),
+          cashier: data?.cashier,
+          createdOn: convertToEthDateWithTime(response?.data?.data?.createdOn),
+        };
+        generatePDF(modData, selectedTransaction.collectedAmount);
         setSelectedTransaction(null);
 
         setOpenDialog(false);

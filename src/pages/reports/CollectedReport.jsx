@@ -131,9 +131,32 @@ const CollectedReport = () => {
 
   const exportToExcel = () => {
     try {
-      const ws = XLSX.utils.json_to_sheet(
-        filteredData.length > 0 ? filteredData : data
+      const modData = filteredData.length > 0 ? filteredData : data;
+      const reportData = modData?.map(
+        ({
+          collectedOn,
+          createdOn,
+          createdBy,
+          id,
+          collectedBy,
+          collecterID,
+          toDate,
+          fromDate,
+          collectedAmount,
+          casher,
+        }) => ({
+          fromDate: renderETDateAtCell(fromDate),
+          toDate: renderETDateAtCell(toDate),
+          collectedOn: convertToEthDateWithTime(collectedOn),
+          collectedBy,
+          collecterID,
+          collectedAmount,
+          casher,
+          createdOn,
+          createdBy,
+        })
       );
+      const ws = XLSX.utils.json_to_sheet(reportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(
         wb,
@@ -174,17 +197,6 @@ const CollectedReport = () => {
             gap: 2,
           }}
         >
-          {/* <TextField
-            label="Start Date"
-            type="date"
-            value={startDate}
-            onChange={(e) => {
-              setStartDate(e.target.value);
-              setShowOnlyHighAmount(false);
-            }}
-            InputLabelProps={{ shrink: true }}
-            required
-          /> */}
           <EtDatePicker
             label="Start Date"
             value={startDate.length > 0 ? new Date(startDate) : null}
@@ -196,17 +208,6 @@ const CollectedReport = () => {
             InputLabelProps={{ shrink: true }}
             required
           />
-          {/* <TextField
-            label="End Date"
-            type="date"
-            value={endDate}
-            onChange={(e) => {
-              setEndDate(e.target.value);
-              setShowOnlyHighAmount(false);
-            }}
-            InputLabelProps={{ shrink: true }}
-            required
-          /> */}
 
           <EtDatePicker
             label="End Date"

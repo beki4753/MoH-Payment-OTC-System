@@ -115,7 +115,7 @@ const Login = () => {
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            height: { xs: "auto", md: "80vh" },
+            height: { xs: "auto", md: "80%" },
             mt: { xs: 4, md: 0 },
           }}
         >

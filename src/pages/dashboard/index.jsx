@@ -118,6 +118,8 @@ const Dashboard = () => {
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
 
+  const collectionnStartDate = new Date(today);
+  collectionnStartDate.setDate(today.getDate() - 30);
   // Fetch uncollected data
   useEffect(() => {
     const fetchUncollected = async () => {
@@ -125,6 +127,7 @@ const Dashboard = () => {
         const response1 = await api.get(
           `/Collection/rpt-uncollected/${tokenValue.name}`
         );
+
         const uncollectedData = response1?.data;
 
         const uncollected = uncollectedData
@@ -137,9 +140,12 @@ const Dashboard = () => {
 
         const fetchCollectedData = async () => {
           try {
-            const response2 = await api.get(
-              `/Collection/get-last-collections/${tokenValue.name}`
-            );
+            const response2 = await api.put("/Collection/Get-all-Collection", {
+              startDate: collectionnStartDate.toISOString().split("T")[0],
+              endDate: today.toISOString().split("T")[0],
+              user: tokenValue?.name,
+              isCollected: 0,
+            });
 
             // Group collected data by cashier and find their last collected date
             const collectedByCashier = response2?.data
@@ -219,7 +225,7 @@ const Dashboard = () => {
 
         const recentPayments = response?.data
           ? response?.data?.filter((payment) => {
-              const paymentDate = new Date(payment.createdOn)
+              const paymentDate = new Date(payment.registeredOn)
                 .toISOString()
                 .split("T")[0];
               return (
@@ -229,17 +235,14 @@ const Dashboard = () => {
             })
           : [];
 
-
-
         const summary = recentPayments
-          .filter((item) => item.type.toLowerCase() !== "free of charge")
+          .filter((item) => item.paymentType.toLowerCase() !== "free of charge")
           .reduce((acc, payment) => {
-            const { type, amount } = payment;
-            acc[type] = (acc[type] || 0) + parseFloat(amount);
+            const { paymentType, paymentAmount } = payment;
+            acc[paymentType] =
+              (acc[paymentType] || 0) + parseFloat(paymentAmount);
             return acc;
           }, {});
-
-
 
         const totalSum = Object.values(summary).reduce(
           (acc, value) => acc + value,
@@ -250,33 +253,37 @@ const Dashboard = () => {
         const todayDateStr = today.toISOString().split("T")[0];
 
         const todayPayments = recentPayments.filter((payment) => {
-          const paymentDateStr = new Date(payment.createdOn)
+          const paymentDateStr = new Date(payment.registeredOn)
             .toISOString()
             .split("T")[0];
           return (
             paymentDateStr === todayDateStr &&
-            payment.type.toLowerCase() !== "free of charge"
+            payment.paymentType.toLowerCase() !== "free of charge"
           );
         });
 
         // Yesterday's data
         const yesterdayDateStr = yesterday.toISOString().split("T")[0];
         const yesterdayPayments = recentPayments.filter((payment) => {
-          const paymentDateStr = new Date(payment.createdOn)
+          const paymentDateStr = new Date(payment.registeredOn)
             .toISOString()
             .split("T")[0];
           return (
             paymentDateStr === yesterdayDateStr &&
-            payment.type.toLowerCase() !== "free of charge"
+            payment.paymentType.toLowerCase() !== "free of charge"
           );
         });
 
         // Amount calculations
-        const todayTotal = todayPayments
-          .reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
+        const todayTotal = todayPayments.reduce(
+          (acc, payment) => acc + parseFloat(payment.paymentAmount),
+          0
+        );
 
-        const yesterdayTotal = yesterdayPayments
-          .reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
+        const yesterdayTotal = yesterdayPayments.reduce(
+          (acc, payment) => acc + parseFloat(payment.paymentAmount),
+          0
+        );
 
         const trend =
           yesterdayTotal > 0
@@ -313,12 +320,11 @@ const Dashboard = () => {
 
         // Patient count calculations
         const todayPatientCount = new Set(
-          todayPayments.map((payment) => payment.cardNumber)
+          todayPayments.map((payment) => payment.patientCardNumber)
         ).size;
 
-
         const yesterdayPatientCount = new Set(
-          yesterdayPayments.map((payment) => payment.cardNumber)
+          yesterdayPayments.map((payment) => payment.patientCardNumber)
         ).size;
         const patientTrend =
           yesterdayPatientCount > 0
@@ -606,7 +612,7 @@ const Dashboard = () => {
           p="30px"
         >
           <Typography variant="h5" fontWeight="600">
-            Uncollected vs Collected
+            Uncollected vs Collected Over Last Month
           </Typography>
           <Box
             display="flex"
@@ -629,8 +635,8 @@ const Dashboard = () => {
               sx={{ mt: "15px" }}
             >
               {formatAccounting(totalUnc)} of{" "}
-              {formatAccounting(totalUnc + totalCollected)} is not Collected
-              from Cashier
+              {formatAccounting(totalUnc + totalCollected)} is Uncollected from
+              Cashier
             </Typography>
           </Box>
         </Box>

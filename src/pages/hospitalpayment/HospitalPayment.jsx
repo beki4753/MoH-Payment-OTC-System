@@ -219,7 +219,7 @@ export const generatePDF = (data) => {
     doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`Receipt NO: ${data?.refNo || "N/A"}`, marginLeft, yPos);
     yPos += lineHeight;
-    drawText(`Address: Debre Brihan`, marginLeft, yPos);
+    drawText(`Address: Debrebrehan`, marginLeft, yPos);
     yPos += lineHeight;
     drawText(`Date: ${new Date().toLocaleDateString()}`, marginLeft, yPos);
     yPos += lineHeight;
@@ -538,29 +538,6 @@ const HospitalPayment = () => {
       console.error(error);
     }
   };
-
-  // const handleAmountChange = (e, reason) => {
-  //   try {
-  //     setFormData((prev) => {
-  //       const updatedAmount = prev.amount.map((item) =>
-  //         item.purpose === reason
-  //           ? { ...item, amount: Math.abs(parseFloat(e.target.value)) }
-  //           : item
-  //       );
-
-  //       if (!updatedAmount.some((item) => item.purpose === reason)) {
-  //         updatedAmount.push({
-  //           purpose: reason,
-  //           amount: Math.abs(parseFloat(e.target.value)),
-  //         });
-  //       }
-
-  //       return { ...prev, amount: updatedAmount };
-  //     });
-  //   } catch (error) {
-  //     console.error(error.message);
-  //   }
-  // };
 
   const handleAmountChange = (e, reason) => {
     try {

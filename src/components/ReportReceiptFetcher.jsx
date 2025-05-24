@@ -59,40 +59,6 @@ const ReportReceiptFetcher = () => {
 
   const ReceiptRegex = /^[a-zA-Z0-9]+$/;
 
-  const tt = {
-    id: 9,
-    referenceNo: "DB152564CASH2025522678951452059843",
-    patientCardNumber: "152564",
-    hospitalName: "DB Tena tabiya",
-    department: "Hospital",
-    paymentChannel: "-",
-    paymentType: "CASH",
-    patientName: "በረከት በየነ ",
-    patientPhone: "",
-    patientAge: "0",
-    patientAddress: null,
-    patientGender: "Male",
-    patientVisiting: "2025-06-05T00:00:00",
-    patientType: "",
-    paymentVerifingID: "-",
-    patientLoaction: null,
-    patientWorkingPlace: null,
-    patientWorkID: null,
-    patientWoreda: null,
-    patientKebele: null,
-    patientsGoth: null,
-    patientCBHI_ID: null,
-    patientReferalNo: null,
-    patientLetterNo: null,
-    patientExamination: null,
-    paymentReason: "X-RAY/ULTRASOUND",
-    paymentAmount: 200,
-    paymentDescription: "-",
-    paymentIsCollected: 0,
-    registeredBy: "test1",
-    registeredOn: "2025-05-22T17:46:57.6781253",
-  };
-
   const columns = [
     { field: "id", headerName: "ID", width: 90 },
     { field: "registeredOn", headerName: "Date", width: 200 },
@@ -184,25 +150,8 @@ const ReportReceiptFetcher = () => {
       } else if (tab === 1 && receiptNumber) {
         if (receiptData.length > 0) {
           const data = await transformPayments(receiptData || []);
-          const response = await api.put("/Payment/patient-info", {
-            patientCardNumber: data?.cardNumber,
-            hospital: tokenvalue?.Hospital,
-            cashier: tokenvalue?.name,
-          });
-
-          if (response?.data?.length > 0) {
-            if (response?.data[0].patientName !== undefined) {
-              const obj = Object.entries(data);
-              obj.push(["patientName", response?.data[0].patientName]);
-
-              generatePDF(Object.fromEntries(obj));
-            }
-          } else {
-            const obj = Object.entries(data);
-            obj.push(["patientName", null]);
-
-            generatePDF(Object.fromEntries(obj));
-          }
+          console.log("This is the payment data ok: ", data);
+          generatePDF(data);
         } else {
           toast.error("Data is Empty.");
         }
@@ -218,25 +167,26 @@ const ReportReceiptFetcher = () => {
     const first = data[0];
 
     const result = {
-      refNo: first?.refNo,
+      refNo: first?.referenceNo,
       id: first?.id,
-      cardNumber: first?.cardNumber,
+      cardNumber: first?.patientCardNumber,
+      patientName: first?.patientName,
       hospitalName: first?.hospitalName,
       department: first?.department,
       amount: data.map((item) => ({
-        purpose: item.purpose,
-        Amount: item.amount,
+        purpose: item.paymentReason,
+        Amount: item.paymentAmount,
       })),
-      createdby: first?.createdby,
-      collectionID: first?.collectionID,
-      type: first?.type,
-      channel: first?.channel,
-      paymentVerifingID: first?.paymentVerifingID,
-      patientLoaction: first?.patientLoaction,
-      patientWorkingPlace: first?.patientWorkingPlace,
-      patientWorkID: first?.patientWorkID,
-      description: first?.description,
-      createdOn: first?.createdOn,
+      cbhiId: first?.patientCBHI_ID,
+      createdby: first?.registeredBy,
+      method: first?.paymentType,
+      digitalChannel: first?.paymentChannel,
+      trxref: first?.paymentVerifingID,
+      patientLoaction: first?.patientWoreda,
+      organization: first?.patientWorkingPlace,
+      employeeId: first?.patientWorkID,
+      description: first?.paymentDescription,
+      createdOn: first?.registeredOn,
     };
 
     return result;
@@ -316,10 +266,6 @@ const ReportReceiptFetcher = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    console.log("receiptData >> ", receiptData);
-  }, [receiptData]);
 
   useEffect(() => {
     setCardNumber("");
