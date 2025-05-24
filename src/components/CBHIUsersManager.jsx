@@ -69,7 +69,7 @@ function CBHIUsersManager() {
     const fetchWoredas = async () => {
       try {
         const response = await api.get(
-          `/Providers/list-providers/${tokenvalue.name}`
+          `/Providers/list-providers`
         );
         if (response.status === 200) {
           setWoredas(response?.data?.map((item) => item.provider));

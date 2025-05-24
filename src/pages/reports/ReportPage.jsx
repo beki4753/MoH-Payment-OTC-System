@@ -46,7 +46,7 @@ const ReportPage = () => {
     const fetchCBHI = async () => {
       try {
         const response = await api.get(
-          `/Providers/list-providers/${tokenValue.name}`
+          `/Providers/list-providers`
         );
         if (response?.status === 200) {
           setWoredas(response?.data?.map((item) => item.provider));
@@ -63,7 +63,7 @@ const ReportPage = () => {
     const fetchORG = async () => {
       try {
         const response = await api.get(
-          `/Organiztion/Organization/${tokenValue.name}`
+          `/Organiztion/Organization`
         );
         if (response?.status === 200 || response?.status === 201) {
           setOrganizations(response?.data?.map((item) => item.organization));

@@ -120,7 +120,7 @@ const EmployeeUploadManager = () => {
     const fetchEmp = async () => {
       try {
         const response = await api.get(
-          `/Collection/collector/${tokenvalue?.name}`
+          `/Collection/collector`
         );
 
         setData(response?.data <= 0 ? new Array() : response?.data);

@@ -19,7 +19,7 @@ const BarChart = ({ isDashboard = false }) => {
         const response = await api.put("/Payment/Get-all-Payment", {
           startDate: startDate,
           endDate: today,
-          user: tokenvalue.name,
+          user: tokenvalue?.name,
         });
       
         const summary = response?.data

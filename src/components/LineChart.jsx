@@ -34,7 +34,7 @@ const LineChart = ({ isCustomLineColors = false, isDashboard = false }) => {
         const response = await api.put("/Payment/Get-all-Payment", {
           startDate,
           endDate: today,
-          user: tokenvalue.name,
+          user: tokenvalue?.name,
         });
 
         const filteredData = response?.data || [];

@@ -41,9 +41,8 @@ const AddUserModal = ({
 
   const departments = ["Card", "Pharmacy", "Hospital", "Tsedey Bank"];
   const hospitals = ["DB Tena tabiya"];
-  //"DB Referral Hospital",  "DB Tena tabiya"
-  const usertypes = ["Cashier", "Supervisor", "Admin","Laboratory Tech"];
-  // Reset form data when modal is closed
+  const usertypes = ["Cashier", "Supervisor", "Admin", "Laboratory Tech"];
+
   const handleClose = () => {
     setFormData({
       username: "",
@@ -57,81 +56,61 @@ const AddUserModal = ({
       hospital: "DB Tena tabiya",
     });
     resetUserData();
-    onClose(); // Close the modal
+    onClose();
   };
 
   useEffect(() => {
-    if (userData !== undefined || userData !== null) {
+    if (userData) {
       setFormData({
-        username: userData?.username,
-        email: userData?.email,
-        password: "", 
+        username: userData?.username || "",
+        email: userData?.email || "",
+        password: "",
         confirmpassword: "",
-        phone: userData?.phoneNumber,
-        role: userData?.role,
-        department: userData?.departement,
-        usertype: userData?.userType,
-        hospital: userData?.hospital,
+        phone: userData?.phoneNumber || "",
+        role: userData?.role || "",
+        department: userData?.departement || "",
+        usertype: userData?.userType || "",
+        hospital: userData?.hospital || "DB Tena tabiya",
       });
     }
   }, [userData]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (e.target.name === "email") {
-      validateEmail(e.target.value);
-    }
-    if (e.target.name === "phone") {
-      validatePhoneNumber(e.target.value);
-    }
-    if (e.target.name === "username") {
-      validateUsername(e.target.value);
-    }
-    if(e.target.name === "confirmpassword")
-    {
-      setConfPassError("")
-    }
+
+    if (e.target.name === "email") validateEmail(e.target.value);
+    if (e.target.name === "phone") validatePhoneNumber(e.target.value);
+    if (e.target.name === "username") validateUsername(e.target.value);
+    if (e.target.name === "confirmpassword") setConfPassError("");
   };
 
   const validateUsername = (username) => {
     const usernameRegex = /^[A-Za-z][A-Za-z0-9]{3,}$/;
-    if (!usernameRegex.test(username)) {
-      setUsernameError(
-        "Username must start with a letter, be at least 3 characters long, and contain no spaces."
-      );
-    } else {
-      setUsernameError("");
-    }
+    setUsernameError(
+      usernameRegex.test(username)
+        ? ""
+        : "Username must start with a letter and be at least 4 characters."
+    );
   };
 
   const validateEmail = (email) => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zAZ0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email)) {
-      setEmailError("Please enter a valid email address.");
-    } else {
-      setEmailError("");
-    }
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    setEmailError(emailRegex.test(email) ? "" : "Invalid email format.");
   };
 
   const validatePhoneNumber = (phone) => {
     const phoneRegex = /^(?:\+251|09|07)\d+$/;
     if (!phoneRegex.test(phone)) {
-      setPhoneError(
-        "Phone number must start with +251, 09, or 07 and contain only numbers."
-      );
+      setPhoneError("Start with +251, 09, or 07 and use only digits.");
+    } else if (phone.startsWith("+251") && phone.length !== 13) {
+      setPhoneError("+251 numbers must be 13 digits.");
+    } else if (
+      (phone.startsWith("09") || phone.startsWith("07")) &&
+      phone.length !== 10
+    ) {
+      setPhoneError("09 or 07 numbers must be 10 digits.");
     } else {
-      if (phone.startsWith("+251") && phone.length !== 13) {
-        setPhoneError("Phone number starting with +251 must have 13 digits.");
-      } else if (
-        (phone.startsWith("09") || phone.startsWith("07")) &&
-        phone.length !== 10
-      ) {
-        setPhoneError(
-          "Phone number starting with 09 or 07 must have 10 digits."
-        );
-      } else {
-        setPhoneError("");
-      }
+      setPhoneError("");
     }
   };
 
@@ -139,33 +118,25 @@ const AddUserModal = ({
     e.preventDefault();
     if (!usernameError && !emailError && !phoneError) {
       if (formData.password !== formData.confirmpassword) {
-        setConfPassError("New Password and Confirm Password do not match.");
+        setConfPassError("Passwords do not match.");
         return;
       }
-
       if (
         formData.department === "Tsedey Bank" &&
         formData.usertype === "Cashier"
       ) {
-        toast.error(`Bank can't have Cashier user Type`);
+        toast.error(`Bank can't have Cashier user type.`);
         return;
       }
 
-      if (userData) {
-        onEdit(formData); // Call onEdit if it's an edit
-      } else {
-        onSubmit(formData); // Call onSubmit if it's a new user
-      }
-      // handleClose();
+      userData ? onEdit(formData) : onSubmit(formData);
     } else {
       alert("Please fix the errors before submitting.");
     }
   };
 
   useEffect(() => {
-    if (!isOpen) {
-      handleClose();
-    }
+    if (!isOpen) handleClose();
   }, [isOpen]);
 
   return (
@@ -173,7 +144,7 @@ const AddUserModal = ({
       open={isOpen}
       onClose={(event, reason) => {
         if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
-          handleClose(); // Reset and close the modal
+          handleClose();
         }
       }}
       disableEscapeKeyDown
@@ -182,7 +153,12 @@ const AddUserModal = ({
       BackdropProps={{ timeout: 500 }}
     >
       <Box sx={modalStyle}>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
           <Typography variant="h6">
             {userData ? "Edit User" : "Add New User"}
           </Typography>
@@ -190,176 +166,180 @@ const AddUserModal = ({
             <CloseIcon />
           </IconButton>
         </Box>
-        <Grid>
-          <form onSubmit={handleSubmit}>
-            <Grid container spacing={2}>
-              <Grid item xs={4}>
-                <TextField
-                  fullWidth
-                  label="Username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  margin="normal"
-                  required
-                  disabled={!!userData} // Disable Username field if editing
-                  error={!!usernameError}
-                  helperText={usernameError}
-                />
-              </Grid>
-              <Grid item xs={8}>
-                <TextField
-                  fullWidth
-                  label="Email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  margin="normal"
-                  disabled={!!userData} // Disable Email field if editing
-                  required
-                  error={!!emailError}
-                  helperText={emailError}
-                />
-              </Grid>
+
+        <Box component="form" onSubmit={handleSubmit}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Username"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+                disabled={!!userData}
+                error={!!usernameError}
+                helperText={usernameError}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                disabled={!!userData}
+                error={!!emailError}
+                helperText={emailError}
+              />
             </Grid>
 
-            <TextField
-              fullWidth
-              label="Phone Number"
-              name="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={handleChange}
-              margin="normal"
-              error={!!phoneError}
-              helperText={phoneError}
-              disabled={!!userData} // Disable Phone Number field if editing
-              required
-            />
-            <Grid container spacing={2}>
-              <Grid item xs={4}>
-                <TextField
-                  select
-                  fullWidth
-                  label="User Type"
-                  name="usertype"
-                  value={formData.usertype}
-                  onChange={handleChange}
-                  margin="normal"
-                  disabled={!!userData}
-                  required
-                >
-                  {usertypes.map((type, index) => (
-                    <MenuItem key={index} value={type}>
-                      {type}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-
-              <Grid item xs={8}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Department"
-                  name="department"
-                  value={formData.department}
-                  onChange={handleChange}
-                  disabled={!!userData}
-                  margin="normal"
-                  required
-                >
-                  {departments.map((dep, index) => (
-                    <MenuItem key={index} value={dep}>
-                      {dep}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Phone Number"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleChange}
+                error={!!phoneError}
+                helperText={phoneError}
+                disabled={!!userData}
+                required
+              />
             </Grid>
-            <TextField
-              select
-              fullWidth
-              label="Hospital Name"
-              name="hospital"
-              value={formData.hospital}
-              onChange={handleChange}
-              disabled={!!userData}
-              margin="normal"
-              required
-            >
-              {hospitals.map((hosp, index) => (
-                <MenuItem key={index} value={hosp}>
-                  {hosp}
-                </MenuItem>
-              ))}
-            </TextField>
 
-            <TextField
-              fullWidth
-              label="Password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              margin="normal"
-              required
-              disabled={!!userData} // Disable password field if editing
-            />
-            <TextField
-              fullWidth
-              label="Confirm Password"
-              name="confirmpassword"
-              type="password"
-              value={formData.confirmpassword}
-              onChange={handleChange}
-              margin="normal"
-              error={!!confPassError}
-              helperText={confPassError}
-              required
-              disabled={!!userData} // Disable password field if editing
-            />
-            <TextField
-              select
-              fullWidth
-              label="Role"
-              name="role"
-              value={!!userData === true ? formData.role : "User"}
-              onChange={handleChange}
-              margin="normal"
-              disabled={!!userData === true ? false : true}
-              required
-            >
-              {role.map((role) => (
-                <MenuItem key={role} value={role}>
-                  {role}
-                </MenuItem>
-              ))}
-            </TextField>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                select
+                fullWidth
+                label="User Type"
+                name="usertype"
+                value={formData.usertype}
+                onChange={handleChange}
+                disabled={!!userData}
+                required
+              >
+                {usertypes.map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {type}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
 
-            <Box display="flex" justifyContent="flex-end" mt={2}>
-              <Button onClick={handleClose} color="secondary" sx={{ mr: 2 }}>
-                Close
-              </Button>
-              <Button type="submit" variant="contained" color="primary">
-                {userData ? "Save Changes" : "Add User"}
-              </Button>
-            </Box>
-          </form>
-        </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                select
+                fullWidth
+                label="Department"
+                name="department"
+                value={formData.department}
+                onChange={handleChange}
+                disabled={!!userData}
+                required
+              >
+                {departments.map((dep) => (
+                  <MenuItem key={dep} value={dep}>
+                    {dep}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                select
+                fullWidth
+                label="Hospital Name"
+                name="hospital"
+                value={formData.hospital}
+                onChange={handleChange}
+                disabled={!!userData}
+                required
+              >
+                {hospitals.map((hosp) => (
+                  <MenuItem key={hosp} value={hosp}>
+                    {hosp}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                disabled={!!userData}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Confirm Password"
+                name="confirmpassword"
+                type="password"
+                value={formData.confirmpassword}
+                onChange={handleChange}
+                required
+                disabled={!!userData}
+                error={!!confPassError}
+                helperText={confPassError}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                select
+                fullWidth
+                label="Role"
+                name="role"
+                value={userData ? formData.role : "User"}
+                onChange={handleChange}
+                required
+                disabled={!userData}
+              >
+                {role.map((r) => (
+                  <MenuItem key={r} value={r}>
+                    {r}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          </Grid>
+
+          <Box display="flex" justifyContent="flex-end" mt={3}>
+            <Button onClick={handleClose} color="secondary" sx={{ mr: 2 }}>
+              Close
+            </Button>
+            <Button type="submit" variant="contained" color="primary">
+              {userData ? "Save Changes" : "Add User"}
+            </Button>
+          </Box>
+        </Box>
       </Box>
     </Modal>
   );
 };
 
-// Modal Styles
+// Responsive Modal Style
 const modalStyle = {
   position: "absolute",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: 600,
+  width: { xs: "90%", sm: 500, md: 600 },
+  maxHeight: "90vh",
+  overflowY: "auto",
   bgcolor: "background.paper",
   boxShadow: 24,
   p: 3,

@@ -9,7 +9,6 @@ import {
   Tabs,
   Tab,
   CircularProgress,
-  Paper,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
@@ -20,19 +19,6 @@ import { generatePDF } from "../pages/hospitalpayment/HospitalPayment";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as XLSX from "xlsx";
-
-const capitalize = (str) => {
-  if (!str) return "";
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-};
-
-const capitalizeWords = (str) => {
-  return str
-    .toLowerCase()
-    .split(" ")
-    .map((word) => capitalize(word))
-    .join(" ");
-};
 
 const formatter2 = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
@@ -141,8 +127,9 @@ const ReportReceiptFetcher = () => {
     try {
       if (tab === 0 && cardNumber) {
         if (reportData.length > 0) {
+          const excelData = await transformPayments(reportData);
           exportToExcel(
-            reportData.map(({ id, isCollected, collectionID, ...rest }) => rest)
+            excelData.map(({ id, isCollected, collectionID, ...rest }) => rest)
           );
         } else {
           toast.error("Data is Empty.");
@@ -175,7 +162,7 @@ const ReportReceiptFetcher = () => {
       department: first?.department,
       amount: data.map((item) => ({
         purpose: item.paymentReason,
-        Amount: item.paymentAmount,
+        amount: item.paymentAmount,
       })),
       cbhiId: first?.patientCBHI_ID,
       createdby: first?.registeredBy,

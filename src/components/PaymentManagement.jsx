@@ -86,7 +86,7 @@ function PaymentManagement() {
     const fetchORG = async () => {
       try {
         const response = await api.get(
-          `/Organiztion/Organization/${tokenvalue.name}`
+          `/Organiztion/Organization`
         );
         if (response?.status === 200 || response?.status === 201) {
           setcreditOrganizations(

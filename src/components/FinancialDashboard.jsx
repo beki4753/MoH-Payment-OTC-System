@@ -66,7 +66,7 @@ const FinancialDashboard = () => {
     const fetchColl1 = async () => {
       try {
         const response1 = await api.get(
-          `/Collection/uncollected/${tokenvalue.name}`
+          `/Collection/uncollected`
         );
 
         const updatedUncollectedData =
@@ -80,7 +80,7 @@ const FinancialDashboard = () => {
         const fetchColl = async () => {
           try {
             const response2 = await api.get(
-              `/Collection/collection/${tokenvalue.name}`
+              `/Collection/collection`
             );
 
             const updatedCollectedData =

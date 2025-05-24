@@ -91,7 +91,7 @@ const OrgUploadManager = () => {
       }
 
       const response = await api.get(
-        `/Organiztion/get-workers/${tokenvalue?.name}/${searchKey}`
+        `/Organiztion/get-workers/${searchKey}`
       );
         if(response?.data?.length === 0)
         {
@@ -134,7 +134,7 @@ const OrgUploadManager = () => {
     const fetchEmp = async () => {
       try {
         const response = await api.get(
-          `/Organiztion/get-workers/${tokenvalue?.name}`
+          `/Organiztion/get-workers`
         );
         setData(response?.data <= 0 ? new Array() : response?.data);
       } catch (error) {
@@ -208,7 +208,7 @@ console.log(params?.row?.employeeID,"To Edit.");
     const fetchORG = async () => {
       try {
         const response = await api.get(
-          `/Organiztion/Organization/${tokenvalue.name}`
+          `/Organiztion/Organization`
         );
         if (response?.status === 200 || response?.status === 201) {
           setOrg(response?.data?.map((item) => item.organization));

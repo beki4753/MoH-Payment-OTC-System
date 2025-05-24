@@ -85,7 +85,7 @@ const PaymentManagementLists = () => {
   // Fetch CBHI Provider
   useEffect(() => {
     fetchData(
-      `/Providers/list-providers/${tokenvalue.name}`,
+      `/Providers/list-providers`,
       "CBHI Providers",
       (item) => item.provider
     );
@@ -94,7 +94,7 @@ const PaymentManagementLists = () => {
   // Fetch Organization with Agreement
   useEffect(() => {
     fetchData(
-      `/Organiztion/Organization/${tokenvalue.name}`,
+      `/Organiztion/Organization`,
       "Organizations with Agreements",
       (item) => item.organization
     );

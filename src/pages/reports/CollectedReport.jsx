@@ -51,7 +51,7 @@ const CollectedReport = () => {
       const response = await api.put("/Collection/Get-all-Collection", {
         startDate: startDate,
         endDate: endDate,
-        user: tokenvalue?.name,
+        // user: tokenvalue?.name,
         isCollected: 0,
       });
 
