@@ -15,6 +15,7 @@ import { getTokenValue } from "../../services/user_service";
 import StorageIcon from "@mui/icons-material/Storage";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import CarCrashIcon from "@mui/icons-material/CarCrash";
+import BiotechIcon from '@mui/icons-material/Biotech';
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VaccinesIcon from "@mui/icons-material/Vaccines";
 import { LibraryBooksTwoTone } from "@mui/icons-material";
@@ -254,6 +255,29 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 />
               </>
             )}
+
+            {role?.toUpperCase() === "USER" &&
+              tokenvalue?.UserType === "MLT" && (
+                <>
+                  {!isCollapsed && (
+                    <Typography
+                      variant="h6"
+                      color={colors.grey[300]}
+                      sx={{ m: "15px 0 5px 20px" }}
+                    >
+                      Treatment Entry Manager
+                    </Typography>
+                  )}
+
+                  <Item
+                    title="Treatment Entry"
+                    to="/treatment-entry"
+                    icon={<BiotechIcon />}
+                    selected={selected}
+                    setSelected={setSelected}
+                  />
+                </>
+              )}
 
             {role?.toUpperCase() === "USER" &&
               (tokenvalue?.UserType?.toUpperCase() === "CASHIER" ||

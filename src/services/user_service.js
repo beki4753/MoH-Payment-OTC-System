@@ -4,16 +4,12 @@ import { jwtDecode } from "jwt-decode";
 const tokenName = ".otc";
 
 export async function login(payload) {
-  try {
-    const response = await api.put("/Account/Login", {
-      username: payload.username,
-      password: payload.password,
-    });
-    return { ...response.data };
-  } catch (error) {
-    console.error("This is Login Error: ", error);
-    return null;
-  }
+  const response = await api.put("/Account/Login", {
+    username: payload.username,
+    password: payload.password,
+  });
+  console.log("This is Log In Response Data: ", response);
+  return { ...response.data };
 }
 
 export function logout() {

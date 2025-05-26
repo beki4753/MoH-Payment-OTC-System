@@ -6,11 +6,20 @@ import {
   Button,
   IconButton,
   Backdrop,
+  CircularProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import InfoIcon from "@mui/icons-material/Info";
+import { Message } from "@mui/icons-material";
 
-const ConfirmationModal = ({ isOpen, onClose, onConfirm, userData, userRole }) => {
+const ConfirmationModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  userData,
+  userRole,
+  loading,
+}) => {
   return (
     <Modal
       open={isOpen}
@@ -29,18 +38,33 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, userData, userRole }) =
       <Box sx={modalStyle}>
         {/* Header */}
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6" fontWeight="bold" color="primary" id="confirmation-modal-title">
+          <Typography
+            variant="h6"
+            fontWeight="bold"
+            color="primary"
+            id="confirmation-modal-title"
+          >
             <InfoIcon sx={{ fontSize: 30, verticalAlign: "middle", mr: 1 }} />
             Please Confirm
           </Typography>
-          <IconButton onClick={onClose} color="primary" aria-label="close modal">
+          <IconButton
+            onClick={onClose}
+            color="primary"
+            aria-label="close modal"
+          >
             <CloseIcon />
           </IconButton>
         </Box>
 
         {/* Warning Message */}
-        <Typography variant="body1" textAlign="center" mt={2} id="confirmation-modal-description">
-          Are you sure you want to delete the {userRole ? `role "${userRole}"` : "user "}
+        <Typography
+          variant="body1"
+          textAlign="center"
+          mt={2}
+          id="confirmation-modal-description"
+        >
+          Are you sure you want to delete the{" "}
+          {userRole ? `role "${userRole}"` : "user "}
           <strong>{userData}</strong>?
         </Typography>
 
@@ -50,13 +74,17 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, userData, userRole }) =
             variant="contained"
             color="primary"
             onClick={() => {
-              onConfirm(userData); // Run the parent's function on confirm
-            //   onClose(); // Close the modal
+              onConfirm({ userData: userData, message: "Delete" }); // Run the parent's function on confirm
+              //   onClose(); // Close the modal
             }}
             sx={{ mx: 1 }}
             aria-label="confirm deletion"
           >
-            Confirm
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Confirm"
+            )}
           </Button>
           <Button
             variant="outlined"

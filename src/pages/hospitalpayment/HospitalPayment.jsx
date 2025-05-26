@@ -30,7 +30,9 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import { green, orange, grey } from "@mui/material/colors";
+import { renderETDateAtCell } from "../../components/PatientSearch.jsx";
 import "./NotoSansEthiopic-Regular-normal.js";
+
 const capitalize = (str) => {
   if (!str) return "";
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -221,7 +223,7 @@ export const generatePDF = (data) => {
     yPos += lineHeight;
     drawText(`Address: Debrebrehan`, marginLeft, yPos);
     yPos += lineHeight;
-    drawText(`Date: ${new Date().toLocaleDateString()}`, marginLeft, yPos);
+    drawText(`Date: ${renderETDateAtCell(new Date())}`, marginLeft, yPos);
     yPos += lineHeight;
     drawText(`Cashier: ${tokenvalue?.name || "N/A"}`, marginLeft, yPos);
     yPos += lineHeight;
@@ -536,8 +538,6 @@ const HospitalPayment = () => {
       console.error(error);
     }
   };
-
- 
 
   const handleAmountChange = (e, reason) => {
     try {

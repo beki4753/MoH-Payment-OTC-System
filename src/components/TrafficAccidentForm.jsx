@@ -12,11 +12,10 @@ import {
   Divider,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { Edit, Delete } from "@mui/icons-material";
+import { Edit } from "@mui/icons-material";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import EtDatePicker from "mui-ethiopian-datepicker";
-import { EthDateTime } from "ethiopian-calendar-date-converter";
 import { renderETDateAtCell } from "./PatientSearch";
 import api from "../utils/api";
 
@@ -106,7 +105,6 @@ function TrafficAccidentCrud() {
           payload
         );
         if (response?.status === 200) {
-        
           setRecords((prev) => [...prev, { ...formData, id: Date.now() }]);
         }
       }
@@ -122,12 +120,6 @@ function TrafficAccidentCrud() {
   const handleEdit = (index) => {
     setFormData(records[index]);
     setEditIndex(index);
-  };
-
-  const handleDelete = (id) => {
-    setRecords(records.filter((record) => record.id !== id));
-    setFormData(initialForm);
-    setEditIndex(null);
   };
 
   const handleCancelEdit = () => {
@@ -195,9 +187,6 @@ function TrafficAccidentCrud() {
             }
           >
             <Edit />
-          </IconButton>
-          <IconButton color="error" onClick={() => handleDelete(params.row.id)}>
-            <Delete />
           </IconButton>
         </>
       ),

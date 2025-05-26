@@ -41,8 +41,8 @@ const AddUserModal = ({
 
   const departments = ["Card", "Pharmacy", "Hospital", "Tsedey Bank"];
   const hospitals = ["DB Tena tabiya"];
-  const usertypes = ["Cashier", "Supervisor", "Admin", "Laboratory Tech"];
-
+  const usertypes = ["Cashier", "Supervisor", "Admin", "MLT"];
+  // (MLT) stand for Medical Laboratory Technician
   const handleClose = () => {
     setFormData({
       username: "",

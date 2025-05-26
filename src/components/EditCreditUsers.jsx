@@ -10,16 +10,20 @@ import {
   CircularProgress,
 } from "@mui/material";
 
-const contactMethods = ["EMAIL", "SMS"];
-
-const EditStaffModal = ({ open, onClose, staffData, onSave, isloading }) => {
+const EditCreditUsers = ({
+  open,
+  onClose,
+  creditUserData,
+  onSave,
+  isloading,
+}) => {
   const [editedData, setEditedData] = useState(() =>
-    staffData !== undefined ? { ...staffData } : {}
+    creditUserData !== undefined ? { ...creditUserData } : {}
   );
 
   useEffect(() => {
-    setEditedData(staffData);
-  }, [staffData]);
+    setEditedData(creditUserData);
+  }, [creditUserData]);
 
   const handleChange = (e) => {
     setEditedData((prev) => ({
@@ -29,7 +33,7 @@ const EditStaffModal = ({ open, onClose, staffData, onSave, isloading }) => {
   };
 
   const handleSubmit = () => {
-    onSave(editedData);
+    onSave({ editedData: editedData, message: "Edit" });
     onClose();
   };
 
@@ -41,7 +45,7 @@ const EditStaffModal = ({ open, onClose, staffData, onSave, isloading }) => {
       disableEnforceFocus
       fullWidth
     >
-      <DialogTitle>Edit Staff</DialogTitle>
+      <DialogTitle>Edit Credit Usesr</DialogTitle>
       <DialogContent dividers>
         <TextField
           margin="dense"
@@ -75,37 +79,6 @@ const EditStaffModal = ({ open, onClose, staffData, onSave, isloading }) => {
           value={editedData?.employeeEmail || ""}
           onChange={handleChange}
         />
-        <TextField
-          margin="dense"
-          label="Assigned As"
-          name="assignedAs"
-          fullWidth
-          value={editedData?.assignedAs || ""}
-          onChange={handleChange}
-        />
-        <TextField
-          margin="dense"
-          label="Assigned By"
-          name="assignedBy"
-          fullWidth
-          value={editedData?.assignedBy || ""}
-          onChange={handleChange}
-        />
-        <TextField
-          select
-          margin="dense"
-          label="Contact Method"
-          name="contactMethod"
-          fullWidth
-          value={editedData?.contactMethod || ""}
-          onChange={handleChange}
-        >
-          {contactMethods.map((method) => (
-            <MenuItem key={method} value={method}>
-              {method}
-            </MenuItem>
-          ))}
-        </TextField>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">
@@ -119,4 +92,4 @@ const EditStaffModal = ({ open, onClose, staffData, onSave, isloading }) => {
   );
 };
 
-export default EditStaffModal;
+export default EditCreditUsers;

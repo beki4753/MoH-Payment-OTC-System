@@ -159,7 +159,6 @@ const PaymentManagementLists = () => {
         "Hospital Services": {
           purpose: params.services,
           amount: params.Amount,
-          createdBy: tokenvalue.name,
         },
         "CBHI Providers": {
           provider: name,
@@ -357,8 +356,8 @@ const PaymentManagementLists = () => {
                   : category === "Organizations with Agreements"
                   ? item.location
                   : "",
-                  amount:
-                  category === "Digital Payment Channels"
+              amount:
+                category === "Digital Payment Channels"
                   ? 0
                   : category === "Payment Methods"
                   ? 0
@@ -415,18 +414,17 @@ const PaymentManagementLists = () => {
                       flex: 0.5,
                     },
                   ]
-                  
                 : category === "Hospital Services"
                 ? [
                     {
                       field: "name",
                       headerName: "Name",
-                      flex:1.1,
+                      flex: 1.1,
                     },
                     {
                       field: "amount",
                       headerName: "Amount",
-                      flex:0.5,
+                      flex: 0.5,
                     },
                     {
                       field: "actions",
@@ -457,10 +455,9 @@ const PaymentManagementLists = () => {
                             </IconButton>
                           </>
                         ),
-                        flex:0.2,
+                      flex: 0.2,
                     },
                   ]
-                
                 : [
                     {
                       field: "name",
@@ -506,7 +503,7 @@ const PaymentManagementLists = () => {
         </div>
       ))}
 
-      <Dialog open={open} onClose={handleClose}>
+      <Dialog open={open} onClose={handleClose} disableEnforceFocus>
         <DialogTitle>
           {editId !== null ? "Edit" : "Add"} {formData.category}
         </DialogTitle>

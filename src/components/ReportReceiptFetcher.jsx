@@ -127,9 +127,8 @@ const ReportReceiptFetcher = () => {
     try {
       if (tab === 0 && cardNumber) {
         if (reportData.length > 0) {
-          const excelData = await transformPayments(reportData);
           exportToExcel(
-            excelData.map(({ id, isCollected, collectionID, ...rest }) => rest)
+            reportData.map(({ id, isCollected, collectionID, ...rest }) => rest)
           );
         } else {
           toast.error("Data is Empty.");

@@ -20,18 +20,24 @@ import api from "../utils/api";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getTokenValue } from "../services/user_service";
-import { use } from "react";
+import EditCreditUsers from "./EditCreditUsers";
+import ConfirmationModal from "./ConfirmationModal";
 
 const tokenvalue = getTokenValue();
+
 const OrgUploadManager = () => {
   const [fileData, setFileData] = useState([]);
   const [SearchData, setSearchData] = useState([]);
   const [data, setData] = useState([]);
-
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [editLoading, setEditloading] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
   const [searching, SetSearching] = useState(false);
-
+  const [isConfOpen, setIsConfOpen] = useState(false);
   const [refresh, setRefresh] = useState(false);
   const option = ["New", "Extend"];
   const [formData, setFormData] = useState({ organization: "", option: "" });
@@ -90,17 +96,14 @@ const OrgUploadManager = () => {
         return;
       }
 
-      const response = await api.get(
-        `/Organiztion/get-workers/${searchKey}`
-      );
-        if(response?.data?.length === 0)
-        {
-         toast.info(`Employee ID : ${searchKey} not Found.`)
-        }
+      const response = await api.get(`/Organiztion/get-workers/${searchKey}`);
+      if (response?.data?.length === 0) {
+        toast.info(`Employee ID : ${searchKey} not Found.`);
+      }
       setSearchData(response?.data);
     } catch (error) {
       console.error(error);
-      toast.error("Unable to search.")
+      toast.error("Unable to search.");
     } finally {
       SetSearching(false);
     }
@@ -133,9 +136,7 @@ const OrgUploadManager = () => {
   useEffect(() => {
     const fetchEmp = async () => {
       try {
-        const response = await api.get(
-          `/Organiztion/get-workers`
-        );
+        const response = await api.get(`/Organiztion/get-workers`);
         setData(response?.data <= 0 ? new Array() : response?.data);
       } catch (error) {
         console.error(error);
@@ -153,14 +154,40 @@ const OrgUploadManager = () => {
     setSearchKey("");
   };
 
-  const handleEdit = (params)=>{
-console.log(params?.row?.employeeID,"To Edit.");
-  }
+  const handleEdit = async (params) => {
+    try {
+      if (params.message === "Edit") {
+        setEditloading(true);
+        console.log("This is the data to Edit: ", params);
+      } else {
+        setEditing(true);
+        setEditData(params?.row);
+      }
+    } catch (error) {
+      console.error("This is handle Edit Error: ", error);
+    } finally {
+      setEditloading(false);
+    }
+  };
 
-  const handlConfirm = (params)=>{
-  console.log(params?.row?.employeeID,"To Confirm Delete.");
-  }
-  
+  const handlConfirm = async (params) => {
+    try {
+      if (params.message === "Delete") {
+        setDeleteLoading(true);
+        console.log("This is Delete Data: ", params);
+        setIsConfOpen(false);
+        setDeleteId(null);
+      } else {
+        setIsConfOpen(true);
+        setDeleteId(params?.row?.employeeID);
+      }
+    } catch (error) {
+      console.error("This is handle confirm Error: ", error);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   const columns = [
     { field: "employeeID", headerName: "Employee ID", flex: 1 },
     { field: "employeeName", headerName: "Employee Name", flex: 1 },
@@ -174,8 +201,8 @@ console.log(params?.row?.employeeID,"To Edit.");
       renderCell: (params) => (
         <>
           <IconButton
-           onClick={() => handleEdit(params)}
-            color ="info"
+            onClick={() => handleEdit(params)}
+            color="info"
             aria-label="edit"
             className="text-info"
           >
@@ -207,9 +234,7 @@ console.log(params?.row?.employeeID,"To Edit.");
   useEffect(() => {
     const fetchORG = async () => {
       try {
-        const response = await api.get(
-          `/Organiztion/Organization`
-        );
+        const response = await api.get(`/Organiztion/Organization`);
         if (response?.status === 200 || response?.status === 201) {
           setOrg(response?.data?.map((item) => item.organization));
         }
@@ -326,7 +351,7 @@ console.log(params?.row?.employeeID,"To Edit.");
             </Grid>
           </Grid>
 
-          <Grid container spacing={2} sx={{marginTop:"10px"}}>
+          <Grid container spacing={2} sx={{ marginTop: "10px" }}>
             <Grid item xs={11}>
               <TextField
                 fullWidth
@@ -388,6 +413,28 @@ console.log(params?.row?.employeeID,"To Edit.");
           }}
         />
       </Paper>
+      <EditCreditUsers
+        open={editing}
+        onClose={() => {
+          setEditing(false);
+          setEditData(null);
+          setEditloading(false);
+        }}
+        creditUserData={editData}
+        onSave={handleEdit}
+        isloading={editLoading}
+      />
+      <ConfirmationModal
+        isOpen={isConfOpen}
+        onClose={() => {
+          setIsConfOpen(false);
+          setDeleteId(null);
+          setDeleteLoading(false);
+        }}
+        onConfirm={handlConfirm}
+        userData={deleteId}
+        loading={deleteLoading}
+      />
       <ToastContainer />
     </Container>
   );
