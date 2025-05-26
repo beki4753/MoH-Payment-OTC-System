@@ -8,6 +8,8 @@ import {
   Paper,
   IconButton,
   CircularProgress,
+  Stack,
+  Divider,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { Edit, Delete } from "@mui/icons-material";
@@ -15,12 +17,15 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import EtDatePicker from "mui-ethiopian-datepicker";
 import { EthDateTime } from "ethiopian-calendar-date-converter";
+import { renderETDateAtCell } from "./PatientSearch";
+import api from "../utils/api";
 
 const initialForm = {
   mrn: "",
   age: "",
   accidentDate: "",
   accidentAddress: "",
+  certificate: "",
   carPlateNumber: "",
   policeName: "",
   policePhone: "",
@@ -73,14 +78,37 @@ function TrafficAccidentCrud() {
         toast.error("Please fix the erros first.");
         return;
       }
+      const payload = {
+        id: 0,
+        patientCardNumber: formData?.mrn,
+        accAddress: formData?.accidentAddress,
+        accDate: formData?.accidentDate,
+        policeName: formData?.policeName,
+        policePhone: formData?.policePhone,
+        plateNumber: formData?.carPlateNumber,
+        certificate: formData?.certificate,
+      };
 
       if (editIndex !== null) {
+        const response = await api.put(
+          "/Patient/change-patient-accedent",
+          payload
+        );
+
+        console.log("This is updtae response: ", response);
         const updated = [...records];
         updated[editIndex] = { ...formData, id: updated[editIndex].id };
         setRecords(updated);
         setEditIndex(null);
       } else {
-        setRecords((prev) => [...prev, { ...formData, id: Date.now() }]);
+        const response = await api.post(
+          "/Patient/add-patient-accedent",
+          payload
+        );
+        if (response?.status === 200) {
+        
+          setRecords((prev) => [...prev, { ...formData, id: Date.now() }]);
+        }
       }
       setFormData(initialForm);
     } catch (error) {
@@ -147,21 +175,7 @@ function TrafficAccidentCrud() {
       headerName: "Date",
       flex: 1,
       renderCell: (params) => {
-        try {
-          const rawDate = params?.row?.accidentDate;
-          if (!rawDate) return "";
-
-          const gDate = new Date(rawDate.replace(" ", "T").replace(" +", "+"));
-          const etDate = EthDateTime.fromEuropeanDate(gDate);
-          const formattedString = `${etDate.year}-${String(
-            etDate.month
-          ).padStart(2, "0")}-${String(etDate.date).padStart(2, "0")}`;
-
-          return formattedString;
-        } catch (err) {
-          console.error("Failed to format Ethiopian date:", err);
-          return "";
-        }
+        return renderETDateAtCell(params?.row?.accidentDate);
       },
     },
     { field: "carPlateNumber", headerName: "Plate Number", flex: 1 },
@@ -282,111 +296,173 @@ function TrafficAccidentCrud() {
 
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2} mt={1}>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="MRN"
-              name="mrn"
-              value={formData?.mrn}
-              onChange={handleChange}
-              fullWidth
-              required
-              error={!!formDataError?.mrn}
-              helperText={formDataError?.mrn}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Age"
-              name="age"
-              value={Math.abs(formData?.age) || formData?.age}
-              onChange={handleChange}
-              fullWidth
-              required
-              type="number"
-              error={!!formDataError?.age}
-              helperText={formDataError?.age}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <EtDatePicker
-              key={formData?.accidentDate || "accidentDate-date"}
-              label="Accident Date"
-              name="accidentDate"
-              value={
-                formData?.accidentDate ? new Date(formData?.accidentDate) : null
-              }
-              onChange={(e) => handleChangeTime("accidentDate", e)}
-              sx={{ width: "100%" }}
-              required
-            />
-
-            {/* <TextField
-              label="Accident Date"
-              name="accidentDate"
-              value={formData?.accidentDate}
-              onChange={handleChange}
-              fullWidth
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              required
-            /> */}
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Car Plate Number"
-              name="carPlateNumber"
-              value={formData?.carPlateNumber}
-              onChange={handleChange}
-              fullWidth
-              error={!!formDataError?.carPlateNumber}
-              helperText={formDataError?.carPlateNumber}
-            />
-          </Grid>
           <Grid item xs={12}>
-            <TextField
-              label="Accident Address"
-              name="accidentAddress"
-              value={formData?.accidentAddress}
-              onChange={handleChange}
-              fullWidth
-              multiline
-              rows={2}
-              required
-              error={!!formDataError?.accidentAddress}
-              helperText={formDataError?.accidentAddress}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Police Name"
-              name="policeName"
-              value={formData?.policeName}
-              onChange={handleChange}
-              fullWidth
-              required
-              error={!!formDataError?.policeName}
-              helperText={formDataError?.policeName}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Police Phone"
-              name="policePhone"
-              value={formData?.policePhone}
-              onChange={handleChange}
-              fullWidth
-              type="tel"
-              error={!!formDataError?.policePhone}
-              helperText={formDataError?.policePhone}
-            />
+            <Stack
+              direction="row"
+              spacing={2}
+              divider={<Divider orientation="vertical" flexItem />}
+              sx={{ width: "100%" }}
+            >
+              {/* Left Section */}
+              <Box sx={{ flex: 1 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight="bold"
+                      color="primary"
+                    >
+                      Patient Information
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="MRN"
+                      name="mrn"
+                      value={formData?.mrn}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      error={!!formDataError?.mrn}
+                      helperText={formDataError?.mrn}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box
+                      sx={{
+                        height: "56px",
+                        border: "1px dashed rgba(0,0,0,0.23)",
+                        borderRadius: "4px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "rgba(0,0,0,0.6)",
+                        fontStyle: "italic",
+                        paddingBottom: "71px",
+                      }}
+                    >
+                      {/* Placeholder */}
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight="bold"
+                      color="primary"
+                    >
+                      Car Information (if Known)
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Car Plate Number"
+                      name="carPlateNumber"
+                      value={formData?.carPlateNumber}
+                      onChange={handleChange}
+                      fullWidth
+                      error={!!formDataError?.carPlateNumber}
+                      helperText={formDataError?.carPlateNumber}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Certificate"
+                      name="certificate"
+                      value={formData?.certificate}
+                      onChange={handleChange}
+                      fullWidth
+                      error={!!formDataError?.certificate}
+                      helperText={formDataError?.certificate}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+
+              {/* Right Section */}
+              <Box sx={{ flex: 1 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight="bold"
+                      color="primary"
+                    >
+                      Accident Information
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <EtDatePicker
+                      key={formData?.accidentDate || "accidentDate-date"}
+                      label="Accident Date"
+                      name="accidentDate"
+                      value={
+                        formData?.accidentDate
+                          ? new Date(formData?.accidentDate)
+                          : null
+                      }
+                      onChange={(e) => handleChangeTime("accidentDate", e)}
+                      sx={{ width: "100%" }}
+                      required
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Accident Address"
+                      name="accidentAddress"
+                      value={formData?.accidentAddress}
+                      onChange={handleChange}
+                      fullWidth
+                      multiline
+                      rows={2}
+                      required
+                      error={!!formDataError?.accidentAddress}
+                      helperText={formDataError?.accidentAddress}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight="bold"
+                      color="primary"
+                    >
+                      From the form filled out by the police
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Police Name"
+                      name="policeName"
+                      value={formData?.policeName}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      error={!!formDataError?.policeName}
+                      helperText={formDataError?.policeName}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Police Phone"
+                      name="policePhone"
+                      value={formData?.policePhone}
+                      onChange={handleChange}
+                      fullWidth
+                      type="tel"
+                      error={!!formDataError?.policePhone}
+                      helperText={formDataError?.policePhone}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+            </Stack>
           </Grid>
         </Grid>
 
+        {/* Buttons */}
         <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
           <Button variant="outlined" color="error" onClick={handleCancelEdit}>
             Cancel
           </Button>
-
           <Button type="submit" variant="contained">
             {loading ? (
               <CircularProgress size={24} color="inherit" />

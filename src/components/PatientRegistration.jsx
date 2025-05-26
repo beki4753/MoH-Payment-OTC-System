@@ -242,7 +242,7 @@ function PatientRegistration() {
     setFormDataError({ name: "Reset" });
     setActiveStep(0);
   };
-  
+
   const handleChangeTime = (fieldName, selectedDate) => {
     try {
       const jsDate =
@@ -541,7 +541,7 @@ function PatientRegistration() {
         } else {
           response = await api.put("/Patient/update-patient-info", payload);
         }
-        if (Object.values(response?.data)?.length > 0) {
+        if (Object.values(response?.data)?.some((item) => item?.length > 0)) {
           setFormData({ name: "reset" });
           setFormDataError({ name: "Reset" });
           setActiveStep(0);
@@ -573,7 +573,8 @@ function PatientRegistration() {
         toast.info("MRN Not Found!");
         return;
       } else {
-        if (Object.values(response?.data)?.length > 0) {
+        
+        if (Object.values(response?.data)?.some((item) => item?.length > 0)) {
           const item = response?.data;
 
           const renamedData = {

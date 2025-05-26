@@ -279,9 +279,7 @@ const ReportPage = () => {
     { field: "registeredBy", headerName: "Created by", width: 150 },
   ];
 
-  useEffect(() => {
-    console.log("This is the Date of Amharic: ", startDate, endDate);
-  }, [startDate, endDate]);
+
 
   const dateObj = {
     sdate: setStartDate,

@@ -15,7 +15,7 @@ import { getTokenValue } from "../../services/user_service";
 import StorageIcon from "@mui/icons-material/Storage";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import CarCrashIcon from "@mui/icons-material/CarCrash";
-import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import VaccinesIcon from "@mui/icons-material/Vaccines";
 import { LibraryBooksTwoTone } from "@mui/icons-material";
 import BusinessIcon from "@mui/icons-material/Business";
@@ -44,8 +44,11 @@ const tokenvalue = getTokenValue();
 
 // Departement,UserType
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
-  const role =
-    tokenvalue["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+  const role = Object.entries(tokenvalue).some(
+    ([key, value]) => value.length > 0
+  )
+    ? tokenvalue["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]
+    : "";
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -140,7 +143,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                     transform: "-moz-initial",
                   }}
                 >
-                  {tokenvalue.name}
+                  {tokenvalue?.name}
                 </Typography>
                 <Typography variant="h5" color={colors.greenAccent[500]}>
                   {tokenvalue?.UserType?.toUpperCase()}

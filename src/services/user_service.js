@@ -50,6 +50,7 @@ export function getTokenValue() {
     if (!token) {
       return null;
     }
+
     const decoded = jwtDecode(token);
 
     return decoded;

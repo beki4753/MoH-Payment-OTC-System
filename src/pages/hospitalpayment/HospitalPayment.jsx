@@ -445,9 +445,7 @@ const HospitalPayment = () => {
   useEffect(() => {
     const fetchORG = async () => {
       try {
-        const response = await api.get(
-          `/Organiztion/Organization/${tokenvalue.name}`
-        );
+        const response = await api.get(`/Organiztion/Organization`);
         if (response?.status === 200 || response?.status === 201) {
           setOrganizations(response?.data?.map((item) => item.organization));
         }
@@ -538,6 +536,8 @@ const HospitalPayment = () => {
       console.error(error);
     }
   };
+
+ 
 
   const handleAmountChange = (e, reason) => {
     try {
@@ -856,9 +856,9 @@ const HospitalPayment = () => {
           ))}
 
           {/* TextFields for Selected Checkboxes */}
-          {formData?.reason?.map((reason) => (
+          {formData?.reason?.map((reason, index) => (
             <TextField
-              key={reason}
+              key={index}
               name={reason}
               label={`${reason} Amount`}
               fullWidth
@@ -869,9 +869,10 @@ const HospitalPayment = () => {
                   ?.amount || ""
               }
               onChange={(e) => handleAmountChange(e, reason)}
+              onWheel={(e) => e.target.blur()} // <-- Prevent scroll change
               type="number"
               inputProps={{
-                min: 1, // Prevents negative values
+                min: 0, // Prevents negative values
                 step: "any", // Allows decimal values
               }}
               sx={{

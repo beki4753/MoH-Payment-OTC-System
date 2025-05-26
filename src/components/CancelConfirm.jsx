@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   Box,
@@ -7,11 +7,50 @@ import {
   IconButton,
   Backdrop,
   CircularProgress,
+  Checkbox,
+  FormControlLabel,
+  Divider,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import InfoIcon from "@mui/icons-material/Info";
 
 const CancelConfirm = ({ isOpen, onClose, onConfirm, userData, onloading }) => {
+  const [selectedGroups, setSelectedGroups] = useState([]);
+
+  useEffect(() => {
+    if (isOpen) setSelectedGroups([]);
+  }, [userData, isOpen]);
+
+  const handleCheckboxChange = (group) => {
+    try {
+      setSelectedGroups((prev) =>
+        prev.includes(group?.groupID)
+          ? prev?.filter((id) => id !== group.groupID)
+          : [...prev, group.groupID]
+      );
+    } catch (error) {
+      console.error("This is handle CheckBox Error: ", error);
+    }
+  };
+
+  const handleSubmit = () => {
+    try {
+      const selectedPayload = userData?.requestedCatagories
+        ?.filter((group) => selectedGroups.includes(group.groupID))
+        ?.map((group) => ({
+          patientCardNumber: userData?.patientCardNumber,
+          groupID: group.groupID,
+          purpose: group.purpose || "N/A",
+        }));
+
+      if (selectedPayload.length > 0) {
+        onConfirm({ selectedPayload: selectedPayload, message: "Yes Please!" });
+      }
+    } catch (error) {
+      console.error("This is the handle Confimr Error: ", error);
+    }
+  };
+
   return (
     <Modal
       open={isOpen}
@@ -37,7 +76,7 @@ const CancelConfirm = ({ isOpen, onClose, onConfirm, userData, onloading }) => {
             id="confirmation-modal-title"
           >
             <InfoIcon sx={{ fontSize: 30, verticalAlign: "middle", mr: 1 }} />
-            Please Confirm
+            Confirm Cancellation
           </Typography>
           <IconButton
             onClick={onClose}
@@ -48,42 +87,56 @@ const CancelConfirm = ({ isOpen, onClose, onConfirm, userData, onloading }) => {
           </IconButton>
         </Box>
 
-        {/* Warning Message */}
-        <Typography
-          variant="body1"
-          textAlign="center"
-          mt={2}
-          id="confirmation-modal-description"
-        >
-          Are you sure you want to Cancel the Payment of &nbsp;
-          {userData?.patientFName}
+        <Typography variant="body1" mt={2} mb={1}>
+          Cancel payment for <strong>{userData?.patientFName}</strong>?
         </Typography>
 
+        <Divider sx={{ my: 2 }} />
+
+        <Typography variant="subtitle1" fontWeight="medium" mb={1}>
+          Select categories to cancel:
+        </Typography>
+
+        {userData?.requestedCatagories?.length > 0 ? (
+          userData.requestedCatagories.map((group) => (
+            <FormControlLabel
+              key={group.groupID}
+              control={
+                <Checkbox
+                  checked={selectedGroups.includes(group.groupID)}
+                  onChange={() => handleCheckboxChange(group)}
+                />
+              }
+              label={`${group.purpose} - ${group.amount} Birr`}
+              sx={{ textAlign: "left" }}
+            />
+          ))
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            No categories found.
+          </Typography>
+        )}
+
         {/* Buttons */}
-        <Box display="flex" justifyContent="center" mt={3}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => {
-              onConfirm({ message: "Yes Please!" });
-            }}
-            sx={{ mx: 1 }}
-            aria-label="confirm deletion"
-          >
-            Confirm
-          </Button>
+        <Box display="flex" justifyContent="flex-end" mt={3} gap={2}>
           <Button
             variant="outlined"
             color="error"
             onClick={onClose}
             disabled={onloading}
-            sx={{ mx: 1 }}
-            aria-label="cancel deletion"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            disabled={selectedGroups.length === 0 || onloading}
+            onClick={handleSubmit}
           >
             {onloading ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
-              "Cancel"
+              "Confirm"
             )}
           </Button>
         </Box>
@@ -92,18 +145,17 @@ const CancelConfirm = ({ isOpen, onClose, onConfirm, userData, onloading }) => {
   );
 };
 
-// Modal Styles
 const modalStyle = {
   position: "absolute",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: 400,
+  width: "90%",
+  maxWidth: 500,
   bgcolor: "background.paper",
   boxShadow: 24,
   p: 3,
   borderRadius: 2,
-  textAlign: "center",
 };
 
 export default CancelConfirm;

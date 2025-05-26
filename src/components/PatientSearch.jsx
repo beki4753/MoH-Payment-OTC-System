@@ -245,7 +245,7 @@ const PatientSearch = () => {
         formData.fname,
         formData.mobile
       );
-      console.log("This is the Paylod: ", payload);
+   
       const response = await api.put("/Patient/get-patient-info", payload);
       if (response?.status === 200) {
         const modDat = await dataModFunc(response?.data?.data);

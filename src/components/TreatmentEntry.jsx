@@ -72,7 +72,8 @@ const TreatmentEntry = () => {
   const [filteredList, setFilteredList] = useState([]);
   const [saveLoading, setSaveloading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [markDoneLoading, setMarkDoneLoading] = useState(false);
+  const [loadingRowId, setLoadingRowId] = useState(null);
+
   const [refresh, setRefresh] = useState(false);
 
   //fetchData for the data grid
@@ -204,7 +205,7 @@ const TreatmentEntry = () => {
           purpose: formData?.category,
           createdBy: tokenvalue?.name,
         });
-        if (Object.values(response?.data?.data).length > 0) {
+        if (Object.values(response?.data)?.some((item) => item?.length > 0)) {
           toast.success("Request Registered Successfully.");
           setRefresh((prev) => !prev);
           setFormData(initialState);
@@ -242,7 +243,7 @@ const TreatmentEntry = () => {
 
   const handleMarkDone = async (data) => {
     try {
-      setMarkDoneLoading(true);
+      setLoadingRowId(data.id);
 
       const payload = {
         patientCardNumber: data?.patientCardNumber,
@@ -262,7 +263,7 @@ const TreatmentEntry = () => {
       console.error("This IS mark as done Error: ", error);
       toast.error(error?.response?.data?.msg || "Internal Server Error.");
     } finally {
-      setMarkDoneLoading(false);
+      setLoadingRowId(null);
     }
   };
 
@@ -330,18 +331,18 @@ const TreatmentEntry = () => {
                 "&:hover": { transform: "scale(1.01)" },
               }}
               onClick={() => handleMarkDone(params.row)}
+              disabled={loadingRowId === params.row.id}
             >
-              {markDoneLoading ? (
+              {loadingRowId === params.row.id ? (
                 <CircularProgress size={24} color="inherit" />
               ) : (
                 "Mark as Completed"
               )}
             </Button>
-          ) : (
-            <></>
-          );
+          ) : null;
         } catch (error) {
-          console.error("Error Occured on rendering: ", error);
+          console.error("Error occurred on rendering: ", error);
+          return null;
         }
       },
     },

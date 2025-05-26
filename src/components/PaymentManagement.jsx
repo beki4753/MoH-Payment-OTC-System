@@ -85,9 +85,7 @@ function PaymentManagement() {
   useEffect(() => {
     const fetchORG = async () => {
       try {
-        const response = await api.get(
-          `/Organiztion/Organization`
-        );
+        const response = await api.get(`/Organiztion/Organization`);
         if (response?.status === 200 || response?.status === 201) {
           setcreditOrganizations(
             response?.data?.map((item) => item.organization)
@@ -180,20 +178,49 @@ function PaymentManagement() {
     setSelectedRow(null);
   };
 
+
   const handleCancel = async (confirm) => {
     try {
       if (confirm.message === "Yes Please!") {
-        console.log("This transaction canceled: ", selectedRow);
-        handleConfClose();
-      } else {
         setCancelLoad(true);
+        const results = await Promise.allSettled(
+          confirm?.selectedPayload?.map((item) =>
+            api.delete("/Patient/cancel-patient-request", {
+              data: {
+                patientCardNumber: item.patientCardNumber,
+                groupID: item.groupID,
+                purpose: item.purpose,
+              },
+            })
+          )
+        );
+
+        results.forEach((result, index) => {
+          if (result.status === "fulfilled" && result?.value?.status === 200) {
+            const msg = result.value.data?.msg || "Success";
+            const purpose =
+              JSON.parse(result?.value?.config?.data)?.purpose || "Unknown";
+            toast.success(
+              `✅ Success ${index + 1}: ${msg} (Purpose: ${purpose})`
+            );
+            setRefresh((prev) => !prev);
+            setCancelLoad(false);
+            handleConfClose();
+          } else {
+            const errorMsg =
+              result?.reason?.response?.data?.msg ||
+              result?.reason?.message ||
+              "Unknown error occurred";
+            toast.error(`❌ Failed ${index + 1}: ${errorMsg}`);
+            setCancelLoad(false);
+          }
+        });
+      } else {
         setSelectedRow(confirm);
         setOpenConfirm(true);
       }
     } catch (error) {
       console.error("This is canceling Payment error: ", error);
-    } finally {
-      setCancelLoad(false);
     }
   };
 
@@ -261,7 +288,7 @@ function PaymentManagement() {
 
       const checkData = {
         cardNumber: selectedRow?.patientCardNumber,
-        amount: selectedRow?.requestedCatagories.filter(
+        amount: selectedRow?.requestedCatagories?.filter(
           (item) => item.isPaid === true
         ),
         method: formData?.method,
@@ -307,7 +334,7 @@ function PaymentManagement() {
         const data = {
           method: formData.method || "",
           amount:
-            selectedRow?.requestedCatagories.filter(
+            selectedRow?.requestedCatagories?.filter(
               (item) => item.isPaid === true
             ) || "",
           patientName: selectedRow?.patientFName || "",
@@ -751,7 +778,7 @@ function PaymentManagement() {
               <strong>
                 {formatAccounting2(
                   selectedRow?.requestedCatagories
-                    .filter((item) => item.isPaid)
+                    ?.filter((item) => item.isPaid)
                     .reduce((sum, item) => sum + item.amount, 0)
                 )}
                 &nbsp; Birr

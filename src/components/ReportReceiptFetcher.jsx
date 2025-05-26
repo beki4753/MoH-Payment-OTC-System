@@ -137,7 +137,6 @@ const ReportReceiptFetcher = () => {
       } else if (tab === 1 && receiptNumber) {
         if (receiptData.length > 0) {
           const data = await transformPayments(receiptData || []);
-          console.log("This is the payment data ok: ", data);
           generatePDF(data);
         } else {
           toast.error("Data is Empty.");
