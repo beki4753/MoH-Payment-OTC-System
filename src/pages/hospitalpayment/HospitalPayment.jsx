@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  Container,
   TextField,
   MenuItem,
   Button,
@@ -361,7 +360,7 @@ const HospitalPayment = () => {
   const [paymentSummary, setPaymentSummary] = useState([]);
   const [paymentMethods, setPaymentMehods] = useState([]);
   const [digitalChannels, setDigitalChannels] = useState([]);
-  const [reasons, setReasons] = useState([
+  const [reasons] = useState([
     "Card",
     "For Examination",
     "Laboratory",

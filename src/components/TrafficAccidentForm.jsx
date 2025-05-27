@@ -105,6 +105,7 @@ function TrafficAccidentCrud() {
           payload
         );
         if (response?.status === 200) {
+          toast.success("Recorded Successfully.");
           setRecords((prev) => [...prev, { ...formData, id: Date.now() }]);
         }
       }
@@ -182,9 +183,10 @@ function TrafficAccidentCrud() {
       renderCell: (params) => (
         <>
           <IconButton
-            onClick={() =>
-              handleEdit(records.findIndex((r) => r.id === params.row.id))
-            }
+            onClick={() => {
+
+              handleEdit(records.findIndex((r) => r.id === params.row.id));
+            }}
           >
             <Edit />
           </IconButton>

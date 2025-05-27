@@ -14,6 +14,7 @@ import {
   Avatar,
   CircularProgress,
   InputAdornment,
+  Stack,
   IconButton,
 } from "@mui/material";
 
@@ -40,6 +41,7 @@ import ReceiptModal from "../pages/hospitalpayment/ReceiptModal";
 import { generatePDF } from "../pages/hospitalpayment/HospitalPayment";
 import PatientTransactionsModal from "./PatientTransactionsModal";
 import CancelConfirm from "./CancelConfirm";
+import { Refresh } from "@mui/icons-material";
 
 const tokenvalue = getTokenValue();
 
@@ -72,6 +74,7 @@ function PaymentManagement() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [refresh, setRefresh] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
   const [isPrintLoading, setIsPrintLoading] = useState(false);
@@ -177,7 +180,6 @@ function PaymentManagement() {
     setOpenConfirm(false);
     setSelectedRow(null);
   };
-
 
   const handleCancel = async (confirm) => {
     try {
@@ -452,6 +454,7 @@ function PaymentManagement() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setIsLoading(true);
         const response = await api.put("/Patient/get-patient-request-cashier", {
           loggedInUser: tokenvalue?.name,
         });
@@ -485,6 +488,8 @@ function PaymentManagement() {
         setRows(ModDataID || []);
       } catch (error) {
         console.error("This is Fetch Table Data Error: ", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchData();
@@ -714,20 +719,47 @@ function PaymentManagement() {
         <Grid item xs={8}>
           <Typography variant="h6">🕓 Pending Payments</Typography>
         </Grid>
-        <Grid item xs={4} textAlign="right">
-          <Button
-            variant="contained"
-            color="success"
-            //startIcon={<AttachMoneyIcon />}
-            onClick={() => navigate("/payments")}
+        <Grid item xs={12} md={4} textAlign="right">
+          <Stack
+            direction="row"
+            spacing={2}
+            justifyContent="flex-end"
+            alignItems="center"
           >
-            Add Payment
-          </Button>
+            <Button
+              variant="contained"
+              color="success"
+              onClick={() => navigate("/payments")}
+            >
+              Add Payment
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="success"
+              onClick={() => {
+                setRefresh((prev) => !prev);
+              }}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <CircularProgress size={24} />
+              ) : (
+                <Refresh
+                  sx={{
+                    transition: "transform 0.5s",
+                    "&:hover": { transform: "rotate(90deg)" },
+                  }}
+                />
+              )}
+            </Button>
+          </Stack>
         </Grid>
         <Grid item xs={12}>
           <DataGrid
             rows={rows}
             // getRowId={(row) => row.patientCardNumber}
+            loading={isLoading}
             columns={columns}
             onRowDoubleClick={handleDoubleClick}
           />

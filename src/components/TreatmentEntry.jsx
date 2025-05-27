@@ -18,6 +18,7 @@ import {
   Checkbox,
   CircularProgress,
   Paper,
+  Stack,
 } from "@mui/material";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import SearchIcon from "@mui/icons-material/Search";
@@ -27,6 +28,7 @@ import { useLang } from "../contexts/LangContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getTokenValue } from "../services/user_service";
+import { Refresh } from "@mui/icons-material";
 
 const tokenvalue = getTokenValue();
 
@@ -75,11 +77,13 @@ const TreatmentEntry = () => {
   const [loadingRowId, setLoadingRowId] = useState(null);
 
   const [refresh, setRefresh] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   //fetchData for the data grid
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setIsLoading(true);
         const response = await api.put("/Patient/get-patient-request", {
           loggedInUser: tokenvalue?.name,
         });
@@ -108,6 +112,8 @@ const TreatmentEntry = () => {
         setTreatmentList(ModData || []);
       } catch (error) {
         console.error("This is Fetch Table Data Error: ", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchData();
@@ -639,26 +645,52 @@ const TreatmentEntry = () => {
             />
           </Grid>
           <Grid item xs={12} md={2}>
-            <Button
-              variant="contained"
-              fullWidth
-              color="primary"
-              size="large"
-              onClick={handleSearch}
-              startIcon={<SearchIcon />}
-              sx={{
-                height: "100%",
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: "bold",
-              }}
+            <Stack
+              direction="row"
+              spacing={2}
+              justifyContent="flex-end"
+              alignItems="center"
             >
-              {searchLoading ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                "Search"
-              )}
-            </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                color="primary"
+                size="large"
+                onClick={handleSearch}
+                startIcon={<SearchIcon />}
+                sx={{
+                  height: "100%",
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: "bold",
+                }}
+              >
+                {searchLoading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Search"
+                )}
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => {
+                  setRefresh((prev) => !prev);
+                }}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  <Refresh
+                    sx={{
+                      transition: "transform 0.5s",
+                      "&:hover": { transform: "rotate(90deg)" },
+                    }}
+                  />
+                )}
+              </Button>
+            </Stack>
           </Grid>
         </Grid>
       </Box>
@@ -670,6 +702,7 @@ const TreatmentEntry = () => {
               ? filteredList
               : treatmentList
           }
+          loading={isLoading}
           columns={columns}
           disableSelectionOnClick
         />

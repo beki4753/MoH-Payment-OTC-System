@@ -12,11 +12,7 @@ import {
 import api from "../../utils/api";
 import { DataGrid } from "@mui/x-data-grid";
 import * as XLSX from "xlsx";
-import {
-  GetAllPaymentByDate,
-  GetAllPaymentType,
-} from "../../services/report_service";
-import { getTokenValue } from "../../services/user_service";
+import { GetAllPaymentType } from "../../services/report_service";
 import Box from "@mui/material/Box";
 import { styled } from "@mui/material/styles";
 import { formatAccounting2 } from "../hospitalpayment/HospitalPayment";
@@ -24,6 +20,43 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import EtDatePicker from "mui-ethiopian-datepicker";
 
+const keysToRemoveByPaymentType = {
+  cash: [
+    "carPlateNumber",
+    "policePhone",
+    "policeName",
+    "accedentDate",
+    "cbhiProvider",
+    "patientWorkID",
+    "idNo",
+    "referalNo",
+    "patientWorkingPlace",
+  ],
+  cbhi: [
+    "carPlateNumber",
+    "policePhone",
+    "policeName",
+    "accedentDate",
+    "patientWorkingPlace",
+    "patientWorkID",
+  ],
+  credit: [
+    "carPlateNumber",
+    "policePhone",
+    "policeName",
+    "accedentDate",
+    "cbhiProvider",
+    "idNo",
+    "referalNo",
+  ],
+  traffic: [
+    "cbhiProvider",
+    "patientWorkID",
+    "idNo",
+    "referalNo",
+    "patientWorkingPlace",
+  ],
+};
 const ReportPage = () => {
   const [payments, setPayments] = useState([]);
 
@@ -39,15 +72,11 @@ const ReportPage = () => {
     organization: "",
   });
 
-  const tokenValue = getTokenValue();
-
   //Fetch (CBHI) providers
   useEffect(() => {
     const fetchCBHI = async () => {
       try {
-        const response = await api.get(
-          `/Providers/list-providers`
-        );
+        const response = await api.get(`/Providers/list-providers`);
         if (response?.status === 200) {
           setWoredas(response?.data?.map((item) => item.provider));
         }
@@ -62,9 +91,7 @@ const ReportPage = () => {
   useEffect(() => {
     const fetchORG = async () => {
       try {
-        const response = await api.get(
-          `/Organiztion/Organization`
-        );
+        const response = await api.get(`/Organiztion/Organization`);
         if (response?.status === 200 || response?.status === 201) {
           setOrganizations(response?.data?.map((item) => item.organization));
         }
@@ -112,11 +139,16 @@ const ReportPage = () => {
   }, [payments]);
 
   const exportToExcel = () => {
-    const filtered = filteredPayments.map(
-      ({ id, collectionID, registeredOn, ...rest }) => {
-        return { ...rest, registeredOn: registeredOn.split("T")[0] };
-      }
-    );
+    const sorted = [...filteredPayments]
+      .map(({ id, visitingDate, ...rest }) => rest)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const withOrder = sorted.map((item, index) => ({
+      No: index + 1,
+      ...item,
+    }));
+
+    const filtered = withOrder;
     const ws = XLSX.utils.json_to_sheet(filtered);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Payments Report");
@@ -132,30 +164,85 @@ const ReportPage = () => {
         toast.info("Empty Data.");
         return;
       }
-      const modified = filteredPayments.map(
-        ({ refNo, id, collectionID, registeredOn, isCollected, ...rest }) => {
-          return { ...rest, registeredOn: registeredOn.split("T")[0] };
-        }
-      );
 
-      const grouped = modified.reduce((acc, item) => {
-        // Create a group key from all keys except 'amount'
-        const { amount, purpose, ...rest } = item;
+      const sorted = [...filteredPayments]
+        .map(({ id, visitingDate, ...rest }) => rest)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      const withOrder = sorted.map((item, index) => ({
+        No: index + 1,
+        ...item,
+      }));
+
+      const grouped = withOrder.reduce((acc, item) => {
+        const {
+          No,
+          cardPaid,
+          unltrasoundPaid,
+          examinationPaid,
+          medicinePaid,
+          laboratoryPaid,
+          bedPaid,
+          surgeryPaid,
+          foodpaid,
+          otherPaid,
+          totalPaid,
+          amount,
+          purpose,
+          ...rest
+        } = item;
+
         const key = JSON.stringify(rest); // serialize grouping keys
 
         if (!acc[key]) {
-          acc[key] = { ...rest, amount: 0, purpose: [] };
+          acc[key] = {
+            ...rest,
+            cardPaid: 0,
+            unltrasoundPaid: 0,
+            examinationPaid: 0,
+            medicinePaid: 0,
+            laboratoryPaid: 0,
+            bedPaid: 0,
+            surgeryPaid: 0,
+            foodpaid: 0,
+            otherPaid: 0,
+            totalPaid: 0,
+          };
         }
 
-        acc[key].amount += amount;
-        acc[key].purpose.push(purpose);
+        acc[key].cardPaid += cardPaid || 0;
+        acc[key].unltrasoundPaid += unltrasoundPaid || 0;
+        acc[key].examinationPaid += examinationPaid || 0;
+        acc[key].medicinePaid += medicinePaid || 0;
+        acc[key].laboratoryPaid += laboratoryPaid || 0;
+        acc[key].bedPaid += bedPaid || 0;
+        acc[key].surgeryPaid += surgeryPaid || 0;
+        acc[key].foodpaid += foodpaid || 0;
+        acc[key].otherPaid += otherPaid || 0;
+        acc[key].totalPaid += totalPaid || 0;
+
         return acc;
       }, {});
 
       const result = Object.values(grouped);
-      const resultAmended = result.map(({ purpose, ...rest }) => {
-        return { ...rest, purpose: purpose.join(",") };
+
+      const normalizeType = (type) => type?.toString().trim().toLowerCase();
+
+      const resultAmended = result.map((item, index) => {
+        const normalizedType = normalizeType(selectedMethod);
+        const keysToRemove = keysToRemoveByPaymentType[normalizedType] || [];
+
+        const amended = { No: index + 1 };
+
+        Object.entries(item).forEach(([key, value]) => {
+          if (!keysToRemove.includes(key)) {
+            amended[key] = value;
+          }
+        });
+
+        return amended;
       });
+
       const ws = XLSX.utils.json_to_sheet(resultAmended);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Payments Report");
@@ -226,7 +313,7 @@ const ReportPage = () => {
     if (formData?.organization?.length <= 0 && formData.woreda?.length <= 0) {
       setFilteredPayments(
         payments
-          ? payments.filter((payment) =>
+          ? payments?.filter((payment) =>
               selectedMethod === "ALL"
                 ? payment
                 : payment.paymentType.toLowerCase() ===
@@ -249,37 +336,41 @@ const ReportPage = () => {
     try {
       return payments
         ? payments
-            .filter((payment) =>
+            ?.filter((payment) =>
               method === "ALL"
                 ? payment
                 : payment.paymentType?.toLowerCase() === method?.toLowerCase()
             )
-            .reduce((sum, payment) => sum + Number(payment.paymentAmount), 0)
+            .reduce((sum, payment) => sum + Number(payment.totalPaid), 0)
         : 0; // Ensure amount is treated as a number
     } catch (error) {
       console.error("Calc Error : ", error);
     }
   };
 
+  const columns =
+    payments?.length > 0
+      ? Object.keys(payments[0]).map((key) => ({
+          field: key,
+          headerName: key,
+          width: 150,
+        }))
+      : [{}];
 
-  const columns = [
-    { field: "referenceNo", headerName: "Ref No.", width: 200 },
-    { field: "hospitalName", headerName: "Hospital Name", width: 150 },
-    { field: "patientCardNumber", headerName: "Card Number", width: 150 },
-    { field: "paymentReason", headerName: "Service", width: 150 },
-    {
-      field: "paymentAmount",
-      headerName: "Amount",
-      width: 120,
-      renderCell: (params) => formatAccounting2(params.row.paymentAmount),
-    },
-    { field: "paymentType", headerName: "Payment Method", width: 150 },
-    { field: "paymentDescription", headerName: "Description", width: 200 },
-    { field: "registeredOn", headerName: "Date", width: 150 },
-    { field: "registeredBy", headerName: "Created by", width: 150 },
-  ];
-
-
+  // const columns = [
+  //   { field: "referenceNo", headerName: "Ref No.", width: 200 },
+  //   { field: "cardNumber", headerName: "Card Number", width: 150 },
+  //   { field: "name", headerName: "Patient Name", width: 150 },
+  //   { field: "visitingDate", headerName: "Visiting Date", width: 150 },
+  //   { field: "gender", headerName: "Gender", width: 150 },
+  //   {
+  //     field: "totalPaid",
+  //     headerName: "Amount",
+  //     width: 120,
+  //     renderCell: (params) => formatAccounting2(params.row.totalPaid),
+  //   },
+  //   { field: "paymentType", headerName: "Payment Method", width: 150 },
+  // ];
 
   const dateObj = {
     sdate: setStartDate,
@@ -299,29 +390,43 @@ const ReportPage = () => {
         toast.error("Invalid date selected.");
         return;
       }
-
-      // Adjust for local timezone
-      const tzOffsetMinutes = jsDate.getTimezoneOffset();
-      const offsetSign = tzOffsetMinutes <= 0 ? "+" : "-";
-      const offsetHours = String(
-        Math.floor(Math.abs(tzOffsetMinutes) / 60)
-      ).padStart(2, "0");
-      const offsetMinutes = String(Math.abs(tzOffsetMinutes) % 60).padStart(
-        2,
-        "0"
-      );
-
-      const localTime = new Date(jsDate.getTime() - tzOffsetMinutes * 60000);
-      const formattedDate = localTime
-        .toISOString()
-        .slice(0, 19)
-        .replace("T", " ");
-      const finalDateTime = `${formattedDate} ${offsetSign}${offsetHours}:${offsetMinutes}`;
+      const finalDateTime = jsDate.toLocaleDateString("en-CA");
       dateObj[fieldName](finalDateTime);
     } catch (error) {
       console.error("Date Picker Change Error:", error);
       toast.error("Unable to select the date properly.");
     }
+  };
+
+  const t = {
+    cardNumber: "152564",
+    name: "በረከት በየነ Moges",
+    visitingDate: "2025-05-26T08:25:30.96",
+    age: "0",
+    gender: "Male",
+    kebele: null,
+    goth: null,
+    referalNo: null,
+    idNo: null,
+    patientType: "",
+    paymentType: "CASH",
+    patientWorkingPlace: null,
+    patientWorkID: null,
+    cbhiProvider: null,
+    accedentDate: null,
+    policeName: null,
+    policePhone: null,
+    carPlateNumber: null,
+    cardPaid: 49,
+    unltrasoundPaid: 0,
+    examinationPaid: 0,
+    medicinePaid: 0,
+    laboratoryPaid: 0,
+    bedPaid: 0,
+    surgeryPaid: 0,
+    foodpaid: 0,
+    otherPaid: 0,
+    totalPaid: 49,
   };
 
   const handleReportRequest = async () => {
@@ -331,18 +436,28 @@ const ReportPage = () => {
         return;
       }
 
-      const datas = await GetAllPaymentByDate({
-        startDate: new Date(startDate.replace(" +03:00", "")),
-        endDate: new Date(endDate.replace(" +03:00", "")),
-        user: tokenValue.name,
+      // const datas = await GetAllPaymentByDate({
+      //   startDate: new Date(startDate.replace(" +03:00", "")),
+      //   endDate: new Date(endDate.replace(" +03:00", "")),
+      //   user: tokenValue.name,
+      // });
+
+      const datas = await api.put("/Payment/rpt-all-Payment", {
+        startDate: startDate.replace(" +03:00", ""),
+        endDate: endDate.replace(" +03:00", ""),
       });
 
-      if (datas.length > 0) {
-        setPayments(datas);
+      if (datas?.status === 200) {
+        const modData = datas?.data?.map((item, index) => ({
+          id: index + 1,
+          ...item,
+        }));
+
+        setPayments(modData);
 
         setFilteredPayments(
           payments
-            ? payments.filter((payment) =>
+            ? payments?.filter((payment) =>
                 selectedMethod === "ALL"
                   ? payment
                   : payment.paymentType.toLowerCase() ===
@@ -351,19 +466,6 @@ const ReportPage = () => {
             : []
         );
       }
-
-      setPayments(datas);
-
-      setFilteredPayments(
-        payments
-          ? payments.filter((payment) =>
-              selectedMethod === "All"
-                ? payment
-                : payment.paymentType.toLowerCase() ===
-                  selectedMethod.toLowerCase()
-            )
-          : []
-      );
     } catch (error) {
       console.error("Error fetching payments:", error);
     }
@@ -379,7 +481,7 @@ const ReportPage = () => {
         const copy = payments;
         setFilteredPayments(
           copy?.filter(
-            (item) => item.patientLoaction.toLowerCase() === value.toLowerCase()
+            (item) => item.kebele?.toLowerCase() === value.toLowerCase()
           )
         );
       } else if (name === "organization") {
@@ -387,7 +489,7 @@ const ReportPage = () => {
         setFilteredPayments(
           copy?.filter(
             (item) =>
-              item.patientWorkingPlace.toLowerCase() === value.toLowerCase()
+              item.patientWorkingPlace?.toLowerCase() === value.toLowerCase()
           )
         );
       }

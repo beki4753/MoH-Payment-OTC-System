@@ -182,8 +182,7 @@ const ReportReceiptFetcher = () => {
       setLoading(true);
       if (tab === 0 && cardNumber) {
         const response = await api.put("/Payment/payment-by-cardNumber", {
-          code: cardNumber,
-          name: tokenvalue?.name,
+          patientCardNumber: cardNumber,
         });
         if (response?.data?.length > 0) {
           setDispPrint(true);
