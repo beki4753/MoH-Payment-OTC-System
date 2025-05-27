@@ -8,6 +8,7 @@ import {
   TextField,
   MenuItem,
   Grid,
+  CircularProgress,
 } from "@mui/material";
 import api from "../../utils/api";
 import { DataGrid } from "@mui/x-data-grid";
@@ -19,6 +20,12 @@ import { formatAccounting2 } from "../hospitalpayment/HospitalPayment";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import EtDatePicker from "mui-ethiopian-datepicker";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import "./NotoSansEthiopic-Regular-normal.js";
+import { renderETDateAtCell } from "../../components/PatientSearch";
+
+const normalizeType = (type) => type?.toString().trim().toLowerCase();
 
 const keysToRemoveByPaymentType = {
   cash: [
@@ -57,6 +64,142 @@ const keysToRemoveByPaymentType = {
     "patientWorkingPlace",
   ],
 };
+
+const exportToPDF = async (data) => {
+  try {
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    doc.setFont("NotoSansEthiopic-Regular", "normal");
+
+    // Constants for PDF layout
+    const margin = 10;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const availableWidth = pageWidth - 2 * margin;
+
+    // Column width distribution (units)
+    const widthDistribution = [2, 4, 10, 7, 5, 3, 4, 4, 4, 4, 5, 5, 6, 5, 6, 6, 6, 5, 5, 4, 4, 4, 10];
+    const totalUnits = widthDistribution.reduce((sum, w) => sum + w, 0);
+    const columnStyles = {};
+    widthDistribution.forEach((units, index) => {
+      columnStyles[index] = { cellWidth: (units / totalUnits) * availableWidth };
+    });
+
+    // Headers (multi-row)
+    const topHeaders = [
+      ["N.O", "Card Number", "Patient Name", "Patient Admitted Date", "Payment Type", "Age", "Gender", "Kebele", "Goth", "ID number", "Referral No", "Outpatient/ inpatient", "Expenses for service", "", "", "", "", "", "", "", "", "Total"],
+      ["", "", "", "", "", "", "", "", "", "", "", "", "Card", "For examination", "Laboratory", "X-ray/ultrasound", "Bed", "Medicine", "Surgery", "Food", "Other", "Total"]
+    ];
+
+    // Format data (numbers to accounting format)
+    const formattedData = data.map(row => row.map((cell, colIndex) => 
+      typeof cell === "number" && colIndex !== 0 ? formatAccounting2(cell) : cell ?? ""
+    ));
+
+    // AutoTable options
+    const autoTableOptions = {
+      startY: 50,
+      head: topHeaders,
+      body: formattedData,
+      styles: {
+        font: "NotoSansEthiopic-Regular",
+        fontSize: 7,
+        cellPadding: 3,
+        overflow: "linebreak",
+        lineWidth: 0.1,
+        lineColor: [80, 80, 80],
+      },
+      headStyles: {
+        fillColor: [22, 160, 133],
+        textColor: 255,
+        fontSize: 7.5,
+        halign: "center",
+        valign: "middle",
+        fontStyle: "bold",
+      },
+      bodyStyles: {
+        valign: "middle",
+      },
+      alternateRowStyles: {
+        fillColor: [240, 250, 250],
+      },
+      columnStyles,
+      theme: "grid",
+      tableWidth: "auto",
+      margin: { left: margin, right: margin },
+
+      didParseCell: function(data) {
+        if (data.section === "head") {
+          if (data.row.index === 0) {
+            if (data.column.index === 12) {
+              data.cell.colSpan = 10;
+              data.cell.content = "Expenses for service";
+            } else if (data.column.index > 12 && data.column.index < 22) {
+              data.cell.content = "";
+            }
+            if (data.column.index <= 11) {
+              data.cell.rowSpan = 2;
+            }
+          }
+          if (data.row.index === 1 && data.column.index <= 11) {
+            data.cell.styles.fillColor = [22, 160, 133];
+            data.cell.styles.textColor = [22, 160, 133];
+          }
+        }
+        if (data.column.index >= 12 && data.section === "body") {
+          data.cell.styles.halign = "right";
+        }
+        if (data.column.index === 21 && data.section === "body") {
+          data.cell.styles.fontStyle = "bold";
+        }
+      },
+
+      willDrawCell: function(data) {
+        if (data.section === "head" && data.row.index === 0 && data.column.index > 12 && data.column.index < 22) {
+          return false;
+        }
+        return true;
+      },
+
+      didDrawCell: function(data) {
+        if (data.section === "head" && data.row.index === 0 && data.column.index === 12) {
+          const mergedWidth = data.table.columns.slice(12, 21).reduce((sum, col) => sum + col.width, 0);
+          doc.setFillColor(22, 160, 133);
+          doc.rect(data.cell.x, data.cell.y, mergedWidth, data.cell.height, "F");
+          doc.setDrawColor(80, 80, 80);
+          doc.setLineWidth(0.1);
+          doc.rect(data.cell.x, data.cell.y, mergedWidth, data.cell.height, "S");
+          doc.setTextColor(255);
+          doc.setFontSize(7.5);
+          doc.setFont("NotoSansEthiopic-Regular", "normal");
+          doc.text("Expenses for service", data.cell.x + mergedWidth / 2, data.cell.y + data.cell.height / 2, { align: "center", baseline: "middle" });
+        }
+      },
+
+      didDrawPage: function(data) {
+        doc.setFillColor(22, 160, 133);
+        doc.rect(margin, 20, pageWidth - 2 * margin, 20, "F");
+        doc.setTextColor(255);
+        doc.setFontSize(16);
+        doc.setFont("NotoSansEthiopic-Regular", "normal");
+        doc.text("Service Cost Report", pageWidth / 2, 35, { align: "center" });
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        doc.setFont("NotoSansEthiopic-Regular", "normal");
+        doc.text("Generated: " + new Date().toLocaleDateString(), margin, pageHeight - 20);
+        doc.text("Page " + doc.internal.getNumberOfPages(), pageWidth - margin, pageHeight - 20, { align: "right" });
+      },
+    };
+
+    // Generate the PDF
+    autoTable(doc, autoTableOptions);
+    doc.save("structured-report.pdf");
+  } catch (error) {
+    console.error("Export to PDF Error:", error);
+    toast.error("Report generation failed.");
+  }
+};
+
+
 const ReportPage = () => {
   const [payments, setPayments] = useState([]);
 
@@ -71,6 +214,8 @@ const ReportPage = () => {
     woreda: "",
     organization: "",
   });
+
+  const [isLoading, setLoading] = useState(false);
 
   //Fetch (CBHI) providers
   useEffect(() => {
@@ -138,33 +283,17 @@ const ReportPage = () => {
     }
   }, [payments]);
 
-  const exportToExcel = () => {
-    const sorted = [...filteredPayments]
-      .map(({ id, visitingDate, ...rest }) => rest)
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    const withOrder = sorted.map((item, index) => ({
-      No: index + 1,
-      ...item,
-    }));
-
-    const filtered = withOrder;
-    const ws = XLSX.utils.json_to_sheet(filtered);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Payments Report");
-    XLSX.writeFile(
-      wb,
-      `Payments_Report_${startDate}_to_${endDate}_${selectedMethod}.xlsx`
+  useEffect(() => {
+    console.log(
+      "Payments is: ",
+      payments.filter(
+        (item) => item.referenceNumber === "DB152345DIGI20255271646354664442768"
+      )
     );
-  };
+  }, [payments]);
 
-  const cumulativeReport = () => {
+  const cumulativeDataModifier = async () => {
     try {
-      if (filteredPayments.length < 0) {
-        toast.info("Empty Data.");
-        return;
-      }
-
       const sorted = [...filteredPayments]
         .map(({ id, visitingDate, ...rest }) => rest)
         .sort((a, b) => a.name.localeCompare(b.name));
@@ -177,6 +306,7 @@ const ReportPage = () => {
       const grouped = withOrder.reduce((acc, item) => {
         const {
           No,
+          referenceNumber,
           cardPaid,
           unltrasoundPaid,
           examinationPaid,
@@ -226,8 +356,6 @@ const ReportPage = () => {
 
       const result = Object.values(grouped);
 
-      const normalizeType = (type) => type?.toString().trim().toLowerCase();
-
       const resultAmended = result.map((item, index) => {
         const normalizedType = normalizeType(selectedMethod);
         const keysToRemove = keysToRemoveByPaymentType[normalizedType] || [];
@@ -243,6 +371,72 @@ const ReportPage = () => {
         return amended;
       });
 
+      return resultAmended;
+    } catch (error) {
+      console.error("This is Cumulative data modifier error: ", error);
+    }
+  };
+
+  const dataModifier = async () => {
+    try {
+      const sorted = [...filteredPayments]
+        .map(({ id, visitingDate, ...rest }) => rest)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      const withOrder = sorted.map((item, index) => ({
+        No: index + 1,
+        ...item,
+      }));
+
+      const columnsFilter = withOrder.map((item) => {
+        const normalizedType = normalizeType(selectedMethod);
+        const keysToRemove = keysToRemoveByPaymentType[normalizedType] || [];
+
+        const amended = {};
+
+        Object.entries(item).forEach(([key, value]) => {
+          if (!keysToRemove.includes(key)) {
+            amended[key] = value;
+          }
+        });
+
+        return amended;
+      });
+
+      return columnsFilter;
+    } catch (error) {
+      console.error("This is data modifier error: ", error);
+    }
+  };
+
+  const exportToExcel = async () => {
+    try {
+      if (filteredPayments.length < 0) {
+        toast.info("Empty Data.");
+        return;
+      }
+
+      const columnsFilter = await dataModifier();
+      const ws = XLSX.utils.json_to_sheet(columnsFilter);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Payments Report");
+      XLSX.writeFile(
+        wb,
+        `Payments_Report_${startDate}_to_${endDate}_${selectedMethod}.xlsx`
+      );
+    } catch (error) {
+      console.error("This is Export To Excell Error: ", error);
+      toast.error("Report Generation Failed.");
+    }
+  };
+
+  const cumulativeReport = async () => {
+    try {
+      if (filteredPayments.length < 0) {
+        toast.info("Empty Data.");
+        return;
+      }
+      const resultAmended = await cumulativeDataModifier();
       const ws = XLSX.utils.json_to_sheet(resultAmended);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Payments Report");
@@ -348,29 +542,31 @@ const ReportPage = () => {
     }
   };
 
-  const columns =
-    payments?.length > 0
-      ? Object.keys(payments[0]).map((key) => ({
-          field: key,
-          headerName: key,
-          width: 150,
-        }))
-      : [{}];
+  const columns = [
+    { field: "referenceNumber", headerName: "Ref No.", flex: 1 },
+    {
+      field: "treatmentDate",
+      headerName: "Date",
+      flex: 1,
+      renderCell: (params) => {
+        return renderETDateAtCell(params?.row?.treatmentDate);
+      },
+    },
+    { field: "cardNumber", headerName: "Card Number", flex: 1 },
+    { field: "name", headerName: "Patient Name", flex: 1 },
+    { field: "cbhiProvider", headerName: "Woreda/Kebele", flex: 1 },
+    { field: "idNo", headerName: "ID No", flex: 1 },
+    { field: "patientWorkingPlace", headerName: "Working Place", flex: 1 },
+    { field: "patientWorkID", headerName: "Working Place ID", flex: 1 },
+    { field: "paymentType", headerName: "Payment Method", flex: 1 },
 
-  // const columns = [
-  //   { field: "referenceNo", headerName: "Ref No.", width: 200 },
-  //   { field: "cardNumber", headerName: "Card Number", width: 150 },
-  //   { field: "name", headerName: "Patient Name", width: 150 },
-  //   { field: "visitingDate", headerName: "Visiting Date", width: 150 },
-  //   { field: "gender", headerName: "Gender", width: 150 },
-  //   {
-  //     field: "totalPaid",
-  //     headerName: "Amount",
-  //     width: 120,
-  //     renderCell: (params) => formatAccounting2(params.row.totalPaid),
-  //   },
-  //   { field: "paymentType", headerName: "Payment Method", width: 150 },
-  // ];
+    {
+      field: "totalPaid",
+      headerName: "Total Paid",
+      width: 120,
+      renderCell: (params) => formatAccounting2(params.row.totalPaid),
+    },
+  ];
 
   const dateObj = {
     sdate: setStartDate,
@@ -431,16 +627,11 @@ const ReportPage = () => {
 
   const handleReportRequest = async () => {
     try {
+      setLoading(true);
       if (startDate === "" || endDate === "") {
         alert("Please select start and end date");
         return;
       }
-
-      // const datas = await GetAllPaymentByDate({
-      //   startDate: new Date(startDate.replace(" +03:00", "")),
-      //   endDate: new Date(endDate.replace(" +03:00", "")),
-      //   user: tokenValue.name,
-      // });
 
       const datas = await api.put("/Payment/rpt-all-Payment", {
         startDate: startDate.replace(" +03:00", ""),
@@ -468,6 +659,8 @@ const ReportPage = () => {
       }
     } catch (error) {
       console.error("Error fetching payments:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -499,14 +692,57 @@ const ReportPage = () => {
   };
 
   const handleChange = (e) => {
-    if (e.target.name === "woreda") {
-      setSelectedMethod("CBHI");
-      setFormData({ organization: "", [e.target.name]: e.target.value });
-    } else {
-      setSelectedMethod("Credit");
-      setFormData({ woreda: "", [e.target.name]: e.target.value });
+    try {
+      if (e.target.name === "woreda") {
+        setSelectedMethod("CBHI");
+        setFormData({ organization: "", [e.target.name]: e.target.value });
+      } else {
+        setSelectedMethod("Credit");
+        setFormData({ woreda: "", [e.target.name]: e.target.value });
+      }
+      filterData(e.target.name, e.target.value);
+    } catch (error) {
+      console.error("This is Handle change error: ", error);
     }
-    filterData(e.target.name, e.target.value);
+  };
+
+  const handlexportToPDF = async () => {
+    try {
+      if (filteredPayments.length < 0) {
+        toast.info("Empty Data.");
+        return;
+      }
+
+      const data = await cumulativeDataModifier();
+      const exportToPDFData = data.map((item, index) => [
+        item?.No,
+        item.cardNumber || "",
+        item.name || "",
+        renderETDateAtCell(item.treatmentDate),
+        item?.paymentType,
+        item.age || "",
+        item.gender || "",
+        item.kebele || "",
+        item.goth || "",
+        item.idNo || "",
+        item.referalNo || "",
+        item.patientType || "",
+        item.cardPaid ?? 0,
+        item.examinationPaid ?? 0,
+        item.laboratoryPaid ?? 0,
+        item.unltrasoundPaid ?? 0,
+        item.bedPaid ?? 0,
+        item.medicinePaid ?? 0,
+        item.surgeryPaid ?? 0,
+        item.foodpaid ?? 0,
+        item.otherPaid ?? 0,
+        item.totalPaid ?? 0,
+      ]);
+
+      exportToPDF(exportToPDFData);
+    } catch (error) {
+      console.error("This is export to pdf handler error: ", error);
+    }
   };
 
   return (
@@ -517,21 +753,6 @@ const ReportPage = () => {
       <Paper sx={{ padding: 2, margin: 2 }}>
         <Grid container spacing={1}>
           <Grid item xs={2}>
-            {/* <TextField
-              label="Start Date"
-              type="date"
-              value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value);
-                setFormData({
-                  woreda: "",
-                  organization: "",
-                });
-              }}
-              InputLabelProps={{ shrink: true }}
-              required
-              sx={{ marginRight: 2 }}
-            /> */}
             <EtDatePicker
               key={startDate || "startDate"}
               label="Start Date"
@@ -566,21 +787,6 @@ const ReportPage = () => {
               required
               sx={{ marginRight: 2 }}
             />
-            {/* <TextField
-              label="End Date"
-              type="date"
-              value={endDate}
-              onChange={(e) => {
-                setEndDate(e.target.value);
-                setFormData({
-                  woreda: "",
-                  organization: "",
-                });
-              }}
-              InputLabelProps={{ shrink: true }}
-              required
-              sx={{ marginRight: 2 }}
-            /> */}
           </Grid>
           <Grid item xs={2}>
             <Button
@@ -588,8 +794,13 @@ const ReportPage = () => {
               color="secondary"
               onClick={handleReportRequest}
               sx={{ marginRight: 2 }}
+              disabled={isLoading}
             >
-              Request Report
+              {isLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Request Report"
+              )}
             </Button>
           </Grid>
 
@@ -619,9 +830,9 @@ const ReportPage = () => {
               value={formData.organization}
               onChange={handleChange}
             >
-              {organizations.map((role) => (
-                <MenuItem key={role} value={role}>
-                  {role}
+              {organizations.map((org, index) => (
+                <MenuItem key={index} value={org}>
+                  {org}
                 </MenuItem>
               ))}
             </TextField>
@@ -647,6 +858,7 @@ const ReportPage = () => {
         <DataGrid
           rows={filteredPayments.length ? filteredPayments : []}
           columns={columns}
+          loading={isLoading}
           slots={{
             noResultsOverlay: CustomNoResultsOverlay,
           }}
@@ -667,6 +879,15 @@ const ReportPage = () => {
         onClick={() => cumulativeReport()}
       >
         Cumulative Export
+      </Button>
+
+      <Button
+        sx={{ marginLeft: 2 }}
+        variant="contained"
+        color="primary"
+        onClick={() => handlexportToPDF()}
+      >
+        Export to PDF
       </Button>
 
       <ToastContainer />

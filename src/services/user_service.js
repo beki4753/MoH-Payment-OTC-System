@@ -8,7 +8,6 @@ export async function login(payload) {
     username: payload.username,
     password: payload.password,
   });
-  console.log("This is Log In Response Data: ", response);
   return { ...response.data };
 }
 
