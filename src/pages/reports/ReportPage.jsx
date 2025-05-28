@@ -67,36 +67,89 @@ const keysToRemoveByPaymentType = {
 
 const exportToPDF = async (data) => {
   try {
-    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "pt",
+      format: "a4",
+    });
     doc.setFont("NotoSansEthiopic-Regular", "normal");
 
-    // Constants for PDF layout
     const margin = 10;
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const availableWidth = pageWidth - 2 * margin;
 
-    // Column width distribution (units)
-    const widthDistribution = [2, 4, 10, 7, 5, 3, 4, 4, 4, 4, 5, 5, 6, 5, 6, 6, 6, 5, 5, 4, 4, 4, 10];
+    const widthDistribution = [
+      2, 4, 10, 7, 5, 3, 4, 4, 4, 4, 5, 5, 6, 5, 6, 6, 6, 5, 5, 4, 4, 4,
+    ];
     const totalUnits = widthDistribution.reduce((sum, w) => sum + w, 0);
     const columnStyles = {};
     widthDistribution.forEach((units, index) => {
-      columnStyles[index] = { cellWidth: (units / totalUnits) * availableWidth };
+      columnStyles[index] = {
+        cellWidth: (units / totalUnits) * availableWidth,
+      };
     });
 
-    // Headers (multi-row)
     const topHeaders = [
-      ["N.O", "Card Number", "Patient Name", "Patient Admitted Date", "Payment Type", "Age", "Gender", "Kebele", "Goth", "ID number", "Referral No", "Outpatient/ inpatient", "Expenses for service", "", "", "", "", "", "", "", "", "Total"],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "Card", "For examination", "Laboratory", "X-ray/ultrasound", "Bed", "Medicine", "Surgery", "Food", "Other", "Total"]
+      [
+        "N.O",
+        "Card Number",
+        "Patient Name",
+        "Patient Admitted Date",
+        "Payment Type",
+        "Age",
+        "Gender",
+        "Kebele",
+        "Goth",
+        "ID number",
+        "Referral No",
+        "Outpatient/ inpatient",
+        "Expenses for service",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Total",
+      ],
+      [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Card",
+        "For examination",
+        "Laboratory",
+        "X-ray/ultrasound",
+        "Bed",
+        "Medicine",
+        "Surgery",
+        "Food",
+        "Other",
+        "Total",
+      ],
     ];
 
-    // Format data (numbers to accounting format)
-    const formattedData = data.map(row => row.map((cell, colIndex) => 
-      typeof cell === "number" && colIndex !== 0 ? formatAccounting2(cell) : cell ?? ""
-    ));
+    const formattedData = data.map((row) =>
+      row.map((cell, colIndex) =>
+        typeof cell === "number" && colIndex !== 0
+          ? formatAccounting2(cell)
+          : cell ?? ""
+      )
+    );
 
-    // AutoTable options
-    const autoTableOptions = {
+    autoTable(doc, {
       startY: 50,
       head: topHeaders,
       body: formattedData,
@@ -124,19 +177,19 @@ const exportToPDF = async (data) => {
       },
       columnStyles,
       theme: "grid",
-      tableWidth: "auto",
-      margin: { left: margin, right: margin },
+      tableWidth: availableWidth, // Ensure table uses availableWidth
+      margin: { left: margin, right: margin }, // Ensure same margins
 
-      didParseCell: function(data) {
+      didParseCell: function (data) {
         if (data.section === "head") {
           if (data.row.index === 0) {
             if (data.column.index === 12) {
-              data.cell.colSpan = 10;
+              data.cell.colSpan = 9;
               data.cell.content = "Expenses for service";
-            } else if (data.column.index > 12 && data.column.index < 22) {
+            } else if (data.column.index > 12 && data.column.index < 21) {
               data.cell.content = "";
             }
-            if (data.column.index <= 11) {
+            if (data.column.index <= 11 || data.column.index === 21) {
               data.cell.rowSpan = 2;
             }
           }
@@ -145,60 +198,101 @@ const exportToPDF = async (data) => {
             data.cell.styles.textColor = [22, 160, 133];
           }
         }
+
         if (data.column.index >= 12 && data.section === "body") {
           data.cell.styles.halign = "right";
         }
+
         if (data.column.index === 21 && data.section === "body") {
           data.cell.styles.fontStyle = "bold";
         }
       },
 
-      willDrawCell: function(data) {
-        if (data.section === "head" && data.row.index === 0 && data.column.index > 12 && data.column.index < 22) {
+      willDrawCell: function (data) {
+        if (
+          data.section === "head" &&
+          data.row.index === 0 &&
+          data.column.index > 12 &&
+          data.column.index < 21
+        ) {
           return false;
         }
         return true;
       },
 
-      didDrawCell: function(data) {
-        if (data.section === "head" && data.row.index === 0 && data.column.index === 12) {
-          const mergedWidth = data.table.columns.slice(12, 21).reduce((sum, col) => sum + col.width, 0);
+      didDrawCell: function (data) {
+        if (
+          data.section === "head" &&
+          data.row.index === 0 &&
+          data.column.index === 12
+        ) {
+          const mergedWidth = data.table.columns
+            .slice(12, 21)
+            .reduce((sum, col) => sum + col.width, 0);
+
           doc.setFillColor(22, 160, 133);
-          doc.rect(data.cell.x, data.cell.y, mergedWidth, data.cell.height, "F");
+          doc.rect(
+            data.cell.x,
+            data.cell.y,
+            mergedWidth,
+            data.cell.height,
+            "F"
+          );
+
           doc.setDrawColor(80, 80, 80);
           doc.setLineWidth(0.1);
-          doc.rect(data.cell.x, data.cell.y, mergedWidth, data.cell.height, "S");
+          doc.rect(
+            data.cell.x,
+            data.cell.y,
+            mergedWidth,
+            data.cell.height,
+            "S"
+          );
+
           doc.setTextColor(255);
           doc.setFontSize(7.5);
           doc.setFont("NotoSansEthiopic-Regular", "normal");
-          doc.text("Expenses for service", data.cell.x + mergedWidth / 2, data.cell.y + data.cell.height / 2, { align: "center", baseline: "middle" });
+          doc.text(
+            "Expenses for service",
+            data.cell.x + mergedWidth / 2,
+            data.cell.y + data.cell.height / 2,
+            { align: "center", baseline: "middle" }
+          );
         }
       },
 
-      didDrawPage: function(data) {
+      didDrawPage: function () {
         doc.setFillColor(22, 160, 133);
         doc.rect(margin, 20, pageWidth - 2 * margin, 20, "F");
+
         doc.setTextColor(255);
         doc.setFontSize(16);
         doc.setFont("NotoSansEthiopic-Regular", "normal");
         doc.text("Service Cost Report", pageWidth / 2, 35, { align: "center" });
+
         doc.setFontSize(8);
         doc.setTextColor(100);
         doc.setFont("NotoSansEthiopic-Regular", "normal");
-        doc.text("Generated: " + new Date().toLocaleDateString(), margin, pageHeight - 20);
-        doc.text("Page " + doc.internal.getNumberOfPages(), pageWidth - margin, pageHeight - 20, { align: "right" });
+        doc.text(
+          "Generated: " + new Date().toLocaleDateString(),
+          margin,
+          pageHeight - 20
+        );
+        doc.text(
+          "Page " + doc.internal.getNumberOfPages(),
+          pageWidth - margin,
+          pageHeight - 20,
+          { align: "right" }
+        );
       },
-    };
+    });
 
-    // Generate the PDF
-    autoTable(doc, autoTableOptions);
     doc.save("structured-report.pdf");
   } catch (error) {
     console.error("Export to PDF Error:", error);
     toast.error("Report generation failed.");
   }
 };
-
 
 const ReportPage = () => {
   const [payments, setPayments] = useState([]);

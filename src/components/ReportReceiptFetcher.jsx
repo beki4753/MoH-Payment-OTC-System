@@ -228,7 +228,6 @@ const ReportReceiptFetcher = () => {
       } else if (tab === 1 && receiptNumber) {
         const response2 = await api.put("/Payment/payment-by-refno", {
           paymentId: receiptNumber,
-          user: tokenvalue?.name,
         });
 
         if (response2?.data?.length > 0) {

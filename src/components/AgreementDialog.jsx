@@ -158,6 +158,7 @@ const AgreementDialog = ({
             handleClose(); // Reset and close the modal
           }
         }}
+        disableEnforceFocus // to remove focus warning
         maxWidth="sm"
         fullWidth
         BackdropProps={{ "aria-hidden": false }}

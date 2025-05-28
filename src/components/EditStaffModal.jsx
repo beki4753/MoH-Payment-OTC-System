@@ -36,7 +36,11 @@ const EditStaffModal = ({ open, onClose, staffData, onSave, isloading }) => {
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={(event, reason) => {
+        if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
+          onClose(); // Reset and close the modal
+        }
+      }}
       maxWidth="sm"
       disableEnforceFocus
       fullWidth

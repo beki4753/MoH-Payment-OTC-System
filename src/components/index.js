@@ -29,3 +29,4 @@ export { default as CategoryCheckboxList } from "./CategoryCheckboxList";
 export { default as PatientTransactionsModal } from "./PatientTransactionsModal";
 export { default as CancelConfirm } from "./CancelConfirm";
 export { default as UnauthorizedPage } from "./UnauthorizedPage";
+export { default as ReceiptReversalManager  } from "./ReceiptReversalManager";

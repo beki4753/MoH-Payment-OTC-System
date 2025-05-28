@@ -40,7 +40,11 @@ const EditCreditUsers = ({
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={(event, reason) => {
+        if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
+          onClose(); // Reset and close the modal
+        }
+      }}
       maxWidth="sm"
       disableEnforceFocus
       fullWidth

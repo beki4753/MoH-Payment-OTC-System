@@ -68,9 +68,7 @@ function CBHIUsersManager() {
   useEffect(() => {
     const fetchWoredas = async () => {
       try {
-        const response = await api.get(
-          `/Providers/list-providers`
-        );
+        const response = await api.get(`/Providers/list-providers`);
         if (response.status === 200) {
           setWoredas(response?.data?.map((item) => item.provider));
         }
@@ -276,11 +274,14 @@ function CBHIUsersManager() {
 
       <Dialog
         open={openDialog}
-        onClose={handleClose}
+        onClose={(event, reason) => {
+          if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
+            handleClose(); // Reset and close the modal
+          }
+        }}
         fullWidth
         maxWidth="md"
         disableEnforceFocus // to remove focus warning
-        
       >
         <DialogTitle>Add CBHI User</DialogTitle>
         <DialogContent>

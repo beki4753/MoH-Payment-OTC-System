@@ -503,7 +503,15 @@ const PaymentManagementLists = () => {
         </div>
       ))}
 
-      <Dialog open={open} onClose={handleClose} disableEnforceFocus>
+      <Dialog
+        open={open}
+        onClose={(event, reason) => {
+          if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
+            handleClose(); // Reset and close the modal
+          }
+        }}
+        disableEnforceFocus
+      >
         <DialogTitle>
           {editId !== null ? "Edit" : "Add"} {formData.category}
         </DialogTitle>

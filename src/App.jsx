@@ -43,6 +43,7 @@ import {
   TreatmentEntry,
   PaymentManagement,
   UnauthorizedPage,
+  ReceiptReversalManager,
 } from "./components";
 
 const tokenvalue = getTokenValue();
@@ -244,6 +245,16 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute
             element={<PatientSearch />}
+            allowedRoles={["User"]}
+            allowedCategory={["Cashier"]}
+          />
+        ),
+      },
+      {
+        path: "money-refund",
+        element: (
+          <ProtectedRoute
+            element={<ReceiptReversalManager />}
             allowedRoles={["User"]}
             allowedCategory={["Cashier"]}
           />

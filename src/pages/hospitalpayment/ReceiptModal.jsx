@@ -63,6 +63,7 @@ const ReceiptModal = ({ open, onClose, data, onPrint, onloading }) => {
       }}
       TransitionComponent={Transition}
       fullScreen={fullScreen}
+      disableEnforceFocus
     >
       <DialogTitle>Payment Receipt</DialogTitle>
       <DialogContent dividers>
