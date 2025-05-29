@@ -23,7 +23,6 @@ import { getTokenValue } from "../services/user_service";
 import { convertToEthDateWithTime } from "../pages/reports/CollectedReport";
 const tokenvalue = getTokenValue();
 
-
 const formatter2 = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -94,7 +93,7 @@ const AgreementDialog = ({
       console.error(error);
       setVerifyEmp(false);
       setEmpVerified("no");
-      toast.info(error?.response?.data || "Internal Server Error!");
+      toast.info(error?.response?.data?.msg || "Internal Server Error!");
     }
   };
 

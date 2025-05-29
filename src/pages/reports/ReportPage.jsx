@@ -47,6 +47,13 @@ const keysToRemoveByPaymentType = {
     "patientWorkingPlace",
     "patientWorkID",
   ],
+  traffic:[
+    "cbhiProvider",
+    "patientWorkID",
+    "idNo",
+    "referalNo",
+    "patientWorkingPlace",
+  ],
   credit: [
     "carPlateNumber",
     "policePhone",

@@ -611,86 +611,27 @@ const TreatmentEntry = () => {
       </Typography>
 
       <Box mb={3} p={2} component={Paper} elevation={3} borderRadius={2}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={5}>
-            <TextField
-              label="Search by Card Number"
-              variant="outlined"
-              fullWidth
-              name="cardNumberSearch"
-              value={cardNumberSearch}
-              onChange={(e) => {
-                mrnCheck("cardNumberSearch", e.target.value);
-                setCardNumberSearch(e.target.value);
-              }}
-              InputLabelProps={{ shrink: true }}
-              error={!!formDataError?.cardNumberSearch}
-              helperText={formDataError?.cardNumberSearch}
-            />
-          </Grid>
-          <Grid item xs={12} md={5}>
-            <TextField
-              label="Search by Full Name"
-              variant="outlined"
-              fullWidth
-              name="fullNameSearch"
-              value={fullNameSearch}
-              onChange={(e) => {
-                onlyLetterCheck("fullNameSearch", e.target.value);
-                setFullNameSearch(e.target.value);
-              }}
-              InputLabelProps={{ shrink: true }}
-              error={!!formDataError?.fullNameSearch}
-              helperText={formDataError?.fullNameSearch}
-            />
-          </Grid>
+        <Grid container spacing={2} alignItems="center" justifyContent="flex-end">
           <Grid item xs={12} md={2}>
-            <Stack
-              direction="row"
-              spacing={2}
-              justifyContent="flex-end"
-              alignItems="center"
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => {
+                setRefresh((prev) => !prev);
+              }}
+              disabled={isLoading}
             >
-              <Button
-                variant="contained"
-                fullWidth
-                color="primary"
-                size="large"
-                onClick={handleSearch}
-                startIcon={<SearchIcon />}
-                sx={{
-                  height: "100%",
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: "bold",
-                }}
-              >
-                {searchLoading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  "Search"
-                )}
-              </Button>
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={() => {
-                  setRefresh((prev) => !prev);
-                }}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  <Refresh
-                    sx={{
-                      transition: "transform 0.5s",
-                      "&:hover": { transform: "rotate(90deg)" },
-                    }}
-                  />
-                )}
-              </Button>
-            </Stack>
+              {isLoading ? (
+                <CircularProgress size={24} />
+              ) : (
+                <Refresh
+                  sx={{
+                    transition: "transform 0.5s",
+                    "&:hover": { transform: "rotate(90deg)" },
+                  }}
+                />
+              )}
+            </Button>
           </Grid>
         </Grid>
       </Box>

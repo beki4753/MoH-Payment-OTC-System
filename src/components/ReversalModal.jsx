@@ -15,7 +15,6 @@ import {
 import { renderETDateAtCell } from "./PatientSearch";
 function ReversalModal({ open, onClose, receipt, onConfirm, loading }) {
   const [reason, setReason] = useState("");
-  const [supervisorPin, setSupervisorPin] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = () => {
@@ -32,45 +31,8 @@ function ReversalModal({ open, onClose, receipt, onConfirm, loading }) {
 
       setError("");
 
-      const t = {
-        rowId: 6,
-        referenceNo: "DB123123CASH2025527165027965224738",
-        patientCardNumber: "123123",
-        hospitalName: "DB Tena tabiya",
-        department: "Card",
-        paymentChannel: "-",
-        paymentType: "CASH",
-        patientName: "Ashabir Anberbir Hone",
-        patientPhone: "",
-        patientAge: "15",
-        patientAddress: null,
-        patientGender: "Male",
-        patientVisiting: "2025-05-27T00:00:00",
-        patientType: "",
-        paymentVerifingID: "-",
-        patientLoaction: null,
-        patientWorkingPlace: null,
-        patientWorkID: null,
-        patientWoreda: null,
-        patientKebele: null,
-        patientsGoth: null,
-        patientCBHI_ID: null,
-        patientReferalNo: null,
-        patientLetterNo: null,
-        patientExamination: null,
-        paymentReason: "FOR EXAMINATION",
-        paymentAmount: 100,
-        paymentDescription: "dfvsrefdcc",
-        paymentIsCollected: 0,
-        accedentDate: null,
-        policeName: null,
-        policePhone: null,
-        carPlateNumber: null,
-        carCertificate: null,
-        registeredBy: "Test1",
-        registeredOn: "2025-05-27T00:00:00",
-      };
       const payload = {
+        paymentVerifingID: receipt?.referenceNo,
         paymentType: receipt?.paymentType || "-",
         cardNumber: receipt?.patientCardNumber || "-",
         amount: [
@@ -89,7 +51,6 @@ function ReversalModal({ open, onClose, receipt, onConfirm, loading }) {
 
       // Reset fields
       setReason("");
-      setSupervisorPin("");
     } catch (error) {
       console.error(error);
     }
@@ -97,9 +58,16 @@ function ReversalModal({ open, onClose, receipt, onConfirm, loading }) {
 
   const handleClose = () => {
     setReason("");
-    setSupervisorPin("");
     setError("");
     onClose();
+  };
+
+  const handleChange = (e) => {
+    try {
+      setReason(e.target.value);
+    } catch (error) {
+      console.error("This is handle change error: ", error);
+    }
   };
 
   return (
@@ -165,8 +133,9 @@ function ReversalModal({ open, onClose, receipt, onConfirm, loading }) {
             multiline
             fullWidth
             rows={3}
+            required
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
+            onChange={handleChange}
           />
         </Box>
 

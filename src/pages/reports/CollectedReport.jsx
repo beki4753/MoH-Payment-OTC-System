@@ -51,7 +51,7 @@ const CollectedReport = () => {
       const response = await api.put("/Collection/Get-all-Collection", {
         startDate: startDate,
         endDate: endDate,
-        // user: tokenvalue?.name,
+        user: tokenvalue?.name,
         isCollected: 0,
       });
 
@@ -66,6 +66,7 @@ const CollectedReport = () => {
       setData(data.length <= 0 ? new Array() : data);
     } catch (error) {
       console.error("Error fetching report data:", error);
+      toast.error(error?.response?.data?.msg || "Internal Server Error!");
     }
   };
 

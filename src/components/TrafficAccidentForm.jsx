@@ -1,4 +1,4 @@
-import React, { useState, useReducer } from "react";
+import React, { useState, useReducer, useEffect } from "react";
 import {
   Box,
   Button,
@@ -20,12 +20,12 @@ import { renderETDateAtCell } from "./PatientSearch";
 import api from "../utils/api";
 
 const initialForm = {
-  mrn: "",
-  age: "",
-  accidentDate: "",
-  accidentAddress: "",
-  certificate: "",
-  carPlateNumber: "",
+  patientCardNumber: "",
+  patientAge: "",
+  accedentDate: "",
+  acceedentAddress: "",
+  carCertificate: "",
+  plateNumber: "",
   policeName: "",
   policePhone: "",
 };
@@ -52,12 +52,33 @@ function TrafficAccidentCrud() {
   const [records, setRecords] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [refresh, setRefresh] = useState(false);
+
+  //Fetch DataGrid data
+  useEffect(() => {
+    const fetchTableData = async () => {
+      try {
+        const response = await api.put("/Patient/get-patient-accedent", {});
+        const modData = response?.data?.data?.map(
+          ({ accedentRecId, ...rest }) => ({ id: accedentRecId, ...rest })
+        );
+        if (response?.status === 200) {
+          setRecords(modData);
+        }
+      } catch (error) {
+        console.error("This is fetch table data error: ", error);
+        toast.error(error?.response?.data?.msg || "Unable to Fetch Data");
+      }
+    };
+
+    fetchTableData();
+  }, [refresh]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === "mrn") {
+    if (name === "patientCardNumber") {
       mrnCheck(name, value);
-    } else if (name === "accidentAddress" || name === "carPlateNumber") {
+    } else if (name === "accedentDate" || name === "plateNumber") {
       letterNumberCheck(name, value);
     } else if (name === "policeName") {
       validateName(name, value);
@@ -78,14 +99,14 @@ function TrafficAccidentCrud() {
         return;
       }
       const payload = {
-        id: 0,
-        patientCardNumber: formData?.mrn,
-        accAddress: formData?.accidentAddress,
-        accDate: formData?.accidentDate,
+        id: editIndex !== null ? formData?.id : 0,
+        patientCardNumber: formData?.patientCardNumber,
+        accAddress: formData?.acceedentAddress,
+        accDate: formData?.accedentDate,
         policeName: formData?.policeName,
         policePhone: formData?.policePhone,
-        plateNumber: formData?.carPlateNumber,
-        certificate: formData?.certificate,
+        plateNumber: formData?.plateNumber,
+        certificate: formData?.carCertificate,
       };
 
       if (editIndex !== null) {
@@ -93,26 +114,26 @@ function TrafficAccidentCrud() {
           "/Patient/change-patient-accedent",
           payload
         );
-
-        console.log("This is updtae response: ", response);
-        const updated = [...records];
-        updated[editIndex] = { ...formData, id: updated[editIndex].id };
-        setRecords(updated);
-        setEditIndex(null);
+        if (response?.status === 200) {
+          toast.success(response?.data?.msg || "Updated Successfully.");
+          setRefresh((prev) => !prev);
+          setEditIndex(null);
+          setFormData(initialForm);
+        }
       } else {
         const response = await api.post(
           "/Patient/add-patient-accedent",
           payload
         );
         if (response?.status === 200) {
+          setRefresh((prev) => !prev);
           toast.success("Recorded Successfully.");
-          setRecords((prev) => [...prev, { ...formData, id: Date.now() }]);
+          setFormData(initialForm);
         }
       }
-      setFormData(initialForm);
     } catch (error) {
       console.error("This is Submit Error: ", error);
-      toast.error(error?.reponse?.data?.message || "Internal Server Error.");
+      toast.error(error?.response?.data?.msg || "Internal Server Error.");
     } finally {
       setLoading(false);
     }
@@ -160,19 +181,29 @@ function TrafficAccidentCrud() {
   };
 
   const columns = [
-    { field: "mrn", headerName: "MRN", flex: 1 },
-    { field: "age", headerName: "Age", flex: 1 },
+    { field: "patientCardNumber", headerName: "MRN", flex: 1 },
+    { field: "patientAge", headerName: "Age", flex: 1 },
 
     {
-      field: "accidentDate",
+      field: "accedentDate",
       headerName: "Date",
       flex: 1,
       renderCell: (params) => {
-        return renderETDateAtCell(params?.row?.accidentDate);
+        return renderETDateAtCell(params?.row?.accedentDate);
       },
     },
-    { field: "carPlateNumber", headerName: "Plate Number", flex: 1 },
-    { field: "accidentAddress", headerName: "Address", flex: 2 },
+    { field: "plateNumber", headerName: "Plate Number", flex: 1 },
+    {
+      field: "carCertificate",
+      headerName: "Car Certificate",
+      flex: 1,
+      renderCell: (params) => {
+        return params?.row?.carCertificate?.length <= 0
+          ? "Unspecified"
+          : params?.row?.carCertificate;
+      },
+    },
+    { field: "acceedentAddress", headerName: "Address", flex: 2 },
     { field: "policeName", headerName: "Police Name", flex: 1 },
     { field: "policePhone", headerName: "Police Phone", flex: 1 },
     {
@@ -184,7 +215,6 @@ function TrafficAccidentCrud() {
         <>
           <IconButton
             onClick={() => {
-
               handleEdit(records.findIndex((r) => r.id === params.row.id));
             }}
           >
@@ -309,13 +339,13 @@ function TrafficAccidentCrud() {
                   <Grid item xs={12} sm={6}>
                     <TextField
                       label="MRN"
-                      name="mrn"
-                      value={formData?.mrn}
+                      name="patientCardNumber"
+                      value={formData?.patientCardNumber}
                       onChange={handleChange}
                       fullWidth
                       required
-                      error={!!formDataError?.mrn}
-                      helperText={formDataError?.mrn}
+                      error={!!formDataError?.patientCardNumber}
+                      helperText={formDataError?.patientCardNumber}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -347,23 +377,23 @@ function TrafficAccidentCrud() {
                   <Grid item xs={12} sm={6}>
                     <TextField
                       label="Car Plate Number"
-                      name="carPlateNumber"
-                      value={formData?.carPlateNumber}
+                      name="plateNumber"
+                      value={formData?.plateNumber}
                       onChange={handleChange}
                       fullWidth
-                      error={!!formDataError?.carPlateNumber}
-                      helperText={formDataError?.carPlateNumber}
+                      error={!!formDataError?.plateNumber}
+                      helperText={formDataError?.plateNumber}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <TextField
                       label="Certificate"
-                      name="certificate"
-                      value={formData?.certificate}
+                      name="carCertificate"
+                      value={formData?.carCertificate}
                       onChange={handleChange}
                       fullWidth
-                      error={!!formDataError?.certificate}
-                      helperText={formDataError?.certificate}
+                      error={!!formDataError?.carCertificate}
+                      helperText={formDataError?.carCertificate}
                     />
                   </Grid>
                 </Grid>
@@ -383,15 +413,15 @@ function TrafficAccidentCrud() {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <EtDatePicker
-                      key={formData?.accidentDate || "accidentDate-date"}
+                      key={formData?.accedentDate || "accidentDate-date"}
                       label="Accident Date"
-                      name="accidentDate"
+                      name="accedentDate"
                       value={
-                        formData?.accidentDate
-                          ? new Date(formData?.accidentDate)
+                        formData?.accedentDate
+                          ? new Date(formData?.accedentDate)
                           : null
                       }
-                      onChange={(e) => handleChangeTime("accidentDate", e)}
+                      onChange={(e) => handleChangeTime("accedentDate", e)}
                       sx={{ width: "100%" }}
                       required
                     />
@@ -399,15 +429,15 @@ function TrafficAccidentCrud() {
                   <Grid item xs={12} sm={6}>
                     <TextField
                       label="Accident Address"
-                      name="accidentAddress"
-                      value={formData?.accidentAddress}
+                      name="acceedentAddress"
+                      value={formData?.acceedentAddress}
                       onChange={handleChange}
                       fullWidth
                       multiline
                       rows={2}
                       required
-                      error={!!formDataError?.accidentAddress}
-                      helperText={formDataError?.accidentAddress}
+                      error={!!formDataError?.acceedentAddress}
+                      helperText={formDataError?.acceedentAddress}
                     />
                   </Grid>
                   <Grid item xs={12}>
@@ -454,7 +484,7 @@ function TrafficAccidentCrud() {
           <Button variant="outlined" color="error" onClick={handleCancelEdit}>
             Cancel
           </Button>
-          <Button type="submit" variant="contained">
+          <Button type="submit" disabled={loading} variant="contained">
             {loading ? (
               <CircularProgress size={24} color="inherit" />
             ) : editIndex !== null ? (
