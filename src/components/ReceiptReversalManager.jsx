@@ -12,31 +12,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import api from "../utils/api";
 import { renderETDateAtCell } from "./PatientSearch";
-
-// Dummy data simulating receipts
-const mockReceipts = [
-  {
-    id: 1,
-    number: "RCPT-00123",
-    patientName: "Tsegaye Alemu",
-    amount: 200,
-    date: "2025-05-28",
-  },
-  {
-    id: 2,
-    number: "RCPT-00124",
-    patientName: "Sofia Bekele",
-    amount: 150,
-    date: "2025-05-27",
-  },
-  {
-    id: 3,
-    number: "RCPT-00125",
-    patientName: "Abebe Dinku",
-    amount: 300,
-    date: "2025-05-26",
-  },
-];
+import { formatAccounting2 } from "../pages/hospitalpayment/HospitalPayment";
 
 const ReceiptReversalManager = () => {
   const [searchRef, setSearchRef] = useState("");
@@ -95,7 +71,6 @@ const ReceiptReversalManager = () => {
         },
       });
       if (response?.data?.refNo?.length > 0) {
-        console.log("This is reversed trx: ", response?.data);
         toast.success("Transaction Reversed Successfully.");
         setModalOpen(false);
         setFilteredReceipts([]);
@@ -115,7 +90,14 @@ const ReceiptReversalManager = () => {
     { field: "referenceNo", headerName: "Receipt No", flex: 1 },
     { field: "patientCardNumber", headerName: "Card Number", flex: 1 },
     { field: "patientName", headerName: "Patient", flex: 1 },
-    { field: "paymentAmount", headerName: "Amount", flex: 1 },
+    {
+      field: "paymentAmount",
+      headerName: "Amount",
+      flex: 1,
+      renderCell: (params) => {
+        return formatAccounting2(params?.row?.paymentAmount);
+      },
+    },
     { field: "paymentType", headerName: "Type", flex: 1 },
     { field: "paymentReason", headerName: "Reason", flex: 1 },
     {

@@ -124,9 +124,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUncollected = async () => {
       try {
-        const response1 = await api.get(
-          `/Collection/rpt-uncollected`
-        );
+        const response1 = await api.get(`/Collection/rpt-uncollected`);
 
         const uncollectedData = response1?.data;
 
@@ -253,11 +251,8 @@ const Dashboard = () => {
         const todayDateStr = today.toISOString().split("T")[0];
 
         const todayPayments = recentPayments.filter((payment) => {
-          const paymentDateStr = new Date(payment.registeredOn)
-            .toISOString()
-            .split("T")[0];
           return (
-            paymentDateStr === todayDateStr &&
+            payment.registeredOn?.split("T")[0] === todayDateStr &&
             payment.paymentType.toLowerCase() !== "free of charge"
           );
         });
@@ -265,11 +260,8 @@ const Dashboard = () => {
         // Yesterday's data
         const yesterdayDateStr = yesterday.toISOString().split("T")[0];
         const yesterdayPayments = recentPayments.filter((payment) => {
-          const paymentDateStr = new Date(payment.registeredOn)
-            .toISOString()
-            .split("T")[0];
           return (
-            paymentDateStr === yesterdayDateStr &&
+            payment.registeredOn?.split("T")[0] === yesterdayDateStr &&
             payment.paymentType.toLowerCase() !== "free of charge"
           );
         });

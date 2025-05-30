@@ -17,6 +17,12 @@ function ReversalModal({ open, onClose, receipt, onConfirm, loading }) {
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
 
+  const letterNumberCheck = (value) => {
+    const comp = /^[a-zA-Z0-9\u1200-\u137F\s]+$/;
+
+    return !comp.test(value) && value.length > 0;
+  };
+
   const handleSubmit = () => {
     try {
       if (!reason.trim()) {
@@ -29,10 +35,15 @@ function ReversalModal({ open, onClose, receipt, onConfirm, loading }) {
         return;
       }
 
+      if (letterNumberCheck(reason)) {
+        setError("Please insert letters or numbers only.");
+        return;
+      }
+
       setError("");
 
       const payload = {
-        paymentVerifingID: receipt?.referenceNo,
+        paymentRefNo: receipt?.referenceNo,
         paymentType: receipt?.paymentType || "-",
         cardNumber: receipt?.patientCardNumber || "-",
         amount: [

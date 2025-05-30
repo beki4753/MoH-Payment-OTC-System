@@ -245,7 +245,7 @@ const PatientSearch = () => {
         formData.fname,
         formData.mobile
       );
-   
+
       const response = await api.put("/Patient/get-patient-info", payload);
       if (response?.status === 200) {
         const modDat = await dataModFunc(response?.data?.data);
@@ -445,6 +445,7 @@ const PatientSearch = () => {
               rows={isSearching ? searchData : rows}
               columns={columns}
               pageSize={5}
+              loading={loading}
               rowsPerPageOptions={[5]}
               disableSelectionOnClick
             />

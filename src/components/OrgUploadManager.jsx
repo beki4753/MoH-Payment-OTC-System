@@ -157,8 +157,16 @@ const OrgUploadManager = () => {
   const handleEdit = async (params) => {
     try {
       if (params.message === "Edit") {
+        if (fileData.length > 0) {
+          const updated = fileData?.map((item) =>
+            item.id === params?.editedData?.id
+              ? { ...item, ...params?.editedData }
+              : item
+          );
+          setFileData(updated);
+        }
+
         setEditloading(true);
-        console.log("This is the data to Edit: ", params);
       } else {
         setEditing(true);
         setEditData(params?.row);
@@ -173,8 +181,13 @@ const OrgUploadManager = () => {
   const handlConfirm = async (params) => {
     try {
       if (params.message === "Delete") {
+        if (fileData.length > 0) {
+          setFileData((prev) =>
+            prev.filter((item) => item.employeeID !== params?.userData)
+          );
+        }
+
         setDeleteLoading(true);
-        console.log("This is Delete Data: ", params);
         setIsConfOpen(false);
         setDeleteId(null);
       } else {

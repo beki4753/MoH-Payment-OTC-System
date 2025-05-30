@@ -342,6 +342,7 @@ function TrafficAccidentCrud() {
                       name="patientCardNumber"
                       value={formData?.patientCardNumber}
                       onChange={handleChange}
+                      disabled={editIndex !== null}
                       fullWidth
                       required
                       error={!!formDataError?.patientCardNumber}

@@ -369,7 +369,7 @@ const ReportPage = () => {
       if (diffSet.size === 0) return;
 
       const maxId =
-        paymentMethods.length > 0
+        paymentMethods?.length > 0
           ? Math.max(...paymentMethods.map((item) => item.id))
           : 0;
 
@@ -384,14 +384,6 @@ const ReportPage = () => {
     }
   }, [payments]);
 
-  useEffect(() => {
-    console.log(
-      "Payments is: ",
-      payments.filter(
-        (item) => item.referenceNumber === "DB152345DIGI20255271646354664442768"
-      )
-    );
-  }, [payments]);
 
   const cumulativeDataModifier = async () => {
     try {
@@ -418,8 +410,6 @@ const ReportPage = () => {
           foodpaid,
           otherPaid,
           totalPaid,
-          amount,
-          purpose,
           ...rest
         } = item;
 
@@ -512,7 +502,7 @@ const ReportPage = () => {
 
   const exportToExcel = async () => {
     try {
-      if (filteredPayments.length < 0) {
+      if (filteredPayments?.length < 0) {
         toast.info("Empty Data.");
         return;
       }
@@ -533,7 +523,7 @@ const ReportPage = () => {
 
   const cumulativeReport = async () => {
     try {
-      if (filteredPayments.length < 0) {
+      if (filteredPayments?.length < 0) {
         toast.info("Empty Data.");
         return;
       }
@@ -768,7 +758,7 @@ const ReportPage = () => {
   const filterData = (name, value) => {
     try {
       if (name === "woreda") {
-        if (payments.length <= 0) {
+        if (payments?.length <= 0) {
           toast.info("Empty Filter.");
           return;
         }
@@ -809,7 +799,7 @@ const ReportPage = () => {
 
   const handlexportToPDF = async () => {
     try {
-      if (filteredPayments.length < 0) {
+      if (filteredPayments?.length < 0) {
         toast.info("Empty Data.");
         return;
       }
@@ -945,7 +935,7 @@ const ReportPage = () => {
           variant="scrollable"
           sx={{ marginTop: 2 }}
         >
-          {paymentMethods.length > 0 &&
+          {paymentMethods?.length > 0 &&
             paymentMethods.map((method) => (
               <Tab
                 key={method.type}
@@ -957,7 +947,7 @@ const ReportPage = () => {
       </Paper>
       <Paper sx={{ height: 400, margin: 2 }}>
         <DataGrid
-          rows={filteredPayments.length ? filteredPayments : []}
+          rows={filteredPayments?.length ? filteredPayments : []}
           columns={columns}
           loading={isLoading}
           slots={{

@@ -65,9 +65,7 @@ const FinancialDashboard = () => {
   useEffect(() => {
     const fetchColl1 = async () => {
       try {
-        const response1 = await api.get(
-          `/Collection/uncollected`
-        );
+        const response1 = await api.get(`/Collection/uncollected`);
 
         const updatedUncollectedData =
           response1?.data.length > 0
@@ -79,9 +77,7 @@ const FinancialDashboard = () => {
 
         const fetchColl = async () => {
           try {
-            const response2 = await api.get(
-              `/Collection/collection`
-            );
+            const response2 = await api.get(`/Collection/collection`);
 
             const updatedCollectedData =
               response2?.data.length > 0
@@ -227,9 +223,19 @@ const FinancialDashboard = () => {
     }
   };
 
+  const obj = {
+    collectedBy: "teshale debela",
+    collecterID: "ts1212",
+    collectedOn: "2025-05-29T13:33:17.819Z",
+    collectedAmount: 50,
+    fromDate: "2025-05-29T13:28:29.470216",
+    toDate: "2025-05-29T13:28:29.470216",
+    casher: "Test1",
+  };
+
   const handleSubmit = async (data) => {
     try {
-      const response = await api.post("/Collection/collection", {
+      const payload = {
         collectedBy: data.empName,
         collecterID: data.empId.toLocaleLowerCase(),
         collectedOn: data.signature,
@@ -237,7 +243,8 @@ const FinancialDashboard = () => {
         fromDate: selectedTransaction.fromDate,
         toDate: selectedTransaction.toDate,
         casher: tokenvalue.name,
-      });
+      };
+      const response = await api.post("/Collection/collection", payload);
       if (response.status === 201) {
         toast.success(response?.data?.msg || "Cash Collected Successfully!");
         setRefresh((prev) => !prev);

@@ -35,7 +35,7 @@ const BarChart = ({ isDashboard = false }) => {
           : [];
       
 
-        const mapped = Object.entries(summary).map(([key, value]) => ({
+        const mapped =  Object.entries(summary).map(([key, value]) => ({
           method: key,
           amount: value,
         }));

@@ -54,7 +54,14 @@ const EmployeeUploadManager = () => {
   };
 
   const handleDelConf = (payload) => {
-    console.log("Recived Data is: ", payload);
+    if (payload?.message === "Delete") {
+      if (fileData?.length > 0) {
+        setFileData((prev) =>
+          prev.filter((item) => item.employeeID !== payload?.userData)
+        );
+      }
+    }
+
     handleConfClose();
   };
 
@@ -119,9 +126,7 @@ const EmployeeUploadManager = () => {
   useEffect(() => {
     const fetchEmp = async () => {
       try {
-        const response = await api.get(
-          `/Collection/collector`
-        );
+        const response = await api.get(`/Collection/collector`);
 
         setData(response?.data <= 0 ? new Array() : response?.data);
       } catch (error) {
@@ -145,7 +150,6 @@ const EmployeeUploadManager = () => {
   const handlConfirm = (params) => {
     setDeleteId(params?.row?.employeeID);
     setIsConfOpen(true);
-    console.log(params?.row?.employeeID, "Confirm To Delete.");
   };
 
   const columns = [

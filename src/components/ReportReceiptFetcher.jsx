@@ -68,20 +68,21 @@ const ReportReceiptFetcher = () => {
     try {
       if (!data || data.length === 0) return;
 
-      const { cardNumber, hospitalName, department, createdby } = data[0];
+      const { patientCardNumber, hospitalName, department, registeredBy } =
+        data[0];
 
       // Seal-style header section (4 rows)
       const headerSection = [
-        ["Card Number", cardNumber],
+        ["Card Number", patientCardNumber],
         ["Hospital Name", hospitalName],
         ["Department", department],
-        ["Cashier", createdby],
+        ["Cashier", registeredBy],
         [], // <-- blank row
       ];
 
       // Extract data table (excluding repeating fields)
       const tableData = data.map(
-        ({ cardNumber, hospitalName, department, createdby, ...rest }) => rest
+        ({ patientCardNumber, hospitalName, department, registeredBy, ...rest }) => rest
       );
 
       // Create sheet from header
@@ -186,41 +187,10 @@ const ReportReceiptFetcher = () => {
         });
         if (response?.data?.length > 0) {
           setDispPrint(true);
-          const mod = response?.data
-            ? response?.data?.map(
-                ({
-                  channel,
-                  createdOn,
-                  refNo,
-                  type,
-                  description,
-                  paymentVerifingID,
-                  patientLoaction,
-                  patientWorkingPlace,
-                  patientWorkID,
-                  ...rest
-                }) => ({
-                  refNo: refNo,
-                  ...rest,
-                  type: type,
-                  channel: channel === "-" ? type : channel,
-                  paymentVerifingID:
-                    paymentVerifingID === "-" ? refNo : paymentVerifingID,
-                  patientLoaction:
-                    patientLoaction === "-" ? "Walking" : patientLoaction,
-                  patientWorkingPlace:
-                    patientWorkingPlace === "-"
-                      ? "Walking"
-                      : patientWorkingPlace,
-                  patientWorkID:
-                    patientWorkID === "-" ? "Walking" : patientWorkID,
-
-                  description,
-                  createdOn: createdOn,
-                })
-              )
-            : [];
-
+          const mod = response.data?.map(({ rowId, ...rest }) => ({
+            id: rowId,
+            ...rest,
+          }));
           setReportData(mod);
         } else if (response?.data?.length <= 0) {
           toast.info("Card Number Not Found.");

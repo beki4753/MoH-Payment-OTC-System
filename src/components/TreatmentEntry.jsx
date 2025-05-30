@@ -136,10 +136,6 @@ const TreatmentEntry = () => {
         return;
       }
 
-      console.log("Searching for:", {
-        cardNumberSearch,
-        fullNameSearch,
-      });
 
       const normalize = (text) => (text || "").toString().trim().toLowerCase();
       // setFilteredList()
@@ -611,27 +607,89 @@ const TreatmentEntry = () => {
       </Typography>
 
       <Box mb={3} p={2} component={Paper} elevation={3} borderRadius={2}>
-        <Grid container spacing={2} alignItems="center" justifyContent="flex-end">
-          <Grid item xs={12} md={2}>
-            <Button
-              variant="outlined"
-              color="primary"
-              onClick={() => {
-                setRefresh((prev) => !prev);
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={5}>
+            <Box
+              sx={{
+                height: "56px",
+                border: "1px dashed rgba(0,0,0,0.23)",
+                borderRadius: "4px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "rgba(0,0,0,0.6)",
+                fontStyle: "italic",
+                paddingBottom: "71px",
               }}
-              disabled={isLoading}
             >
-              {isLoading ? (
-                <CircularProgress size={24} />
-              ) : (
-                <Refresh
-                  sx={{
-                    transition: "transform 0.5s",
-                    "&:hover": { transform: "rotate(90deg)" },
-                  }}
-                />
-              )}
-            </Button>
+              {/* Placeholder */}
+            </Box>
+          </Grid>
+          <Grid item xs={12} md={5}>
+            <Box
+              sx={{
+                height: "56px",
+                border: "1px dashed rgba(0,0,0,0.23)",
+                borderRadius: "4px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "rgba(0,0,0,0.6)",
+                fontStyle: "italic",
+                paddingBottom: "71px",
+              }}
+            >
+              {/* Placeholder */}
+            </Box>
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <Stack
+              direction="row"
+              spacing={2}
+              justifyContent="flex-end"
+              alignItems="center"
+            >
+              <Button
+                variant="contained"
+                fullWidth
+                color="primary"
+                size="large"
+                onClick={handleSearch}
+                disabled
+                startIcon={<SearchIcon />}
+                sx={{
+                  height: "100%",
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: "bold",
+                }}
+              >
+                {searchLoading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Search"
+                )}
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => {
+                  setRefresh((prev) => !prev);
+                }}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  <Refresh
+                    sx={{
+                      transition: "transform 0.5s",
+                      "&:hover": { transform: "rotate(90deg)" },
+                    }}
+                  />
+                )}
+              </Button>
+            </Stack>
           </Grid>
         </Grid>
       </Box>
