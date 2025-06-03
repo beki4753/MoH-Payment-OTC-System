@@ -69,6 +69,7 @@ function PaymentManagement() {
   const [paymentOptions, setPaymentOptions] = useState([]);
   const [digitalChannels, setDigitalChannels] = useState([]);
   const [formData, setFormData] = useState(initialState);
+  const [trxRefError, settrxRefError] = useState("");
   const [formDataError, setFormDataError] = useState(initialState);
   const [creditOrganizations, setcreditOrganizations] = useState([]);
   const [totals, setTotals] = useState({});
@@ -247,9 +248,28 @@ function PaymentManagement() {
         employeeId: "",
       });
     } else {
+      if (e.target.name === "trxref") {
+        validateTransactionRef(e.target.value);
+      }
       setFormData({ ...formData, [e.target.name]: e.target.value });
       setFormDataError({ ...formDataError, [e.target.name]: "" });
     }
+  };
+
+  const validateTransactionRef = (trxRef) => {
+    const trxPattern = /^[A-Za-z0-9-_]{10,25}$/;
+
+    if (!trxRef) {
+      settrxRefError("Transaction reference is required");
+    } else if (!trxPattern.test(trxRef)) {
+      settrxRefError(
+        "Invalid format. Use 10-25 characters with letters, numbers, -, _"
+      );
+    } else {
+      settrxRefError("");
+    }
+
+    return;
   };
 
   const handleOpenModal = (row) => {
@@ -266,9 +286,9 @@ function PaymentManagement() {
     setOpenModal(false);
     setFormData(initialState);
     setFormDataError(initialState);
+    settrxRefError("");
     setSelectedRow(null);
   };
-
 
   const handleConfSave = async () => {
     try {
@@ -276,7 +296,7 @@ function PaymentManagement() {
       if (
         !formData.method ||
         (formData.method.toUpperCase().includes("DIGITAL") &&
-          (!formData.digitalChannel || !formData.trxref)) ||
+          (!formData.digitalChannel || !formData.trxref || !!trxRefError)) ||
         (formData.method.toUpperCase().includes("CREDIT") &&
           (!formData.organization || !formData.employeeId))
       ) {
@@ -966,8 +986,14 @@ function PaymentManagement() {
                     </InputAdornment>
                   ),
                 }}
-                error={!!formDataError?.trxref}
-                helperText={formDataError?.trxref}
+                error={
+                  trxRefError?.length > 0
+                    ? !!trxRefError
+                    : !!formDataError?.trxref
+                }
+                helperText={
+                  trxRefError?.length > 0 ? trxRefError : formDataError?.trxref
+                }
               />
             </>
           )}
