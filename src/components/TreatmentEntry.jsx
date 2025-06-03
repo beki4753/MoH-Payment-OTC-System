@@ -69,11 +69,7 @@ const TreatmentEntry = () => {
   const [formData, setFormData] = useState(initialState);
   const [formDataError, setFormDataError] = useState(errorStates);
   const [searchText, setSearchText] = useState("");
-  const [cardNumberSearch, setCardNumberSearch] = useState("");
-  const [fullNameSearch, setFullNameSearch] = useState("");
-  const [filteredList, setFilteredList] = useState([]);
   const [saveLoading, setSaveloading] = useState(false);
-  const [searchLoading, setSearchLoading] = useState(false);
   const [loadingRowId, setLoadingRowId] = useState(null);
 
   const [refresh, setRefresh] = useState(false);
@@ -118,46 +114,6 @@ const TreatmentEntry = () => {
     };
     fetchData();
   }, [refresh]);
-
-  //Main Patient Searching Logic
-  const handleSearch = async () => {
-    try {
-      setSearchLoading(true);
-      if (
-        formDataError?.cardNumberSearch?.length > 0 ||
-        formDataError.fullNameSearch.length > 0
-      ) {
-        toast.error("Please fix the error first.");
-        return;
-      }
-
-      if (cardNumberSearch.length <= 0 && fullNameSearch.length <= 0) {
-        toast.error("Please Write in the fields first.");
-        return;
-      }
-
-
-      const normalize = (text) => (text || "").toString().trim().toLowerCase();
-      // setFilteredList()
-      const filteredList1 = treatmentList.filter((t) => {
-        const cardMatch = cardNumberSearch
-          ? normalize(t.cardNumber).includes(normalize(cardNumberSearch))
-          : true;
-
-        const nameMatch = fullNameSearch
-          ? normalize(t.fullName).includes(normalize(fullNameSearch))
-          : true;
-
-        return cardMatch && nameMatch;
-      });
-      setFilteredList(filteredList1);
-    } catch (error) {
-      console.error("This is Search Error: ", error);
-      toast.error(error?.response?.data?.message || "Internal Server Error.");
-    } finally {
-      setSearchLoading(false);
-    }
-  };
 
   //List Searching Logic
   const handleSearchChange = (event) => {
@@ -372,20 +328,6 @@ const TreatmentEntry = () => {
     }
   };
 
-  const onlyLetterCheck = (name, value) => {
-    const comp = /^[a-zA-Z\u1200-\u137F\s]+$/;
-    if (!comp.test(value) && value.length > 0) {
-      setFormDataError((prev) => ({
-        ...prev,
-        [name]: "Please Insert Only Letters.",
-      }));
-    } else {
-      setFormDataError((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
-  };
 
   return (
     <Box p={4}>
@@ -654,7 +596,6 @@ const TreatmentEntry = () => {
                 fullWidth
                 color="primary"
                 size="large"
-                onClick={handleSearch}
                 disabled
                 startIcon={<SearchIcon />}
                 sx={{
@@ -664,11 +605,7 @@ const TreatmentEntry = () => {
                   fontWeight: "bold",
                 }}
               >
-                {searchLoading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  "Search"
-                )}
+                Search
               </Button>
               <Button
                 variant="outlined"
@@ -696,11 +633,7 @@ const TreatmentEntry = () => {
 
       <Paper elevation={2} sx={{ height: 400 }}>
         <DataGrid
-          rows={
-            cardNumberSearch.length > 0 || fullNameSearch.length > 0
-              ? filteredList
-              : treatmentList
-          }
+          rows={treatmentList}
           loading={isLoading}
           columns={columns}
           disableSelectionOnClick

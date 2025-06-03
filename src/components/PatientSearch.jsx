@@ -253,6 +253,7 @@ const PatientSearch = () => {
           setSearchData(modDat);
         } else {
           toast.info("Data not found!");
+          setSearchData([]);
         }
       }
     } catch (error) {

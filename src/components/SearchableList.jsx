@@ -11,7 +11,6 @@ import {
   OutlinedInput,
   Select,
   TextField,
-  SelectChangeEvent,
 } from "@mui/material";
 
 const ITEM_HEIGHT = 48;

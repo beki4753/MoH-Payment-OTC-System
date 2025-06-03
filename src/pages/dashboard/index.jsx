@@ -209,7 +209,7 @@ const Dashboard = () => {
     };
 
     fetchUncollected();
-  }, []);
+  }, [collectionnStartDate,tokenValue?.name]);
 
   // Fetch recent transactions
   useEffect(() => {
@@ -366,7 +366,7 @@ const Dashboard = () => {
   return (
     <div
       ref={dashboardRef}
-      style={{ backgroundColor: colors.primary[400], padding: "20px" }}
+      style={{padding: "20px" }}
     >
       {/* PDF Header - Only visible in PDF */}
       <div style={{ display: "none" }}>

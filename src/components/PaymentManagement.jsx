@@ -69,6 +69,7 @@ function PaymentManagement() {
   const [paymentOptions, setPaymentOptions] = useState([]);
   const [digitalChannels, setDigitalChannels] = useState([]);
   const [formData, setFormData] = useState(initialState);
+  const [formDataError, setFormDataError] = useState(initialState);
   const [creditOrganizations, setcreditOrganizations] = useState([]);
   const [totals, setTotals] = useState({});
   const [total, setTotal] = useState(0);
@@ -236,8 +237,18 @@ function PaymentManagement() {
         organization: "",
         employeeId: "",
       });
+
+      setFormDataError({
+        ...formDataError,
+        method: "",
+        digitalChannel: "",
+        trxref: "",
+        organization: "",
+        employeeId: "",
+      });
     } else {
       setFormData({ ...formData, [e.target.name]: e.target.value });
+      setFormDataError({ ...formDataError, [e.target.name]: "" });
     }
   };
 
@@ -254,11 +265,14 @@ function PaymentManagement() {
   const handleCloseModal = () => {
     setOpenModal(false);
     setFormData(initialState);
+    setFormDataError(initialState);
     setSelectedRow(null);
   };
 
-  const handleConfSave = () => {
+
+  const handleConfSave = async () => {
     try {
+      const errorMessage = "Please Fill this field";
       if (
         !formData.method ||
         (formData.method.toUpperCase().includes("DIGITAL") &&
@@ -266,7 +280,48 @@ function PaymentManagement() {
         (formData.method.toUpperCase().includes("CREDIT") &&
           (!formData.organization || !formData.employeeId))
       ) {
-        toast.error("Please Fill All Fields");
+        if (!formData.method) {
+          setFormDataError((prev) => ({ ...prev, method: errorMessage }));
+        }
+
+        if (
+          formData.method.toUpperCase().includes("DIGITAL") &&
+          (!formData.digitalChannel || !formData.trxref)
+        ) {
+          if (!formData.digitalChannel) {
+            setFormDataError((prev) => ({
+              ...prev,
+              digitalChannel: errorMessage,
+            }));
+          }
+
+          if (!formData.trxref) {
+            setFormDataError((prev) => ({
+              ...prev,
+              trxref: errorMessage,
+            }));
+          }
+        }
+
+        if (
+          formData.method.toUpperCase().includes("CREDIT") &&
+          (!formData.organization || !formData.employeeId)
+        ) {
+          if (!formData.organization) {
+            setFormDataError((prev) => ({
+              ...prev,
+              organization: errorMessage,
+            }));
+          }
+
+          if (!formData.employeeId) {
+            setFormDataError((prev) => ({
+              ...prev,
+              employeeId: errorMessage,
+            }));
+          }
+        }
+        toast.error("Please Fill All Fields.");
         return;
       }
 
@@ -825,7 +880,13 @@ function PaymentManagement() {
           />
 
           {/* Payment Method */}
-          <FormControl fullWidth margin="normal">
+          <FormControl
+            fullWidth
+            margin="normal"
+            required
+            error={!!formDataError?.method}
+            helpertext={formDataError?.method}
+          >
             <Select
               name="method"
               value={formData.method}
@@ -838,7 +899,7 @@ function PaymentManagement() {
                   </Box>
                 ) : (
                   <span style={{ color: "#888" }}>
-                    Select Payment Method...
+                    Select Payment Method...*
                   </span>
                 )
               }
@@ -857,7 +918,13 @@ function PaymentManagement() {
           {/* Digital */}
           {formData.method === "Digital" && (
             <>
-              <FormControl fullWidth margin="normal">
+              <FormControl
+                fullWidth
+                margin="normal"
+                required
+                error={!!formDataError?.digitalChannel}
+                helpertext={formDataError?.digitalChannel}
+              >
                 <Select
                   name="digitalChannel"
                   value={formData.digitalChannel}
@@ -899,6 +966,8 @@ function PaymentManagement() {
                     </InputAdornment>
                   ),
                 }}
+                error={!!formDataError?.trxref}
+                helperText={formDataError?.trxref}
               />
             </>
           )}
@@ -906,7 +975,12 @@ function PaymentManagement() {
           {/* Credit */}
           {formData.method === "Credit" && (
             <>
-              <FormControl fullWidth margin="normal">
+              <FormControl
+                fullWidth
+                margin="normal"
+                required
+                error={!!formDataError?.organization}
+              >
                 <Select
                   name="organization"
                   value={formData.organization}
@@ -939,6 +1013,9 @@ function PaymentManagement() {
                 value={formData.employeeId}
                 onChange={handleChange}
                 margin="normal"
+                required
+                error={!!formDataError?.employeeId}
+                helperText={formDataError?.employeeId}
               />
             </>
           )}
@@ -950,7 +1027,7 @@ function PaymentManagement() {
                 variant="contained"
                 fullWidth
                 color="secondary"
-                onClick={handleCloseModal}
+                onClick={() => handleCloseModal()}
               >
                 Cancel
               </Button>

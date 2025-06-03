@@ -120,7 +120,7 @@ export default function PatientTransactionsModal({ open, onClose, rows }) {
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} color="secondary">
+        <Button onClick={()=>onClose()} color="secondary">
           Cancel
         </Button>
       </DialogActions>

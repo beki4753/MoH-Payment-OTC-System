@@ -14,7 +14,6 @@ import { DataGrid } from "@mui/x-data-grid";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import api from "../utils/api";
-import { getTokenValue } from "../services/user_service";
 import { generatePDF } from "../pages/hospitalpayment/HospitalPayment";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -31,7 +30,6 @@ const formatAccounting2 = (num) => {
   return num < 0 ? `(${formatted})` : formatted;
 };
 
-const tokenvalue = getTokenValue();
 
 const ReportReceiptFetcher = () => {
   const [tab, setTab] = useState(0);
@@ -43,13 +41,14 @@ const ReportReceiptFetcher = () => {
   const [errorM, setErrorM] = useState("");
   const [dispPrint, setDispPrint] = useState(false);
 
-  const ReceiptRegex = /^[a-zA-Z0-9]+$/;
+  const ReceiptRegex = /^[a-zA-Z0-9-]+$/;
 
   const columns = [
     { field: "id", headerName: "ID", width: 90 },
     { field: "registeredOn", headerName: "Date", width: 200 },
     { field: "referenceNo", headerName: "Reciept Number", width: 200 },
     { field: "patientCardNumber", headerName: "Card Number", width: 150 },
+    { field: "patientName", headerName: "Patient Name", width: 150 },
     {
       field: "paymentAmount",
       headerName: "Amount",

@@ -14,3 +14,4 @@ export {default as HospitalPayment }from "./hospitalpayment/HospitalPayment.jsx"
 export {default as ReportPage }from "./reports/ReportPage.jsx";
 export {default as BankerComponent }from "./supervisors/BankerComponent.jsx";
 export {default as CollectedReport }from "./reports/CollectedReport.jsx";
+export {default as AdminDashboard }from "./dashboard/AdminDashboard.jsx";

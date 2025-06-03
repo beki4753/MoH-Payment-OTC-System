@@ -276,6 +276,7 @@ function PatientRegistration() {
       const finalDateTime = `${formattedDate} ${offsetSign}${offsetHours}:${offsetMinutes}`;
 
       setFormData({ name: fieldName, values: finalDateTime });
+      setFormDataError({ name: fieldName, values: "" });
     } catch (error) {
       console.error("Date Picker Change Error:", error);
       toast.error("Unable to select the date properly.");
@@ -320,6 +321,7 @@ function PatientRegistration() {
     }
 
     setFormData({ name: e.target.name, values: e.target.value });
+    setFormDataError({ name: e.target.name, values: "" });
   };
 
   const validateName = (name, value) => {
@@ -462,19 +464,15 @@ function PatientRegistration() {
       const hasStep1Empty = step1Fields.some(isEmpty);
       const hasStep2Empty = step2Fields.some(isEmpty);
 
-      const hasFieldErrors = Object.values({
-        fname: formDataError.fname,
-        fatname: formDataError.fatname,
-        gfname: formDataError.gfname,
-        maname: formDataError.maname,
-        pbirth: formDataError.pbirth,
-        sname: formDataError.sname,
-        sfname: formDataError.sfname,
-        mrn: formDataError.mrn,
-      }).some(Boolean);
+      const hasFieldErrors = Object.values(formDataError).some(Boolean);
 
       if (activeStep < steps.length - 1) {
         if (hasStep1Empty) {
+          step1Fields.map((item) => {
+            if (formData[item].length <= 0) {
+              setFormDataError({ name: item, values: "Please fill this field first." });
+            }
+          });
           toast.error(requiredMessage);
           return;
         }
@@ -484,8 +482,13 @@ function PatientRegistration() {
         }
         setActiveStep((prev) => prev + 1);
       } else {
-        setLoading(true);
+        
         if (hasStep1Empty || hasStep2Empty) {
+          step2Fields.map((item) => {
+            if (formData[item].length <= 0) {
+              setFormDataError({ name: item, values: requiredMessage });
+            }
+          });
           toast.error(requiredMessage);
           return;
         }
@@ -493,6 +496,7 @@ function PatientRegistration() {
           toast.error(errorFixMessage);
           return;
         }
+        setLoading(true);
 
         const payload = {
           patientCardNumber: formData?.mrn,
@@ -573,7 +577,6 @@ function PatientRegistration() {
         toast.info("MRN Not Found!");
         return;
       } else {
-        
         if (Object.values(response?.data)?.some((item) => item?.length > 0)) {
           const item = response?.data;
 
@@ -697,6 +700,8 @@ function PatientRegistration() {
                   onChange={(e) => {
                     handleChangeTime("dob", e);
                   }}
+                  error={!!formDataError?.dob}
+                  helperText={formDataError?.dob}
                   sx={{ width: "100%" }}
                 />
               </Grid>
@@ -860,6 +865,8 @@ function PatientRegistration() {
                   onChange={handleChange}
                   fullWidth
                   required
+                  error={!!formDataError?.gender}
+                  helperText={formDataError?.gender}
                 >
                   {genders.map((g) => (
                     <MenuItem key={g} value={g}>
@@ -885,6 +892,8 @@ function PatientRegistration() {
                       onChange={handleChange}
                       fullWidth
                       required
+                      error={!!formDataError?.providers}
+                      helperText={formDataError?.providers}
                     >
                       {Providers.map((p) => (
                         <MenuItem key={p} value={p}>
@@ -928,6 +937,8 @@ function PatientRegistration() {
                   name="dep"
                   fullWidth
                   required
+                  error={!!formDataError?.dep}
+                  helperText={formDataError?.dep}
                   onChange={handleChange}
                 >
                   {Departments.map((d) => (
@@ -963,6 +974,8 @@ function PatientRegistration() {
                       label="Region"
                       fullWidth
                       required
+                      error={!!formDataError?.region}
+                      helperText={formDataError?.region}
                     >
                       {ethiopianRegions.map((r) => (
                         <MenuItem key={r} value={r}>
@@ -1065,6 +1078,8 @@ function PatientRegistration() {
                       label="Region"
                       fullWidth
                       required
+                      error={!!formDataError?.nregion}
+                      helperText={formDataError?.nregion}
                     >
                       {ethiopianRegions.map((r) => (
                         <MenuItem key={r} value={r}>

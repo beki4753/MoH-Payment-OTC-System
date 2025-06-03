@@ -47,13 +47,6 @@ const keysToRemoveByPaymentType = {
     "patientWorkingPlace",
     "patientWorkID",
   ],
-  traffic:[
-    "cbhiProvider",
-    "patientWorkID",
-    "idNo",
-    "referalNo",
-    "patientWorkingPlace",
-  ],
   credit: [
     "carPlateNumber",
     "policePhone",
@@ -685,36 +678,6 @@ const ReportPage = () => {
     }
   };
 
-  const t = {
-    cardNumber: "152564",
-    name: "በረከት በየነ Moges",
-    visitingDate: "2025-05-26T08:25:30.96",
-    age: "0",
-    gender: "Male",
-    kebele: null,
-    goth: null,
-    referalNo: null,
-    idNo: null,
-    patientType: "",
-    paymentType: "CASH",
-    patientWorkingPlace: null,
-    patientWorkID: null,
-    cbhiProvider: null,
-    accedentDate: null,
-    policeName: null,
-    policePhone: null,
-    carPlateNumber: null,
-    cardPaid: 49,
-    unltrasoundPaid: 0,
-    examinationPaid: 0,
-    medicinePaid: 0,
-    laboratoryPaid: 0,
-    bedPaid: 0,
-    surgeryPaid: 0,
-    foodpaid: 0,
-    otherPaid: 0,
-    totalPaid: 49,
-  };
 
   const handleReportRequest = async () => {
     try {

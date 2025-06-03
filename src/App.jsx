@@ -22,6 +22,7 @@ import {
   ReportPage,
   BankerComponent,
   CollectedReport,
+  AdminDashboard,
 } from "./pages";
 
 import { logout as logoutAction } from "./services/user_service.js";
@@ -50,9 +51,11 @@ const tokenvalue = getTokenValue();
 
 const token = getSession();
 
+const role = tokenvalue
+  ? tokenvalue["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]
+  : "";
+
 const ProtectedRoute = ({ element, allowedRoles, allowedCategory }) => {
-  const role =
-    tokenvalue["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
   const userType = tokenvalue?.UserType;
 
   if (!token) {
@@ -85,7 +88,20 @@ const router = createBrowserRouter([
     id: "root",
     loader: getSession,
     children: [
-      { index: true, element: <ProtectedRoute element={<Dashboard />} /> },
+      {
+        index: true,
+        element: (
+          <ProtectedRoute
+            element={
+              role?.toUpperCase() === "USER" ? (
+                <Dashboard />
+              ) : (
+                <AdminDashboard />
+              )
+            }
+          />
+        ),
+      },
       { path: "login", element: <Login /> },
       { path: "logout", action: logoutAction },
       // { path: "profile", element: <ProtectedRoute element={<Profile />} /> },

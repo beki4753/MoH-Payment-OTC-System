@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from "react";
 import {
-  Container,
   Paper,
   Typography,
   Button,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   FormControlLabel,
   Checkbox,
   Box,
@@ -63,7 +59,7 @@ const CollectedReport = () => {
               ...rest,
             })) || []
           : [];
-      setData(data.length <= 0 ? new Array() : data);
+      setData(data.length <= 0 ? new Array([]) : data);
     } catch (error) {
       console.error("Error fetching report data:", error);
       toast.error(error?.response?.data?.msg || "Internal Server Error!");
