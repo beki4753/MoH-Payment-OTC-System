@@ -218,13 +218,13 @@ export const generatePDF = (data) => {
 
     // Receipt Info
     doc.setFont("NotoSansEthiopic-Regular", "normal");
-    drawText(`Receipt NO: ${data?.refNo || "N/A"}`, marginLeft, yPos);
+    drawText(`Receipt NO : ${data?.refNo || "N/A"}`, marginLeft, yPos);
     yPos += lineHeight;
-    drawText(`Address: Debrebrehan`, marginLeft, yPos);
+    drawText(`Address : Debrebrehan`, marginLeft, yPos);
     yPos += lineHeight;
-    drawText(`Date: ${renderETDateAtCell(new Date())}`, marginLeft, yPos);
+    drawText(`Date : ${renderETDateAtCell(new Date())}`, marginLeft, yPos);
     yPos += lineHeight;
-    drawText(`Cashier: ${tokenvalue?.name || "N/A"}`, marginLeft, yPos);
+    drawText(`Cashier : ${tokenvalue?.name || "N/A"}`, marginLeft, yPos);
     yPos += lineHeight;
 
     doc.setLineWidth(0.3);
@@ -233,49 +233,49 @@ export const generatePDF = (data) => {
 
     // Patient Info
     doc.setFont("NotoSansEthiopic-Regular", "normal");
-    drawText(`Patient Name:`, marginLeft, yPos);
+    drawText(`Patient Name :`, marginLeft, yPos);
     doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`${data?.patientName || "N/A"}`, marginLeft + 35, yPos);
     yPos += lineHeight;
 
     doc.setFont("NotoSansEthiopic-Regular", "normal");
-    drawText(`Card Number:`, marginLeft, yPos);
+    drawText(`Card Number :`, marginLeft, yPos);
     doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`${data.cardNumber || "N/A"}`, marginLeft + 35, yPos);
     yPos += lineHeight;
 
     doc.setFont("NotoSansEthiopic-Regular", "normal");
-    drawText(`Payment Method:`, marginLeft, yPos);
+    drawText(`Payment Method :`, marginLeft, yPos);
     doc.setFont("NotoSansEthiopic-Regular", "normal");
     drawText(`${data.method || "N/A"}`, marginLeft + 35, yPos);
     yPos += lineHeight;
 
     if (data.method.toUpperCase().includes("DIGITAL")) {
       doc.setFont("NotoSansEthiopic-Regular", "normal");
-      drawText("Channel:", marginLeft, yPos);
+      drawText("Channel :", marginLeft, yPos);
       doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`${data.digitalChannel || "N/A"}`, marginLeft + 35, yPos);
       yPos += lineHeight;
 
       doc.setFont("NotoSansEthiopic-Regular", "normal");
-      drawText("Transaction Ref No:", marginLeft, yPos);
+      drawText("Transaction Ref No :", marginLeft, yPos);
       doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`${data.trxref || "N/A"}`, marginLeft + 35, yPos);
       yPos += lineHeight;
     } else if (data.method.toUpperCase().includes("CBHI")) {
       doc.setFont("NotoSansEthiopic-Regular", "normal");
-      drawText(`CBHI ID:`, marginLeft, yPos);
+      drawText(`CBHI ID :`, marginLeft, yPos);
       doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`${data.cbhiId || "N/A"}`, marginLeft + 35, yPos);
       yPos += lineHeight;
     } else if (data.method.toUpperCase().includes("CREDIT")) {
       doc.setFont("NotoSansEthiopic-Regular", "normal");
-      drawText(`Organization:`, marginLeft, yPos);
+      drawText(`Organization :`, marginLeft, yPos);
       doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`${data.organization || "N/A"}`, marginLeft + 35, yPos);
       yPos += lineHeight;
       doc.setFont("NotoSansEthiopic-Regular", "normal");
-      drawText(`Employee Id:`, marginLeft, yPos);
+      drawText(`Employee Id :`, marginLeft, yPos);
       doc.setFont("NotoSansEthiopic-Regular", "normal");
       drawText(`${data.employeeId || "N/A"}`, marginLeft + 35, yPos);
       yPos += lineHeight;
@@ -351,6 +351,7 @@ const HospitalPayment = () => {
   const [payments, setPayments] = useState([]);
 
   const [formData, setFormData] = useState(initialState);
+  const [formDataError, setFormDataError] = useState(initialState);
   const [organizations, setOrganizations] = useState([]);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
@@ -478,6 +479,7 @@ const HospitalPayment = () => {
   const handleChange = (e) => {
     try {
       setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+      setFormDataError((prev) => ({ ...prev, [e.target.name]: "" }));
 
       if (e.target.name === "trxref") {
         validateTransactionRef(e.target.value);
@@ -487,6 +489,13 @@ const HospitalPayment = () => {
       }
       if (e.target.name === "method") {
         setFormData((prev) => ({
+          ...prev,
+          trxref: "",
+          organization: "",
+          employeeId: "",
+          digitalChannel: "",
+        }));
+        setFormDataError((prev) => ({
           ...prev,
           trxref: "",
           organization: "",
@@ -517,8 +526,9 @@ const HospitalPayment = () => {
 
   const handleCheckboxChange = (reason) => {
     try {
+      let updatedReason;
       setFormData((prev) => {
-        const updatedReason = prev.reason.includes(reason)
+        updatedReason = prev.reason.includes(reason)
           ? prev.reason.filter((r) => r !== reason)
           : [...prev.reason, reason];
 
@@ -530,6 +540,20 @@ const HospitalPayment = () => {
         return {
           ...prev,
           reason: updatedReason,
+          amount: finalAmount,
+        };
+      });
+
+      setFormDataError((prev) => {
+        const myReason = "";
+        // if unchecking, drop any amount entry for that reason:
+        const finalAmount = updatedReason.includes(reason)
+          ? prev.amount
+          : prev.amount.filter((item) => item.purpose !== reason);
+
+        return {
+          ...prev,
+          reason: myReason,
           amount: finalAmount,
         };
       });
@@ -560,6 +584,18 @@ const HospitalPayment = () => {
           amount: finalAmounts,
         };
       });
+      setFormDataError((prev) => {
+        const finalAmounts = prev?.amount.some(
+          (item) => item.purpose === reason
+        )
+          ? prev?.amount?.filter((item) => item.purpose !== reason)
+          : [...prev?.amount];
+
+        return {
+          ...prev,
+          amount: finalAmounts,
+        };
+      });
     } catch (err) {
       console.error(err);
     }
@@ -578,8 +614,12 @@ const HospitalPayment = () => {
     }
   };
 
+
   const handleSubmit = () => {
     try {
+      const amountErrormsg =
+        "Each reason must have a corresponding payment amount greater than 0!";
+      const fillError = "Please fill this field.";
       if (
         !formData.cardNumber ||
         !!cardNumberError ||
@@ -593,7 +633,76 @@ const HospitalPayment = () => {
         (formData.method.toUpperCase().includes("CREDIT") &&
           (!formData.organization || !formData.employeeId))
       ) {
-        return window.alert("Please fill all the necessary fields!!");
+        if (!formData.cardNumber || !!cardNumberError) {
+          setFormDataError((prev) => ({
+            ...prev,
+            cardNumber: fillError,
+          }));
+        }
+
+        if (formData.reason.length <= 0) {
+          setFormDataError((prev) => ({
+            ...prev,
+            reason: "Please Select a reason.",
+          }));
+        }
+        if (formData.amount <= 0) {
+          setFormDataError((prev) => ({
+            ...prev,
+            amount: formData?.reason?.map((item) => ({
+              purpose: item,
+              amount: amountErrormsg,
+            })),
+          }));
+        }
+
+        if (!formData.method) {
+          setFormDataError((prev) => ({
+            ...prev,
+            method: "Please select payment method.",
+          }));
+        }
+
+        if (
+          formData.method.toUpperCase().includes("DIGITAL") &&
+          (!formData.digitalChannel ||
+            !formData.trxref ||
+            trxRefError.length > 0)
+        ) {
+          if (!formData.digitalChannel) {
+            setFormDataError((prev) => ({
+              ...prev,
+              digitalChannel: fillError,
+            }));
+          }
+
+          if (!formData.trxref || trxRefError.length > 0) {
+            setFormDataError((prev) => ({
+              ...prev,
+              trxref: fillError,
+            }));
+          }
+        }
+
+        if (
+          formData.method.toUpperCase().includes("CREDIT") &&
+          (!formData.organization || !formData.employeeId)
+        ) {
+          if (!formData.organization) {
+            setFormDataError((prev) => ({
+              ...prev,
+              organization: fillError,
+            }));
+          }
+
+          if (!formData.employeeId) {
+            setFormDataError((prev) => ({
+              ...prev,
+              employeeId: fillError,
+            }));
+          }
+        }
+        return toast.error("Please fill all the necessary fields!!");
       }
 
       // Validate amount based on reason
@@ -604,9 +713,34 @@ const HospitalPayment = () => {
       );
 
       if (!isAmountValid) {
-        return window.alert(
-          "Each reason must have a corresponding payment amount greater than 0!"
-        );
+        const isNew = formData.reason?.map((item) => {
+          if (
+            !formData?.amount?.map((ite) => ite.purpose).includes(item) ||
+            formData?.amount
+              ?.filter((k) => k.purpose === item)
+              ?.every((ite) => ite.amount === 0)
+          ) {
+            return { ok: true, val: item };
+          } else {
+            return { ok: false, val: "" };
+          }
+        });
+
+        if (isNew?.some((item) => item.ok === true)) {
+          
+          const newData = isNew?.filter((item) => item.ok === true);
+          const uppData = newData?.map((item) => ({
+            purpose: item?.val,
+            amount: amountErrormsg,
+          }));
+          setFormDataError((prev) => ({ ...prev, amount: uppData }));
+        }
+
+        return toast.error(amountErrormsg);
+      }
+
+      if (Object.values(formDataError)?.some((item) => item.length > 0)) {
+        return toast.error("Please fix the errors first.");
       }
 
       setReceiptData(formData);
@@ -652,6 +786,7 @@ const HospitalPayment = () => {
         };
         setReceiptOpen(false);
         setFormData(initialState);
+        setFormDataError(initialState);
         toast.success(`Payment Regitstered Under ${response?.data?.refNo}`);
         setRefresh((prev) => !prev);
 
@@ -814,8 +949,16 @@ const HospitalPayment = () => {
             value={formData.cardNumber}
             onChange={handleChange}
             fullWidth
-            error={!!cardNumberError}
-            helperText={cardNumberError}
+            error={
+              cardNumberError?.length > 0
+                ? !!cardNumberError
+                : !!formDataError?.cardNumber
+            }
+            helperText={
+              cardNumberError?.length > 0
+                ? cardNumberError
+                : formDataError?.cardNumber
+            }
             margin="normal"
             variant="outlined"
             sx={{
@@ -833,7 +976,10 @@ const HospitalPayment = () => {
             }}
             FormHelperTextProps={{
               style: {
-                color: !!cardNumberError ? "red" : "green",
+                color:
+                  !!cardNumberError || !!formDataError?.cardNumber
+                    ? "red"
+                    : "green",
                 fontSize: "14px",
               },
             }}
@@ -841,6 +987,12 @@ const HospitalPayment = () => {
           <Typography variant="subtitle1" gutterBottom>
             {language === "AMH" ? "ምክንያት" : "Select Reason*"}
           </Typography>
+          {formDataError?.reason?.length > 0 && (
+            <Typography variant="subtitle1" color="error" gutterBottom>
+              {formDataError?.reason}
+            </Typography>
+          )}
+
           {reasons?.map((reason) => (
             <FormControlLabel
               key={reason}
@@ -887,6 +1039,16 @@ const HospitalPayment = () => {
                   },
                 },
               }}
+              error={
+                !!formDataError?.amount
+                  .filter((item) => item.purpose === reason)
+                  .map((item) => item.amount)[0]
+              }
+              helperText={
+                formDataError?.amount
+                  .filter((item) => item.purpose === reason)
+                  .map((item) => item.amount)[0]
+              }
             />
           ))}
 
@@ -912,6 +1074,8 @@ const HospitalPayment = () => {
                 },
               },
             }}
+            error={!!formDataError?.method}
+            helperText={formDataError?.method}
           >
             {paymentMethods?.map((method) => (
               <MenuItem key={method} value={method}>
@@ -943,6 +1107,8 @@ const HospitalPayment = () => {
                     },
                   },
                 }}
+                error={!!formDataError?.digitalChannel}
+                helperText={formDataError?.digitalChannel}
               >
                 {digitalChannels?.map((channel) => (
                   <MenuItem key={channel} value={channel}>
@@ -954,8 +1120,14 @@ const HospitalPayment = () => {
                 label="Transaction Reference No"
                 name="trxref"
                 value={formData.trxref}
-                error={!!trxRefError}
-                helperText={trxRefError}
+                error={
+                  trxRefError?.length > 0
+                    ? !!trxRefError
+                    : !!formDataError?.trxref
+                }
+                helperText={
+                  trxRefError?.length > 0 ? trxRefError : formDataError?.trxref
+                }
                 onChange={handleChange}
                 fullWidth
                 required
@@ -1009,6 +1181,8 @@ const HospitalPayment = () => {
                     },
                   },
                 }}
+                error={!!formDataError?.organization}
+                helperText={formDataError?.organization}
               >
                 {organizations.map((org) => (
                   <MenuItem key={org} value={org}>
@@ -1038,6 +1212,8 @@ const HospitalPayment = () => {
                     },
                   },
                 }}
+                error={!!formDataError?.employeeId}
+                helperText={formDataError?.employeeId}
               />
             </>
           )}
