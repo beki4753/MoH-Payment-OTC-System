@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Modal,
   Typography,
@@ -21,7 +21,7 @@ const AddHospitalServices = ({
   setLoading,
 }) => {
   const [rows, setRows] = useState([]);
- const fileInput = useRef(null)
+  const fileInput = useRef(null);
   const columns = [
     { field: "Services", headerName: "Hospital Services", flex: 1 },
     { field: "Amount", headerName: "Amount", flex: 1 },
@@ -75,11 +75,16 @@ const AddHospitalServices = ({
     }
   };
 
+  useEffect(() => {
+    if (!isOpen) {
+      handleClose();
+    }
+  }, [isOpen]);
 
-  const handleReset = ()=>{
+  const handleReset = () => {
     setRows([]);
     fileInput.current.value = null;
-  }
+  };
 
   return (
     <Modal
@@ -110,7 +115,12 @@ const AddHospitalServices = ({
           Upload Hospital Services (Excel)
         </Typography>
         <Stack direction="row" spacing={2} alignItems="center" mb={2}>
-          <input ref={fileInput} type="file" accept=".xlsx, .xls" onChange={handleFileUpload} />
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".xlsx, .xls"
+            onChange={handleFileUpload}
+          />
           <IconButton
             onClick={handleReset}
             color="error"
