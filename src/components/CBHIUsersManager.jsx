@@ -9,7 +9,7 @@ import {
   TextField,
   Typography,
   Grid,
-  IconButton,
+  FormHelperText,
   CircularProgress,
   Select,
   MenuItem,
@@ -143,6 +143,14 @@ function CBHIUsersManager() {
         const fieldNames = missingFields
           .map((key) => requiredFields[key])
           .join(", ");
+
+        missingFields?.map((item) => {
+          setFormDataError({
+            name: item,
+            values: "Please fill this field",
+          });
+        });
+
         toast.error(
           `Please fill in the following required fields: ${fieldNames}`
         );
@@ -245,6 +253,7 @@ function CBHIUsersManager() {
     const dateStr = localDate.toISOString().slice(0, 19).replace("T", " ");
     const sqlDateOffset = `${dateStr} ${offsetStr}`;
     setFormData((prev) => ({ ...prev, [fieldName]: sqlDateOffset }));
+    setFormDataError({ name: fieldName, values: "" });
   };
 
   return (
@@ -302,12 +311,14 @@ function CBHIUsersManager() {
                     label={label}
                     name={name}
                     required
+                    error={!!formDataError[name]}
+                    helperText={formDataError[name]}
                     value={formData[name] ? new Date(formData[name]) : null}
                     onChange={(e) => handleChangeTime(name, e)}
                     sx={{ width: "100%" }}
                   />
                 ) : name === "kebele" ? (
-                  <FormControl required fullWidth>
+                  <FormControl required fullWidth error={!!formDataError[name]}>
                     <InputLabel>{label}</InputLabel>
                     <Select
                       name={name}
@@ -321,6 +332,7 @@ function CBHIUsersManager() {
                         </MenuItem>
                       ))}
                     </Select>
+                    <FormHelperText>{formDataError[name]}</FormHelperText>
                   </FormControl>
                 ) : (
                   <TextField

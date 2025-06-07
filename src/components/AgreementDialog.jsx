@@ -170,7 +170,7 @@ const AgreementDialog = ({
               {formatAccounting2(selectedTransaction?.collectedAmount)}
             </Typography>
             <Divider sx={{ my: 2 }} />
-
+            {/* 
             <FormControlLabel
               control={
                 <Checkbox
@@ -179,7 +179,7 @@ const AgreementDialog = ({
                 />
               }
               label="I confirm this agreement paper and agree to the terms of service"
-            />
+            /> */}
             <TextField
               fullWidth
               label="Employee ID"
@@ -247,7 +247,6 @@ const AgreementDialog = ({
               variant="contained"
               onClick={handleVerify}
               disabled={
-                !agreed ||
                 !formData.empId ||
                 !formData.empName ||
                 empIdError.length > 0 ||
@@ -265,7 +264,6 @@ const AgreementDialog = ({
                 fullWidth
                 disabled={
                   !verifyEmp ||
-                  !agreed ||
                   !formData.empId ||
                   !formData.empName ||
                   empIdError.length > 0 ||
@@ -281,6 +279,16 @@ const AgreementDialog = ({
                 {convertToEthDateWithTime(signature) || "Click to Sign"}
               </Button>
             </Box>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                />
+              }
+              label="I confirm this agreement paper and agree to the terms of service"
+              sx={{ marginTop: "15px" }}
+            />
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Cancel</Button>

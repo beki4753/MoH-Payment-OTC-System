@@ -1,4 +1,4 @@
-import React, { useReducer, useState } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 import {
   Grid,
   TextField,
@@ -307,13 +307,13 @@ function PatientRegistration() {
     ) {
       letterNumberCheck(e.target.name, e.target.value);
     } else if (e.target.name === "mrn") {
+      mrnCheck(e.target.name, e.target.value);
       if (formData?.isUpdate) {
         toast.info(
           "You changed the MRN so now you are recording a new data, not updating the existing one."
         );
         setFormData({ name: "isUpdate", values: false });
       }
-      mrnCheck(e.target.name, e.target.value);
     } else if (e.target.name === "phone" || e.target.name === "nphone") {
       phoneCheck(e.target.name, e.target.value);
     } else if (e.target.name === "mobile" || e.target.name === "nmobile") {
@@ -321,7 +321,7 @@ function PatientRegistration() {
     }
 
     setFormData({ name: e.target.name, values: e.target.value });
-    setFormDataError({ name: e.target.name, values: "" });
+    //setFormDataError({ name: e.target.name, values: "" });
   };
 
   const validateName = (name, value) => {
@@ -470,7 +470,10 @@ function PatientRegistration() {
         if (hasStep1Empty) {
           step1Fields.map((item) => {
             if (formData[item].length <= 0) {
-              setFormDataError({ name: item, values: "Please fill this field first." });
+              setFormDataError({
+                name: item,
+                values: "Please fill this field first.",
+              });
             }
           });
           toast.error(requiredMessage);
@@ -482,7 +485,6 @@ function PatientRegistration() {
         }
         setActiveStep((prev) => prev + 1);
       } else {
-        
         if (hasStep1Empty || hasStep2Empty) {
           step2Fields.map((item) => {
             if (formData[item].length <= 0) {
@@ -654,22 +656,21 @@ function PatientRegistration() {
                 type="text"
                 value={formData?.mrn}
                 onChange={handleChange}
+                onBlurCapture={() => handleCheck()}
                 error={!!formDataError?.mrn}
                 helperText={formDataError?.mrn}
                 required
               />
-              <Button
-                variant="contained"
-                sx={{ marginInline: "15px" }}
-                disabled={checkLoading}
-                onClick={() => handleCheck()}
-              >
-                {checkLoading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  "Check"
-                )}
-              </Button>
+              {checkLoading && (
+                <Box
+                  display="flex"
+                  justifyContent="center"
+                  alignItems="center"
+                  sx={{ marginLeft: "15px"}}
+                >
+                  <CircularProgress />
+                </Box>
+              )}
             </Grid>
 
             <hr style={{ margin: "20px" }} />

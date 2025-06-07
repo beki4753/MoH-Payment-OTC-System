@@ -9,6 +9,12 @@ import {
   MenuItem,
   Grid,
   CircularProgress,
+  FormControlLabel,
+  Checkbox,
+  InputAdornment,
+  Select,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import api from "../../utils/api";
 import { DataGrid } from "@mui/x-data-grid";
@@ -294,6 +300,17 @@ const exportToPDF = async (data) => {
   }
 };
 
+// Filter options
+const filterOptions = [
+  { label: "Equal to", value: "=" },
+  { label: "Greater than", value: ">" },
+  { label: "Less than", value: "<" },
+  { label: "Greater or equal", value: ">=" },
+  { label: "Less or equal", value: "<=" },
+  { label: "Not equal", value: "!=" },
+  { label: "Between", value: "between" },
+];
+
 const ReportPage = () => {
   const [payments, setPayments] = useState([]);
 
@@ -301,6 +318,11 @@ const ReportPage = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [filteredPayments, setFilteredPayments] = useState(payments);
+  const [skipZero, setSkipZero] = useState(false);
+  const [operator, setOperator] = useState("=");
+  const [minAge, setMinAge] = useState("");
+  const [maxAge, setMaxAge] = useState("");
+  const [filterAge, setFilterAge] = useState("");
   const [paymentMethods, setpaymentMethods] = useState([]);
   const [woredas, setWoredas] = useState([]);
   const [organizations, setOrganizations] = useState([]);
@@ -376,7 +398,6 @@ const ReportPage = () => {
       console.error("Filter Error : ", error);
     }
   }, [payments]);
-
 
   const cumulativeDataModifier = async () => {
     try {
@@ -678,7 +699,6 @@ const ReportPage = () => {
     }
   };
 
-
   const handleReportRequest = async () => {
     try {
       setLoading(true);
@@ -697,8 +717,13 @@ const ReportPage = () => {
           id: index + 1,
           ...item,
         }));
+        setPayments(() => {
+          if (!modData) return [];
 
-        setPayments(modData);
+          return skipZero
+            ? modData.filter((item) => item.totalPaid !== 0)
+            : modData;
+        });
 
         setFilteredPayments(
           payments
@@ -799,56 +824,79 @@ const ReportPage = () => {
     }
   };
 
+  const handleOperatorChange = (e) => {
+    try {
+      const { value } = e.target;
+      setOperator(value);
+      if (value === "between") {
+        setFilterAge("");
+      } else {
+        setMaxAge("");
+        setMinAge("");
+      }
+    } catch (error) {
+      console.error("This is handle Operator Change error: ", error);
+    }
+  };
   return (
     <Box>
       <Typography variant="h5" gutterBottom sx={{ margin: 2 }}>
         Payment Reports
       </Typography>
-      <Paper sx={{ padding: 2, margin: 2 }}>
-        <Grid container spacing={1}>
-          <Grid item xs={2}>
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
+          m: 2,
+          borderRadius: 3,
+          backgroundColor: "#f9f9f9",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+        }}
+      >
+        <Typography variant="h6" fontWeight="bold" mb={2}>
+          Report Filter Panel
+        </Typography>
+
+        <Grid container columnSpacing={1} rowSpacing={2}>
+          {/* Start Date */}
+          <Grid item xs={12} sm={6} md={2}>
             <EtDatePicker
               key={startDate || "startDate"}
               label="Start Date"
               value={startDate ? new Date(startDate) : null}
               onChange={(e) => {
-                // setStartDate(e);
                 handleChangeTime("sdate", e);
-                setFormData({
-                  woreda: "",
-                  organization: "",
-                });
+                setFormData({ woreda: "", organization: "" });
               }}
               required
-              sx={{ marginRight: 2 }}
+              fullWidth
             />
           </Grid>
 
-          <Grid item xs={2}>
+          {/* End Date */}
+          <Grid item xs={12} sm={6} md={2}>
             <EtDatePicker
               key={endDate || "endDate"}
               label="End Date"
               value={endDate ? new Date(endDate) : null}
               onChange={(e) => {
-                // setEndDate(e);
                 handleChangeTime("edate", e);
-                setFormData({
-                  woreda: "",
-                  organization: "",
-                });
+                setFormData({ woreda: "", organization: "" });
               }}
-              InputLabelProps={{ shrink: true }}
               required
-              sx={{ marginRight: 2 }}
+              fullWidth
             />
           </Grid>
-          <Grid item xs={2}>
+
+          {/* Request Report */}
+          <Grid item xs={12} sm={6} md={2}>
             <Button
               variant="contained"
               color="secondary"
               onClick={handleReportRequest}
-              sx={{ marginRight: 2 }}
+              // fullWidth
               disabled={isLoading}
+              // sx={{ height: "100%" }}
             >
               {isLoading ? (
                 <CircularProgress size={24} color="inherit" />
@@ -858,7 +906,8 @@ const ReportPage = () => {
             </Button>
           </Grid>
 
-          <Grid item xs={3}>
+          {/* Woreda */}
+          <Grid item xs={12} sm={6} md={3}>
             <TextField
               select
               fullWidth
@@ -875,7 +924,8 @@ const ReportPage = () => {
             </TextField>
           </Grid>
 
-          <Grid item xs={3}>
+          {/* Organization */}
+          <Grid item xs={12} sm={6} md={3}>
             <TextField
               select
               fullWidth
@@ -891,12 +941,81 @@ const ReportPage = () => {
               ))}
             </TextField>
           </Grid>
+
+          {/* Filter Type */}
+          <Grid item xs={12} sm={6} md={4}>
+            <FormControl fullWidth>
+              <InputLabel>Filter Type</InputLabel>
+              <Select
+                value={operator}
+                label="Filter Type"
+                onChange={(e) => handleOperatorChange(e)}
+              >
+                {filterOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* Between input */}
+          {operator === "between" ? (
+            <>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  label="Min Age"
+                  type="number"
+                  value={minAge}
+                  onChange={(e) => setMinAge(e.target.value)}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  label="Max Age"
+                  type="number"
+                  value={maxAge}
+                  onChange={(e) => setMaxAge(e.target.value)}
+                  fullWidth
+                />
+              </Grid>
+            </>
+          ) : (
+            <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                type="number"
+                label="Age"
+                value={filterAge}
+                onChange={(e) => setFilterAge(e.target.value)}
+                fullWidth
+              />
+            </Grid>
+          )}
+
+          {/* Skip Zero */}
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={skipZero}
+                  onChange={(e) => setSkipZero(e.target.checked)}
+                />
+              }
+              label="Skip Zero"
+            />
+          </Grid>
         </Grid>
+
+        {/* Tabs for payment methods */}
         <Tabs
           value={selectedMethod}
           onChange={handleMethodChange}
           variant="scrollable"
-          sx={{ marginTop: 2 }}
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{ marginTop: 3 }}
         >
           {paymentMethods?.length > 0 &&
             paymentMethods.map((method) => (

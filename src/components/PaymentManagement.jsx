@@ -41,7 +41,7 @@ import ReceiptModal from "../pages/hospitalpayment/ReceiptModal";
 import { generatePDF } from "../pages/hospitalpayment/HospitalPayment";
 import PatientTransactionsModal from "./PatientTransactionsModal";
 import CancelConfirm from "./CancelConfirm";
-import { Refresh } from "@mui/icons-material";
+import { CarCrash, Refresh } from "@mui/icons-material";
 
 const tokenvalue = getTokenValue();
 
@@ -51,6 +51,7 @@ const icons = {
   Credit: <CreditScoreIcon />,
   "Free of Charge": <MonetizationOnIcon />,
   Digital: <AttachMoneyIcon />,
+  Traffic: <CarCrash />,
 };
 
 //const creditOrganizations = ["Tsedey Bank", "Amhara Bank", "Ethio Telecom"]; // example list
@@ -62,6 +63,7 @@ const initialState = {
   organization: "",
   employeeId: "",
 };
+
 function PaymentManagement() {
   const [rows, setRows] = useState([]);
   const [openModal, setOpenModal] = useState(false);
@@ -732,6 +734,8 @@ function PaymentManagement() {
         return "Digital";
       } else if (text.toLowerCase() === "free of charge") {
         return "Free of Charge";
+      } else if (text.toLowerCase() === "traffic") {
+        return "Traffic";
       } else {
         return text;
       }

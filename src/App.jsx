@@ -39,6 +39,7 @@ import {
   ReportReceiptFetcher,
   PatientRegistration,
   PatientSearch,
+  FriendlyAgeFilterDataGrid,
   CBHIUsersManager,
   TrafficAccidentForm,
   TreatmentEntry,
@@ -261,6 +262,16 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute
             element={<PatientSearch />}
+            allowedRoles={["User"]}
+            allowedCategory={["Cashier"]}
+          />
+        ),
+      },
+      {
+        path: "test",
+        element: (
+          <ProtectedRoute
+            element={<FriendlyAgeFilterDataGrid />}
             allowedRoles={["User"]}
             allowedCategory={["Cashier"]}
           />
