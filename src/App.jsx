@@ -83,7 +83,7 @@ const ProtectedRoute = ({ element, allowedRoles, allowedCategory }) => {
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path:"/",
     element: <RootLayout />, // Ensuring layout consistency
     errorElement: <NotFoundPage />,
     id: "root",
@@ -91,10 +91,13 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: (
+        element: ( 
+        
           <ProtectedRoute
             element={
               role?.toUpperCase() === "USER" ? (
+                tokenvalue?.UserType?.toUpperCase() === "MLT" ? 
+                <TreatmentEntry /> :
                 <Dashboard />
               ) : (
                 <AdminDashboard />

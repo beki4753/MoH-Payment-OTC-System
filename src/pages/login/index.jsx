@@ -11,11 +11,14 @@ import {
 } from "@mui/material";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
-import logo from "../../assets/logo.png";
+
 import Topbar from "../global/Topbar";
 import bag from "../../assets/bg16.jpg";
 import { login } from "../../services/user_service";
 import { useTheme } from "@mui/material";
+import tsedey from "../../assets/tsedey.png";
+import amh from "../../assets/AMRS_logo .png";
+import moh from "../../assets/moh.png";
 // import { useAuth } from "../../contexts/AuthProvider"
 
 const Login = () => {
@@ -132,7 +135,11 @@ const Login = () => {
               boxShadow: 3,
             }}
           >
-            <img src={logo} width="210px" alt="Company Logo" />
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+  <img src={moh} width="100px" alt="Company Logo" style={{ marginRight: '0px',marginTop:'20px' }} />
+  <img src={amh} width="75px" alt="Company Logo" style={{ marginRight: '0px' }} />
+  <img src={tsedey} width="95px" alt="Company Logo" />
+</div>
             <Typography variant="h5" sx={{ mt: 2, fontWeight: "bold" }}>
               Sign in to Your Account
             </Typography>

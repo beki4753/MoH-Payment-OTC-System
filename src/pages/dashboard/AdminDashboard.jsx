@@ -247,7 +247,7 @@ const AdminDashboard = () => {
                   },
                 }}
               >
-                <Typography color={colors.grey[500]} width="50%">
+                <Typography color={colors.greenAccent[500]} width="50%">
                   {org.organization}
                 </Typography>
 

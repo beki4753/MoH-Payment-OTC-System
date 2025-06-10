@@ -283,6 +283,14 @@ const OrgUploadManager = () => {
                 onChange={handleChange}
                 margin="normal"
                 required
+                InputLabelProps={{
+                  sx: {
+                    color: 'primary.neutral',
+                    '&.Mui-focused': {
+                      color: 'secondary.main',
+                    },
+                  },
+                }}
               >
                 {org.map((item, index) => (
                   <MenuItem key={index} value={item}>
@@ -302,6 +310,14 @@ const OrgUploadManager = () => {
                 onChange={handleChange}
                 margin="normal"
                 required
+                InputLabelProps={{
+                  sx: {
+                    color: 'primary.neutral',
+                    '&.Mui-focused': {
+                      color: 'secondary.main',
+                    },
+                  },
+                }}
               >
                 {option.map((item, index) => (
                   <MenuItem key={index} value={item}>

@@ -321,7 +321,7 @@ const PatientSearch = () => {
           p: { xs: 2, sm: 3 },
           mt: 4,
           borderRadius: 2,
-          backgroundColor: "#f9f9f9",
+          //backgroundColor: "#f9f9f9",
           boxShadow: 3,
           marginInline: "15px",
         }}

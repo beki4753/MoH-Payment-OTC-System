@@ -22,6 +22,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import Logout from "@mui/icons-material/Logout";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { getTokenValue } from "../../services/user_service";
+import AMHRLogo from "../../assets/Amhara-region.png";
 
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 
@@ -84,12 +85,27 @@ const Topbar = () => {
         display="flex"
         backgroundColor={colors.primary[400]}
         borderRadius="3px"
+        sx={{
+          height: { xs: 35, sm: 40, md: 42 },
+          width: { xs: 120, sm: 160, md: 222 },
+        }}
       >
         <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" />
         <IconButton type="button" sx={{ p: 1 }}>
           <SearchIcon />
         </IconButton>
       </Box>
+      {/*<Box
+        component="img"
+        src={AMHRLogo}
+        alt="Amhara Region Logo"
+        sx={{
+          height: { xs: 50, sm: 55, md: 90 },
+          width: { xs: 120, sm: 160, md: 222 },
+          objectFit: "contain",
+          maxWidth: "100%",
+        }}
+      />*/}
 
       {/* ICONS */}
       <Box display="flex">
