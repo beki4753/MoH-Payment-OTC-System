@@ -81,7 +81,9 @@ const EmployeeUploadManager = () => {
         const response = await api.get(
           `/Collection/collector/${tokenvalue?.name}`
         );
-        setData(response?.data);
+
+        
+        setData(response?.data<= 0 ? new Array() : response?.data);
       } catch (error) {
         console.error(error);
         toast.error(error?.response?.data || "Failde To Load list.");

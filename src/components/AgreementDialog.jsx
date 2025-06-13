@@ -21,7 +21,7 @@ import { toast } from "react-toastify";
 import api from "../utils/api";
 import { getTokenValue } from "../services/user_service";
 
-const tokenvalue= getTokenValue()
+const tokenvalue = getTokenValue();
 const formatter2 = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -75,26 +75,24 @@ const AgreementDialog = ({
 
   const handleVerify = async () => {
     try {
-       console.log("formData>>",formData)
       const response = await api.put("/Collection/collector-check", {
         employeeID: formData?.empId.toLocaleLowerCase(),
         employeeName: formData?.empName,
         user: tokenvalue?.name,
       });
-        console.log(response?.data)
-      if(response.status === 200)
-      {
-        toast.success('Verified.')
+      if (response.status === 200) {
+        toast.success("Verified.");
         setEmpVerified("yes");
-        setVerifyEmp(true)
-      }else{
-        setVerifyEmp(undefined)
+        setVerifyEmp(true);
+      } else {
+        setVerifyEmp(undefined);
+        setVerifyEmp(false);
       }
     } catch (error) {
       console.error(error);
-      setVerifyEmp(undefined);
+      setVerifyEmp(false);
       setEmpVerified("no");
-      toast.info(error?.response?.date || "Internal Server Error!")
+      toast.info(error?.response?.data || "Internal Server Error!");
     }
   };
 
@@ -137,6 +135,9 @@ const AgreementDialog = ({
       signature: "",
       cashier: "",
     });
+    setVerifyEmp(undefined);
+    setEmpVerified("no");
+
     onClose();
   };
 
@@ -260,9 +261,17 @@ const AgreementDialog = ({
               <Button
                 variant="outlined"
                 fullWidth
-                disabled={!verifyEmp}
+                disabled={
+                  !verifyEmp ||
+                  !agreed ||
+                  !formData.empId ||
+                  !formData.empName ||
+                  empIdError.length > 0 ||
+                  empNameError.length > 0
+                }
                 onClick={() => {
                   const date = new Date();
+
                   date.setHours(date.getHours() + 3); // Add 3 hours to UTC time
                   setSignature(date.toISOString());
                 }}

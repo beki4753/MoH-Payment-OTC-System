@@ -35,11 +35,13 @@ const CollectedReport = () => {
         isCollected: 0,
       });
       if (response?.data.length <= 0) toast.info("Report not found!");
-      const data = 
-      response?.data.length >0 ? response?.data?.map(({ collectionId, ...rest }) => ({
-          id: collectionId,
-          ...rest,
-        })) || [] : [];
+      const data =
+        response?.data.length > 0
+          ? response?.data?.map(({ collectionId, ...rest }) => ({
+              id: collectionId,
+              ...rest,
+            })) || []
+          : [];
       setData(data.length <= 0 ? new Array() : data);
     } catch (error) {
       console.error("Error fetching report data:", error);
@@ -52,7 +54,8 @@ const CollectedReport = () => {
         const filteredData = data?.filter((item) => {
           if (
             showOnlyHighAmount &&
-            item.collectedAmount < Math.max(...data?.map((item) => item?.collectedAmount))
+            item.collectedAmount <
+              Math.max(...data?.map((item) => item?.collectedAmount))
           )
             return false;
           return true;
@@ -75,10 +78,23 @@ const CollectedReport = () => {
   }, [showOnlyHighAmount]);
 
   const exportToExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(filteredData.length > 0  ? filteredData:data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `Collection Report of ${tokenvalue?.name}` );
-    XLSX.writeFile(wb, `Collection_Report from ${startDate} to ${endDate}.xlsx`);
+    try {
+      const ws = XLSX.utils.json_to_sheet(
+        filteredData.length > 0 ? filteredData : data
+      );
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(
+        wb,
+        ws,
+        `Collection Report of ${tokenvalue?.name}`
+      );
+      XLSX.writeFile(
+        wb,
+        `Collection_Report from ${startDate} to ${endDate}.xlsx`
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -150,7 +166,7 @@ const CollectedReport = () => {
           ]}
         />
       </Paper>
-      <Button variant="contained" color="primary" onClick={exportToExcel}>
+      <Button variant="contained" color="primary" onClick={()=>exportToExcel()}>
         Export to Excel
       </Button>
       <ToastContainer />

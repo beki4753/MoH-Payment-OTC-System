@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import {jwtDecode} from "jwt-decode";
 import { logout } from "./user_service";
-import moment from "moment/moment";
+import api from "../utils/api";
 
 const tokenName = ".otc"
 
@@ -9,22 +9,20 @@ const useTokenCheck = () => {
 
 
   useEffect(() => {
-    const checkTokenExpiration = () => {
+    const checkTokenExpiration =async () => {
       const token = localStorage.getItem(tokenName); 
       if (!token) {
         return;
       }
 
       try {
-        const decoded = jwtDecode(token);
-        // const currentTime = Date.now() / 1000; 
-        const currentTime = Date.parse(moment.utc().format()) / 1000; 
-
-        // if (decoded.exp < currentTime) {
-        //   logout();
-        // }
+          const response = await api.get("/Account/check-login")
+        if (response.status !== 200) {
+          logout();
+        }
       } catch (error) {
         console.error("Invalid token:", error);
+        logout();
       }
     };
 

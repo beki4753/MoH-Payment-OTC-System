@@ -311,6 +311,7 @@ const PaymentManagementLists = () => {
                     "TeleBirr",
                     "CBE Mobile Banking",
                     "BANK OF ABYSSINIA",
+                    "Awash Bank",
                   ]
                     .map((item) => item.toUpperCase())
                     .includes(params.row.name.toUpperCase()) && (

@@ -26,7 +26,7 @@ import {
 
 import { logout as logoutAction } from "./services/user_service.js";
 import { getTokenValue, getSession, logout } from "./services/user_service.js";
-// import useTokenCheck from "./services/useTokenCheck.js";
+import useTokenCheck from "./services/useTokenCheck.js";
 
 import {
   HospitalManagement,
@@ -35,6 +35,7 @@ import {
   FinancialDashboard,
   PaymentManagementLists,
   EmployeeUploadManager,
+  ReportReceiptFetcher,
 } from "./components";
 
 const tokenvalue = getTokenValue();
@@ -93,6 +94,15 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute
             element={<HospitalPayment />}
+            allowedRoles={["User"]}
+          />
+        ),
+      },
+      {
+        path: "find-patient",
+        element: (
+          <ProtectedRoute
+            element={<ReportReceiptFetcher />}
             allowedRoles={["User"]}
           />
         ),
@@ -189,7 +199,7 @@ const router = createBrowserRouter([
 const queryClient = new QueryClient();
 
 function App() {
-  // useTokenCheck();
+  useTokenCheck();
 
   return (
     <QueryClientProvider client={queryClient}>

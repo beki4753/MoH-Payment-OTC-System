@@ -16,6 +16,7 @@ import { getTokenValue } from "../../services/user_service";
 import StorageIcon from "@mui/icons-material/Storage";
 import { LibraryBooksTwoTone } from "@mui/icons-material";
 import BusinessIcon from "@mui/icons-material/Business";
+import ManageSearchIcon from "@mui/icons-material/ManageSearch";
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -36,10 +37,13 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
 };
 
 const tokenvalue = getTokenValue();
+
+
 // Departement,UserType
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const role =
     tokenvalue["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [selected, setSelected] = useState(() => {
@@ -56,6 +60,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       localStorage.setItem("currentNav", JSON.stringify(selected));
     }
   }, [selected]);
+
 
   return (
     <Box
@@ -289,6 +294,14 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                     title="Collection Reports"
                     to="/collection-reports"
                     icon={<LibraryBooksTwoTone />}
+                    selected={selected}
+                    setSelected={setSelected}
+                  />
+
+                  <Item
+                    title="Find Patient"
+                    to="/find-patient"
+                    icon={<ManageSearchIcon />}
                     selected={selected}
                     setSelected={setSelected}
                   />

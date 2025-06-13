@@ -1,9 +1,7 @@
 import api from "../utils/api";
-import {jwtDecode} from "jwt-decode";
-import moment from "moment";
+import { jwtDecode } from "jwt-decode";
+
 const tokenName = ".otc";
-
-
 
 export async function login(payload) {
   const response = await api.put("/Account/Login", {
@@ -14,7 +12,6 @@ export async function login(payload) {
 }
 
 export async function getUserDetails() {
-
   const data = {};
 
   return data;
@@ -38,20 +35,19 @@ export function getUser() {
 
 export function getSession() {
   const token = localStorage.getItem(tokenName);
-  if (!token) {
-    return null;
-  }
-    return token; 
+  if (!token) return null;
+
+  return token;
 }
 
-export function getTokenValue(){
+export function getTokenValue() {
   const token = localStorage.getItem(tokenName);
   if (!token) {
     return null;
   }
   const decoded = jwtDecode(token);
-  
-return decoded
+
+  return decoded;
 }
 
 export function checkAuthLoader() {

@@ -109,6 +109,7 @@ const HospitalPayment = () => {
     woreda: "",
     trxref: "",
     organization: "",
+    employeeId: "",
   });
   const [woredas, setWoredas] = useState([]);
   const [organizations, setOrganizations] = useState([]);
@@ -133,6 +134,7 @@ const HospitalPayment = () => {
   const [isPrintLoading, setIsPrintLoading] = useState(false);
   const [isAdditionalCBHILoading, setIsAdditionalCBHILoading] = useState(false);
 
+
   //Inserting evry changet that the user makes on print into the loacl storage using the useEffect hooks
   // onchange of payments the useEffect runs
   useEffect(() => {
@@ -151,7 +153,6 @@ const HospitalPayment = () => {
           const sortedPayment = await response?.data.sort(
             (a, b) => b.id - a.id
           );
-          // console.log("sortedPayment>>",sortedPayment)
           setPayments(sortedPayment);
         }
       } catch (error) {
@@ -283,6 +284,7 @@ const HospitalPayment = () => {
           woreda: "",
           trxref: "",
           organization: "",
+          employeeId: "",
           digitalChannel: "",
         }));
         setCbhiId("");
@@ -464,7 +466,7 @@ const HospitalPayment = () => {
           setReceiptOpen(false);
           setFormData({
             cardNumber: "",
-            amount: "",
+            amount: [],
             method: "",
             description: "",
             reason: [],
@@ -472,6 +474,7 @@ const HospitalPayment = () => {
             woreda: "",
             trxref: "",
             organization: "",
+            employeeId: "",
           });
           setRegisteredPatient(null);
           setPatientName("");
@@ -519,6 +522,7 @@ const HospitalPayment = () => {
   //Generate PDF
   const generatePDF = (data, refNo) => {
     try {
+      console.log(data, refNo);
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -1229,35 +1233,60 @@ const HospitalPayment = () => {
             </TextField>
           )}
           {formData?.method.toUpperCase().includes("CREDIT") && (
-            <TextField
-              select
-              label="Organization"
-              name="organization"
-              value={formData.organization}
-              onChange={handleChange}
-              required
-              fullWidth
-              margin="normal"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "10px", // Rounded edges for a modern look
+            <>
+              <TextField
+                select
+                label="Organization"
+                name="organization"
+                value={formData.organization}
+                onChange={handleChange}
+                required
+                fullWidth
+                margin="normal"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "10px", // Rounded edges for a modern look
 
-                  "&:hover fieldset": {
-                    borderColor: "info.main", // Changes border color on hover
+                    "&:hover fieldset": {
+                      borderColor: "info.main", // Changes border color on hover
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "primary.main", // Focus effect
+                      boxShadow: "0px 0px 8px rgba(0, 0, 255, 0.2)", // Nice glow
+                    },
                   },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "primary.main", // Focus effect
-                    boxShadow: "0px 0px 8px rgba(0, 0, 255, 0.2)", // Nice glow
+                }}
+              >
+                {organizations.map((org) => (
+                  <MenuItem key={org} value={org}>
+                    {org}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              <TextField
+                label="Employee Id"
+                name="employeeId"
+                value={formData.employeeId}
+                onChange={handleChange}
+                required
+                fullWidth
+                margin="normal"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "10px", // Rounded edges for a modern look
+
+                    "&:hover fieldset": {
+                      borderColor: "info.main", // Changes border color on hover
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "primary.main", // Focus effect
+                      boxShadow: "0px 0px 8px rgba(0, 0, 255, 0.2)", // Nice glow
+                    },
                   },
-                },
-              }}
-            >
-              {organizations.map((org) => (
-                <MenuItem key={org} value={org}>
-                  {org}
-                </MenuItem>
-              ))}
-            </TextField>
+                }}
+              />
+            </>
           )}
 
           <TextField
