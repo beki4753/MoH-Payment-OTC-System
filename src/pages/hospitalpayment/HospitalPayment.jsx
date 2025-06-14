@@ -134,7 +134,6 @@ const HospitalPayment = () => {
   const [isPrintLoading, setIsPrintLoading] = useState(false);
   const [isAdditionalCBHILoading, setIsAdditionalCBHILoading] = useState(false);
 
-
   //Inserting evry changet that the user makes on print into the loacl storage using the useEffect hooks
   // onchange of payments the useEffect runs
   useEffect(() => {
@@ -385,6 +384,7 @@ const HospitalPayment = () => {
         !formData.cardNumber ||
         formData.reason.length <= 0 ||
         formData.amount.length <= 0 ||
+        formData.employeeId.length <= 0 ||
         !formData.method ||
         (formData.method.toUpperCase().includes("DIGITAL") &&
           (!formData.digitalChannel ||
@@ -440,7 +440,8 @@ const HospitalPayment = () => {
           department: tokenvalue?.Departement,
           paymentVerifingID: formData.trxref || "-",
           patientLocation: formData.woreda || "-",
-          patientWorkingPlace: formData.organization || "-",
+          patientWorkID: formData.employeeId || "-",
+          patientWorkingPlace: formData?.organization || "-",
           userType: tokenvalue?.UserType,
         },
         {
@@ -493,6 +494,7 @@ const HospitalPayment = () => {
     } catch (error) {
       console.error(error);
       setIsPrintLoading(false);
+      toast.error(error?.response?.data ||"Internal Server Error.")
     }
   };
 
