@@ -384,7 +384,6 @@ const HospitalPayment = () => {
         !formData.cardNumber ||
         formData.reason.length <= 0 ||
         formData.amount.length <= 0 ||
-        formData.employeeId.length <= 0 ||
         !formData.method ||
         (formData.method.toUpperCase().includes("DIGITAL") &&
           (!formData.digitalChannel ||
@@ -392,7 +391,7 @@ const HospitalPayment = () => {
             trxRefError.length > 0)) ||
         (formData.method.toUpperCase().includes("CBHI") && !formData.woreda) ||
         (formData.method.toUpperCase().includes("CREDIT") &&
-          !formData.organization)
+          (!formData.organization || !formData.employeeId) )
       ) {
         return window.alert("Please fill all the necessary fields!!");
       }
